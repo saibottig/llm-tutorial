@@ -54,7 +54,7 @@ Because this growth is such a problem, there is a set of countermeasures — wor
 
 The KV cache normally lives only for the duration of one request. The obvious question: why not keep it across requests when the beginning stays the same?
 
-That is exactly what **prompt caching** is, and it is the largest cost lever available. It gets [its own chapter](../prompt-caching/) because it makes such a difference in practice.
+That is exactly what **prompt caching** is, and it is the largest cost lever available — especially in Claude Code sessions, whose beginning (tool definitions, system prompt, CLAUDE.md) stays stable across many turns. It gets [its own chapter](../prompt-caching/) because it makes such a difference in practice.
 
 <KeyTakeaway>
 - The KV cache stores keys and values of already-processed tokens so they need not be recomputed for every new token.

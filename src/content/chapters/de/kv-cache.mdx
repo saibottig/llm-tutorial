@@ -54,7 +54,7 @@ Weil dieses Wachstum so problematisch ist, gibt es eine Reihe von Gegenmaßnahme
 
 Der KV-Cache lebt normalerweise nur für die Dauer einer Anfrage. Naheliegende Frage: Warum ihn nicht über Anfragen hinweg behalten, wenn der Anfang gleich bleibt?
 
-Genau das ist **Prompt Caching**, und es ist der größte verfügbare Kostenhebel. Es bekommt sein [eigenes Kapitel](../prompt-caching/), weil es in der Praxis so viel ausmacht.
+Genau das ist **Prompt Caching**, und es ist der größte verfügbare Kostenhebel — gerade in Claude-Code-Sitzungen, deren Anfang (Tool-Definitionen, System-Prompt, CLAUDE.md) über viele Runden stabil bleibt. Es bekommt sein [eigenes Kapitel](../prompt-caching/), weil es in der Praxis so viel ausmacht.
 
 <KeyTakeaway>
 - Der KV-Cache speichert Keys und Values bereits verarbeiteter Token, damit sie nicht bei jedem neuen Token neu berechnet werden müssen.

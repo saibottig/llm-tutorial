@@ -41,10 +41,10 @@ The demo shows the decisive relationship: a longer prompt pushes the time to fir
 
 **Batching only helps decode.** Because the compute units are idle during decode, several requests can be pushed through at once at almost no extra cost — the weights are being read anyway. This is exactly what providers rely on when serving large models.
 
-**Your own hardware is usually bandwidth-bound at decode.** Run a model locally and you notice quickly: a faster GPU does little for output speed if memory bandwidth stays the same. That is the subject of [VRAM and RAM](../vram-vs-ram/).
+**Long sessions start sluggishly.** In a full Claude Code session the prompt on every turn is the entire history — so the pause before the first reaction grows with session length. [Prompt caching](../prompt-caching/) defuses exactly that: whatever is in the cache need not be recomputed during prefill.
 
 <Callout type="praxis">
-When an application feels sluggish it is worth telling apart which phase is to blame. A long pause before the first character? The prompt is too long — or prompt caching is not taking effect. Answer streaming slowly? Then it comes down to model size and bandwidth, and a shorter prompt will not help.
+When Claude Code feels sluggish it is worth telling apart which phase is to blame. A long pause before the first character? The context is large — or prompt caching is not taking effect. Answer streaming slowly? Then it comes down to the model itself, and a shorter context will not help.
 </Callout>
 
 <KeyTakeaway>

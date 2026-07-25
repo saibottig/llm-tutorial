@@ -2,7 +2,7 @@
 title: Hallucinations
 description: Why models produce convincing falsehoods — and why that is not a defect in the usual sense.
 part: 5
-order: 3
+order: 4
 ---
 
 A **hallucination** is an output that sounds plausible and is wrong. Invented sources, functions that do not exist, wrong figures carrying a correct-looking decimal place.
@@ -24,8 +24,8 @@ One further point matters: **confidence of tone says nothing about correctness.*
 - **Specific numbers and dates** — years, version numbers, prices, statistics.
 - **Sources and citations** — the classic, because title and author formats are easy to imitate.
 - **Niche knowledge** — the thinner the training material, the more likely invention replaces recall.
-- **APIs and libraries** — methods that *could* exist but do not.
-- **Anything after the training cutoff** — there is simply no knowledge here, only extrapolation.
+- **APIs and libraries** — methods that *could* exist but do not: a plausible-sounding Spring configuration property, an Angular API from an older major version, a Mockito method with a slightly different name.
+- **Anything after the training cutoff** — there is simply no knowledge here, only extrapolation. A new Spring Boot release is unknown to the model until you put the release notes into the context.
 
 ## What genuinely helps
 
@@ -35,7 +35,7 @@ One further point matters: **confidence of tone says nothing about correctness.*
 
 **Permit not knowing.** Models would rather answer than say nothing. An explicit sentence in the prompt — that "not in the material" is a full answer — noticeably changes behaviour.
 
-**Make it verifiable.** Where possible, build so the output can be checked: code that gets run, figures that get recomputed, IDs checked against a database. Automatic verification beats any admonition.
+**Make it verifiable.** Where possible, build so the output can be checked: code that compiles and gets run, figures that get recomputed, IDs checked against a database. Automatic verification beats any admonition — in programming this is the verification loop from the [Unit Tests](../unit-tests/) chapter: a hallucinated method does not survive a compiler run.
 
 **A second pass.** A separate pass checking an output against the source material catches a good share of errors — especially effective when it runs with fresh context rather than as self-criticism in the same conversation.
 

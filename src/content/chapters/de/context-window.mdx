@@ -28,7 +28,7 @@ Läuft das Fenster über, gibt es im Wesentlichen drei Reaktionen:
 2. **Abschneiden.** Die ältesten Nachrichten fallen weg. Billig, aber das Modell „vergisst" schlagartig den Anfang.
 3. **Compaction.** Ältere Runden werden zusammengefasst, das Ergebnis ersetzt sie. Deutlich besser, aber verlustbehaftet.
 
-Gute Harnesses machen das dritte, und zwar rechtzeitig statt erst an der Wand.
+Claude Code macht das dritte: Es komprimiert automatisch, bevor die Wand erreicht ist, und mit `/compact` lässt sich der Schnitt auch bewusst setzen — idealerweise an einer Stelle, an der ein Arbeitsschritt abgeschlossen ist. Was die Sitzung gerade belegt, zeigt `/context`.
 
 ## Der wichtigere Punkt: Qualität vor Kapazität
 
@@ -49,7 +49,7 @@ Dazu kommt der zweite Effekt, der sich in langen Agentensitzungen aufbaut und of
 - **Relevanz schlägt Vollständigkeit.** Lieber gezielt drei passende Dateien als das halbe Repository.
 - **Aufräumen ist eine Funktion, kein Detail.** Alte Tool-Ergebnisse zu entfernen ist genauso wichtig wie neue hinzuzufügen.
 - **Wichtiges gehört an den Rand.** Was unbedingt beachtet werden muss, gehört an den Anfang oder ans Ende — nicht in die Mitte eines Berges von Material.
-- **Lange Sitzungen brauchen Schnitte.** Ein bewusster Neustart mit einer sauberen Zusammenfassung ist oft besser als eine Sitzung, die man endlos weiterschleppt.
+- **Lange Sitzungen brauchen Schnitte.** Ein bewusster Neustart mit `/clear` und einer sauberen Aufgabenbeschreibung ist oft besser als eine Sitzung, die man endlos weiterschleppt. Eine Sitzung pro Aufgabe ist die gesunde Grundeinstellung.
 
 <KeyTakeaway>
 - Das Context Window ist die Obergrenze in Token, inklusive der zu erzeugenden Antwort.

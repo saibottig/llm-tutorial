@@ -22,6 +22,8 @@ Eine typische Anfrage besteht aus vier Teilen, die in dieser Reihenfolge zusamme
 
 Die Reihenfolge ist keine Konvention, sondern technisch relevant. Sie entscheidet darüber, welche Teile einer Anfrage zwischengespeichert werden können — dazu mehr im Kapitel [Prompt Caching](../prompt-caching/).
 
+Eine Claude-Code-Sitzung ist genau dieser Aufbau: Die Tool-Definitionen sind die eingebauten Werkzeuge plus aktive MCP-Server, zum System-Prompt gehört unter anderem die `CLAUDE.md` des Projekts, und der Verlauf enthält neben deinen Aufgaben auch jedes Tool-Ergebnis — jede gelesene Datei, jede Testausgabe.
+
 <Callout type="merke">
 Der System-Prompt ist keine Sonderzone mit besonderer Autorität, sondern schlicht Text an einer bestimmten Stelle des Contexts. Er wirkt stark, weil er am Anfang steht und weil Modelle darauf trainiert sind, ihn ernst zu nehmen — nicht, weil er technisch unantastbar wäre. Genau daran hängt das Kapitel [Prompt Injection](../prompt-injection/).
 </Callout>
@@ -37,12 +39,12 @@ Daraus folgt einiges Praktisches:
 - **Ein neuer Chat ist ein echter Neustart.** Es gibt keine verborgene Verbindung zwischen zwei Unterhaltungen.
 
 <Callout type="praxis">
-Wenn ein Modell sich in einer langen Unterhaltung festfährt und immer wieder denselben Fehler macht, hilft Nachbohren oft weniger als ein Neustart mit einer sauber formulierten Aufgabe. Der alte Verlauf ist nicht neutral — er zieht die Antwort in die Richtung, die schon einmal falsch war.
+Wenn Claude Code sich in einer langen Sitzung festfährt und immer wieder denselben Fehler macht, hilft Nachbohren oft weniger als `/clear` und ein Neustart mit einer sauber formulierten Aufgabe. Der alte Verlauf ist nicht neutral — er zieht die Antwort in die Richtung, die schon einmal falsch war.
 </Callout>
 
 ## Context ist nicht nur Text
 
-Alles, was ein Modell verarbeiten soll, wird zu Context: hochgeladene Dokumente, Bilder, Ergebnisse von Tool-Aufrufen, Suchtreffer, Dateiinhalte. Ein Agent, der drei Dateien liest, hat danach den Inhalt dieser drei Dateien im Context — und trägt ihn für den Rest der Sitzung mit.
+Alles, was ein Modell verarbeiten soll, wird zu Context: hochgeladene Dokumente, Bilder, Ergebnisse von Tool-Aufrufen, Suchtreffer, Dateiinhalte. Liest Claude Code drei Java-Klassen, steht der Inhalt dieser drei Klassen im Context — und bleibt dort für den Rest der Sitzung, auch wenn die Arbeit daran längst abgeschlossen ist.
 
 Das ist der Grund, warum bei agentischen Abläufen der Context viel schneller wächst als beim Chatten. Ein einzelner Tool-Aufruf, der eine große Datei zurückgibt, kann mehr Context verbrauchen als zwanzig Gesprächsrunden.
 

@@ -18,7 +18,7 @@ The splitting is done by the **tokenizer**, and the tokenizer belongs to the mod
 <Callout type="korrektur">
 You often read that the token count depends on the server the model runs on. It does not. Tokenization is part of the model and is fixed.
 
-Something else does depend on the operator: the **usable context length**. A model may technically be able to process a million tokens — but if the provider only allocates enough memory for 200,000, then 200,000 is where it stops. That is an operational decision, not a property of the model. More on this in [VRAM and RAM](../vram-vs-ram/).
+Something else does depend on the operator: the **usable context length**. A model may technically be able to process a million tokens — but if the provider only allocates enough memory for 200,000, then 200,000 is where it stops. That is an operational decision, not a property of the model.
 </Callout>
 
 ## The rule of thumb and its expiry date
@@ -33,7 +33,7 @@ The numbers in this demo are not estimates. They are computed with the real toke
 
 ## Why this matters in practice
 
-Tokens are the unit of account for almost everything:
+Everything that appears in a Claude Code session — the CLAUDE.md, a Java class, a stack trace, the text of a Jira ticket — is measured in tokens. Tokens are the unit of account for almost everything:
 
 - **Billing.** Providers charge per token, input and output separately and at different rates.
 - **Limits.** The context window is measured in tokens, not characters or pages.

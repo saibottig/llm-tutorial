@@ -1,65 +1,76 @@
 ---
-title: Cost
-description: How the price of a request is put together — and which four levers actually move it.
+title: Working Cost-Consciously
+description: How the price of a request is composed — and which habits actually move the needle in day-to-day Claude Code work.
 part: 5
 order: 1
 ---
 
-Billing is per token, with **input and output charged separately**. Output is consistently more expensive than input, usually by a factor of five.
+Billing is per token, with **input and output priced separately**. Output is consistently much more expensive than input, usually by a factor of five.
 
 For scale, prices per million tokens:
 
 | Model class | Input | Output |
 | --- | --- | --- |
-| large, for hard tasks | approx. $5 | approx. $25 |
-| mid, for the bulk of the load | approx. $3 | approx. $15 |
-| small, for simple tasks | approx. $1 | approx. $5 |
+| large, for hard tasks | ~$5 | ~$25 |
+| medium, for most of the load | ~$3 | ~$15 |
+| small, for simple tasks | ~$1 | ~$5 |
 
-These numbers change; the ratios hold. Output costs a multiple of input, and there is roughly a factor of five between the classes.
+These numbers change; the ratios persist: output costs a multiple of input, and roughly a factor of five separates the classes. Even though enterprise operation means no private bill: the same mechanics sit behind the usage quotas — understanding them makes your quota go further.
 
 ## Where the money actually goes
 
-Intuition regularly misleads here. In most applications — and in anything agentic — the dominant cost is not output but **input**. Despite the higher output price.
+Intuition regularly misleads here. In Claude Code sessions — as in everything agentic — it is not output that dominates but **input**. Despite output's higher price.
 
-The reason is in [Context](../context/): every turn resends the entire history so far. A session with thirty turns sends the beginning thirty times. The answers, by contrast, are each short.
+The reason is in the [Context](../context/) chapter: every turn resends the entire history — every Java class read, every test output. A thirty-turn session sends the beginning thirty times. The answers, by contrast, are short each time.
 
 <Callout type="merke">
-In agentic workloads, 80 to 95 percent of the cost typically falls on input. Saving therefore means working on the input side — trimming output achieves comparatively little.
+In agentic workflows, input typically accounts for 80 to 95 percent of the cost. Anyone wanting to save has to work the input side — in other words, the context. Cost discipline and the context hygiene from the [Context Window](../context-window/) chapter are the same exercise.
 </Callout>
 
-## The four levers that move things
+## The four mechanical levers
 
-**1. Prompt caching.** By far the largest lever. A cache read costs about a tenth of the normal input price. On a stable prefix that means up to 90 percent off the dominant cost block. Details and pitfalls in [Prompt Caching](../prompt-caching/).
+**1. Prompt caching.** By far the largest lever. Cache reads cost about a tenth of the normal input price; with a stable session prefix that means up to 90 percent off the dominant cost block. Claude Code uses it automatically — you can still break it, see [Prompt Caching](../prompt-caching/).
 
-**2. Model choice per task.** Not every task needs the largest model. Classification, extraction, reformatting, routing — the small class handles these at a fifth of the cost. A mixed setup that picks the right model per step is usually far cheaper than a uniform one.
+**2. Model choice per task.** Not every task needs the largest model. A commit message, a rename across ten files, a formatting question — the small class handles those at a fifth of the price. In Claude Code, `/model` switches the model; the large model is for the tasks the small one fails at.
 
-**3. Keep context lean.** Every token not sent costs nothing. Remove old tool results, attach only relevant files, switch off unneeded MCP servers. This saves twice over, because per [Context Window](../context-window/) it also improves quality.
+**3. Keep context lean.** Every token not sent costs nothing. Switch off unneeded [MCP servers](../mcp/), point at files rather than "have a look around", push research into [sub-agents](../multi-agent/). This saves twice, because lean context also raises quality.
 
-**4. Batch processing.** When results are not needed immediately, providers offer asynchronous processing at half price. For nightly analyses, migrations or bulk classification that is a discount with no downside.
+**4. Batch processing.** When results are not needed immediately — nightly analyses, bulk migrations in the pipeline — providers offer asynchronous processing at half price.
+
+## The habits that matter day to day
+
+Across many teams, a handful of habits have proven the most effective:
+
+- **One session per task.** `/clear` between independent tasks is the cheapest single measure: otherwise the old task's history rides along on every turn of the new one — paid-for, actively distracting ballast.
+- **Plan mode before large changes.** A discarded plan costs a few thousand tokens. A discarded implementation plus failed attempts costs a multiple — and leaves behind a flooded history.
+- **Run commands yourself when no model is needed.** With the `!` prefix a shell command runs directly, and only its output lands in the context — no model round trip around it.
+- **`/compact` at section boundaries** rather than automatically at the wall — the summary is better when it summarises a finished state.
+- **State tasks precisely.** "Write tests for the changed methods in this diff" instead of "take care of tests" — the sharper the task, the fewer exploration rounds you pay for.
+
+<Callout type="praxis">
+A useful reflex before any optimisation: look at `/context`. If two unused MCP servers and the history of three finished tasks sit there, that is the lever — not the wording of the next prompt.
+</Callout>
 
 ## What achieves little
 
-- **Trimming the prompt.** Saving two hundred tokens in the system prompt while the history carries twenty thousand is symbolic.
-- **Keeping output short.** Only helps where output really is long. With agents it rarely is.
-- **Dropping to a cheaper model the task cannot support.** If it then takes three attempts, nothing was saved.
+- **Trimming the prompt.** Saving two hundred tokens in the task description while the history holds twenty thousand is symbolic politics.
+- **Keeping output short.** Only helps where output is genuinely long. With agents it rarely is.
+- **Switching to a cheaper model when the task does not allow it.** If that takes three attempts, nothing was saved.
 
-## Before going to production
+## For anything that runs automated
 
-Three things worth knowing beforehand:
+As soon as Claude Code works headless in a pipeline ([Agentic Workflows](../agentic-workflows/)), three additional rules apply:
 
-**Measure cost per operation, not per request.** An agent session is easily fifty calls. The price per call on its own tells you nothing.
+**Measure cost per operation, not per request.** One pipeline run is easily fifty calls. The price per call says nothing on its own.
 
-**Look at the worst case, not the average.** Cost is heavily right-skewed: most operations are cheap, a few explode. If the top percentile blows the budget, the mean does not help.
+**Look at the worst case, not the average.** Costs are heavily right-skewed: most operations are cheap, a few explode.
 
-**Put hard ceilings in.** A limit per operation, not just per call — the same argument as the safeguards in [Multi-Agent](../multi-agent/). Without a ceiling, a loop is not just a bug but an invoice.
-
-<Callout type="praxis">
-A useful reflex: before optimising prompts, check whether the cache is taking effect at all. The billing fields in the response will tell you. A cache that is not working generally costs more than any prompt optimisation can save.
-</Callout>
+**Put in hard ceilings.** A limit per operation, not just per call — the same argument as the safeguards in the [Multi-Agent](../multi-agent/) chapter. Without a ceiling, a loop is not just a bug but a bill.
 
 <KeyTakeaway>
-- Input and output are priced separately; output is around five times more expensive per token.
-- Even so, input dominates agentic workloads at 80 to 95 percent, because the history goes along every time.
-- The effective levers: caching, per-step model choice, lean context, batch processing.
-- Measure per operation rather than per request, plan for the worst case and set hard ceilings.
+- Input and output are priced separately; still, input dominates agent work at 80 to 95 percent, because the history rides along every time.
+- The mechanical levers: caching, model choice per task, lean context, batch processing.
+- The daily habits: one session per task, plan mode before large changes, `!` for direct commands, `/compact` at section boundaries, precise tasks.
+- Before optimising, look at `/context` — the ballast there is usually a bigger lever than any wording.
+- Automated workflows need per-operation measurement and hard ceilings.
 </KeyTakeaway>

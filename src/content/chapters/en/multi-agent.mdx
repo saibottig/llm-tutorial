@@ -2,10 +2,10 @@
 title: Multi-Agent Orchestration
 description: Several agents on one task — what it really costs, and why the most-cited drawback is not quite right.
 part: 4
-order: 2
+order: 4
 ---
 
-In **multi-agent orchestration** several agents work towards one result. The classic pattern: an orchestrator that decomposes the task, hands parts to specialised sub-agents, and merges their results afterwards.
+In **multi-agent orchestration** several agents work towards one result. In Claude Code you meet this as the sub-agent: the main session spawns an agent with a fresh context for a sub-task — say, "search the monorepo for every use of this interface". The classic pattern behind it: an orchestrator that decomposes the task, hands parts to specialised sub-agents, and merges their results afterwards.
 
 ```
                     ┌──────────────┐
@@ -69,20 +69,21 @@ These safeguards belong in from the start, not retrofitted. A system without an 
 
 ## When it pays off — and when it does not
 
-**A good fit** when sub-tasks are genuinely independent: research across many sources, analysis of many files, the same check applied to many objects. Likewise when an intermediate step produces a lot of raw material that has no business in the main thread — the isolation benefit.
+**A good fit** when sub-tasks are genuinely independent: research across many sources, analysis of many files, the same check applied to many objects. Likewise when an intermediate step produces a lot of raw material that has no business in the main thread — the isolation benefit. The everyday case in Claude Code: the monorepo research runs in the sub-agent, and only the conclusion reaches the session that changes the code.
+
+A related technique for genuine parallel work: several Claude Code sessions in separate **git worktrees**, each on its own branch working its own task. That is not orchestration — the human does the coordinating — but it uses the same insight that separate tasks deserve separate contexts.
 
 **A poor fit** when steps depend on one another. If step two needs the result of step one there is nothing to parallelise, and you pay the surcharge for nothing. Likewise for tasks small enough for a single agent.
 
 ## What to build it with
 
-There are established frameworks to start from:
+For everyday team use the answer is usually already there: **Claude Code ships sub-agents built in** — no extra framework needed. For building multi-agent systems of your own beyond that, there are established frameworks:
 
 - **crewAI** — role-based, very approachable, good for the classic orchestrator-with-specialists shape.
 - **LangGraph** — the flow as a graph, more control over state and branching.
 - **OpenAI Agents SDK** — a leaner approach built around handoffs between agents.
-- **Sub-agents in the harness** — Claude Code and others ship this built in, with no extra framework.
 
-The last point deserves mention because it gets overlooked: if the [harness](../harness/) already offers sub-agents, an additional framework is often unnecessary machinery.
+The ordering is deliberate: if the [harness](../claude-code/) already offers sub-agents, an additional framework is often unnecessary machinery.
 
 <KeyTakeaway>
 - Multi-agent brings parallelism — and, often more importantly, context isolation: raw material stays with the sub-agent.

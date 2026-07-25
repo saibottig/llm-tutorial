@@ -9,7 +9,7 @@ import CacheSimulator from '../../../components/demos/CacheSimulator.astro';
 
 The [KV cache](../kv-cache/) normally lives only for the duration of one request. **Prompt caching** keeps it across requests: when two requests begin with the same text, that beginning only has to be processed once.
 
-This pays off because in most applications the overwhelming majority of each request is identical — system prompt, tool definitions, reference documents, the conversation so far. Only the new question at the end differs.
+This pays off because the overwhelming majority of each request is identical — system prompt, tool definitions, reference documents, the conversation so far. Only the new question at the end differs. A Claude Code session is the ideal case: across thirty turns the beginning — tools, system prompt, CLAUDE.md, old turns — stays exactly the same, and that is precisely why a long session is affordable at all.
 
 ## The one rule
 
@@ -34,6 +34,8 @@ The pieces are assembled in a fixed order: tool definitions, then system prompt,
 | never | right at the front, ahead of every cache point |
 | per session | after the fixed part |
 | per request | at the end, behind the last cache point |
+
+In Claude Code the harness takes care of this arrangement — the pieces already sit cache-friendly. What you can contribute yourself: do not switch [MCP servers](../mcp/) on or off mid-session, and change the CLAUDE.md between sessions rather than during one. Both sit at the front of the context and invalidate the running session's entire cache in one stroke.
 
 ## What quietly destroys the cache
 

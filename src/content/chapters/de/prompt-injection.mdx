@@ -2,10 +2,10 @@
 title: Prompt Injection
 description: Warum ein Modell nicht unterscheiden kann, was Anweisung und was Daten ist — und was sich dagegen tatsächlich tun lässt.
 part: 5
-order: 2
+order: 3
 ---
 
-Sobald ein Modell Tools benutzt und fremde Inhalte verarbeitet, wird aus einem Qualitätsthema ein Sicherheitsthema.
+Sobald ein Modell Tools benutzt und fremde Inhalte verarbeitet, wird aus einem Qualitätsthema ein Sicherheitsthema. Eine Claude-Code-Sitzung mit Atlassian-Anbindung tut beides ständig: Sie liest Jira-Tickets, Confluence-Seiten und PR-Beschreibungen, die nicht vom eigenen Team stammen müssen — der Ablauf aus dem Kapitel [Ticket zu Pull Request](../atlassian/).
 
 ## Das Grundproblem
 
@@ -29,8 +29,8 @@ Das ist keine Lücke, die durch ein Update geschlossen wird. Es folgt daraus, wi
 Der Angriff muss nicht über den Chat kommen. Alles, was ein Agent liest, ist ein möglicher Träger:
 
 - Webseiten, die abgerufen werden
-- E-Mails, Tickets, Pull-Request-Beschreibungen, Code-Kommentare
-- Dateien aus einem Repository, auch fremde Abhängigkeiten
+- Jira-Tickets samt Kommentaren, Confluence-Seiten, Pull-Request-Beschreibungen
+- Dateien aus einem Repository, auch fremde Abhängigkeiten und deren Code-Kommentare
 - Ausgaben von MCP-Servern
 - Dokumente, die Nutzer hochladen
 
@@ -48,7 +48,7 @@ Fehlt einer der drei, ist der Schaden begrenzt. Ein Agent, der fremde Inhalte li
 
 ## Was tatsächlich hilft
 
-**Rechte begrenzen.** Die wirksamste Maßnahme, und sie hat nichts mit dem Modell zu tun. Ein Agent sollte nur die Tools haben, die er für seine Aufgabe braucht, und diese mit möglichst engen Rechten. Lesezugriff statt Schreibzugriff, ein Verzeichnis statt des Dateisystems, eine Domain statt des Internets.
+**Rechte begrenzen.** Die wirksamste Maßnahme, und sie hat nichts mit dem Modell zu tun. Ein Agent sollte nur die Tools haben, die er für seine Aufgabe braucht, und diese mit möglichst engen Rechten. Lesezugriff statt Schreibzugriff, ein Verzeichnis statt des Dateisystems, eine Domain statt des Internets. Genau das leisten die Permissions aus dem Kapitel [Projekt-Setup](../setup/) — sie sind Sicherheitsarchitektur, nicht Komfortverzicht.
 
 **Bestätigung bei nicht Umkehrbarem.** Mail versenden, Daten löschen, Geld bewegen, nach außen pushen — solche Schritte gehören hinter eine Rückfrage. Die entscheidende Eigenschaft ist Umkehrbarkeit, nicht Wichtigkeit.
 

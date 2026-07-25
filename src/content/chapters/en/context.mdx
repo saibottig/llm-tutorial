@@ -22,6 +22,8 @@ A typical request has four parts, assembled in this order:
 
 The order is not a convention but technically relevant. It determines which parts of a request can be cached — more on that in [Prompt Caching](../prompt-caching/).
 
+A Claude Code session is exactly this structure: the tool definitions are the built-in tools plus active MCP servers, the system prompt includes among other things the project's `CLAUDE.md`, and the history holds not just your tasks but every tool result — every file read, every test output.
+
 <Callout type="merke">
 The system prompt is not a privileged zone with special authority. It is simply text at a particular position in the context. It carries weight because it comes first and because models are trained to take it seriously — not because it is technically inviolable. That is exactly what [Prompt Injection](../prompt-injection/) hinges on.
 </Callout>
@@ -37,12 +39,12 @@ Several practical things follow:
 - **A new chat is a genuine restart.** There is no hidden link between two conversations.
 
 <Callout type="praxis">
-When a model gets stuck in a long conversation and keeps making the same mistake, pressing harder usually helps less than starting over with a cleanly stated task. The old history is not neutral — it pulls the answer back towards what was already wrong once.
+When Claude Code gets stuck in a long session and keeps making the same mistake, pressing harder usually helps less than `/clear` and a restart with a cleanly stated task. The old history is not neutral — it pulls the answer back towards what was already wrong once.
 </Callout>
 
 ## Context is not just text
 
-Anything a model is meant to process becomes context: uploaded documents, images, tool call results, search hits, file contents. An agent that reads three files carries the contents of those three files in its context for the rest of the session.
+Anything a model is meant to process becomes context: uploaded documents, images, tool call results, search hits, file contents. When Claude Code reads three Java classes, the contents of those three classes sit in the context — and stay there for the rest of the session, long after the work on them is done.
 
 This is why context grows far faster in agentic work than in chat. A single tool call returning a large file can consume more context than twenty conversational turns.
 
