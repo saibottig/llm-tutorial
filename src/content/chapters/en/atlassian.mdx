@@ -5,6 +5,8 @@ part: 4
 order: 3
 ---
 
+import Terminal from '../../../components/demos/Terminal.astro';
+
 The workday starts with a Jira ticket and ends with a Bitbucket PR — via [MCP](../mcp/), Claude Code reaches every station in between. Cloud: official Atlassian remote server (one-time OAuth). Data Center: community server via `claude mcp add`. What is enabled is governed by the [central configuration](../claude-code/).
 
 ## The full pass in five steps
@@ -32,6 +34,8 @@ A wrong comment on the wrong ticket is public; a wrongly edited file is not.
 <Callout type="achtung">
 Everything read via MCP is external input: ticket texts, comments and Confluence pages can contain text that looks like an instruction — and Claude can interpret it as an order. Why that is structurally hard to prevent: [Prompt Injection](../prompt-injection/).
 </Callout>
+
+<Terminal script="atlassian" locale="en" variant="inline" />
 
 <KeyTakeaway>
 - Via Atlassian MCP, Claude Code reaches Jira, Confluence and Bitbucket — from ticket to PR.

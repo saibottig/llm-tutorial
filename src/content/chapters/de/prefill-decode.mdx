@@ -5,7 +5,7 @@ part: 2
 order: 2
 ---
 
-import PrefillDecode from '../../../components/demos/PrefillDecode.astro';
+import Terminal from '../../../components/demos/Terminal.astro';
 
 Nach dem Absenden passiert erst eine Weile nichts, dann läuft die Antwort gleichmäßig durch. Das ist kein Implementierungsdetail — Generierung zerfällt in zwei Phasen mit verschiedenen Flaschenhälsen:
 
@@ -16,9 +16,9 @@ Nach dem Absenden passiert erst eine Weile nichts, dann läuft die Antwort gleic
 | Flaschenhals | Rechenleistung (compute-bound) | Speicherbandbreite (memory-bound) |
 | Bestimmt | Zeit bis zum ersten Token (TTFT) | Token pro Sekunde |
 
-<PrefillDecode locale="de" />
+<Terminal script="prefill-decode" locale="de" variant="inline" />
 
-Der entscheidende Zusammenhang in der Demo: Ein längerer Prompt verschiebt die Zeit bis zum ersten Token — die Ausgabegeschwindigkeit danach bleibt gleich.
+Der entscheidende Zusammenhang: Ein längerer Prompt verschiebt die Zeit bis zum ersten Token — die Ausgabegeschwindigkeit danach bleibt gleich. Die beiden Szenarien unten stellen genau das gegenüber.
 
 <Deep title="Warum Decode bandbreitenlimitiert ist">
 Für jedes einzelne Ausgabe-Token muss das Modell seine kompletten Gewichte einmal aus dem Speicher lesen: 40-GB-Modell → 40 GB gelesen pro Token. Die Recheneinheiten langweilen sich dabei. Deshalb können Anbieter beim Decode mehrere Anfragen fast kostenlos bündeln — die Gewichte werden ohnehin gelesen. Genau davon lebt der Betrieb großer Modelle.

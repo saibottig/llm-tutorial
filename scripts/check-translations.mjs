@@ -94,81 +94,153 @@ for (const locale of LOCALES) {
   }
 }
 
-/* ── Playground transcript ───────────────────────────────────────────────
-   The terminal playground carries as much prose as a short chapter, and it
-   sits outside the collection, so the checks above cannot see it. It is JSON
-   rather than TypeScript precisely so this dependency-free script can read it:
-   every object with a `de` key must carry a non-empty `en` next to it. */
+/* ── Terminal scripts ────────────────────────────────────────────────────
+   Every chapter's terminal carries as much prose as a short chapter, and none
+   of it sits in the content collection, so the checks above cannot see it.
+   The scripts are JSON rather than TypeScript precisely so this
+   dependency-free script can read them: every object with a `de` key must
+   carry a non-empty `en` next to it. */
 
-const TRANSCRIPT = new URL('../src/lib/terminal/transcript.json', import.meta.url).pathname;
-let transcript;
+// The server ids live in world.ts, which this script cannot import — it stays
+// dependency-free so it runs without a build. A regex over the literal is
+// enough, and a rename that breaks it surfaces here rather than in the browser.
+const WORLD = new URL('../src/lib/terminal/world.ts', import.meta.url).pathname;
+const SERVER_IDS = new Set(
+  [...(await readFile(WORLD, 'utf8')).matchAll(/\{\s*id:\s*'([a-z-]+)'/g)].map((m) => m[1]),
+);
+if (!SERVER_IDS.size) problems.push('world.ts: could not read any MCP server ids.');
+
+const SCRIPTS = new URL('../src/lib/terminal/scripts', import.meta.url).pathname;
+const scripts = new Map();
 try {
-  transcript = JSON.parse(await readFile(TRANSCRIPT, 'utf8'));
+  for (const file of (await readdir(SCRIPTS)).filter((f) => f.endsWith('.json'))) {
+    scripts.set(file, JSON.parse(await readFile(join(SCRIPTS, file), 'utf8')));
+  }
 } catch (error) {
-  problems.push(`transcript.json could not be read: ${error.message}`);
+  problems.push(`terminal scripts could not be read: ${error.message}`);
 }
 
-function walkTranslations(node, path) {
+function walkTranslations(node, path, file) {
   if (Array.isArray(node)) {
-    node.forEach((item, i) => walkTranslations(item, `${path}[${i}]`));
+    node.forEach((item, i) => walkTranslations(item, `${path}[${i}]`, file));
     return;
   }
   if (!node || typeof node !== 'object') return;
 
-  const localised = LOCALES.some((l) => l in node);
-  if (localised) {
+  if (LOCALES.some((l) => l in node)) {
     for (const locale of LOCALES) {
       const value = node[locale];
       if (typeof value !== 'string' || !value.trim()) {
-        problems.push(`transcript.json ${path}: missing or empty "${locale}".`);
+        problems.push(`${file} ${path}: missing or empty "${locale}".`);
       }
     }
     return;
   }
-  for (const [key, value] of Object.entries(node)) walkTranslations(value, `${path}.${key}`);
+  for (const [key, value] of Object.entries(node)) walkTranslations(value, `${path}.${key}`, file);
 }
 
-if (transcript) {
-  walkTranslations(transcript, 'transcript');
+// Kept in step with the switch in engine.ts — a scenario replaying a command
+// nothing answers would look broken to a reader without failing anywhere.
+const SLASH = new Set([
+  'context',
+  'cache',
+  'compact',
+  'clear',
+  'tokens',
+  'mcp',
+  'permissions',
+  'model',
+  'help',
+]);
+const STEP_TYPES = new Set([
+  'assistant',
+  'note',
+  'out',
+  'tool',
+  'subagent',
+  'generate',
+  'invalidate',
+  'chips',
+  'compare',
+  'meter',
+  'cache',
+  'clear',
+  'compact',
+  'mcp',
+  'rule',
+]);
 
-  // A scenario that replays a command nothing answers would look broken to a
-  // reader without failing anywhere.
-  const slashCommands = new Set(['context', 'compact', 'clear', 'model', 'mcp', 'help']);
-  for (const scenario of transcript.scenarios ?? []) {
+function checkSteps(steps, where, file, ruleIds) {
+  for (const [i, step] of (steps ?? []).entries()) {
+    const at = `${where}[${i}]`;
+    if (!STEP_TYPES.has(step.type)) {
+      problems.push(`${file} ${at}: unknown step type "${step.type}".`);
+      continue;
+    }
+    if (step.type === 'rule' && ruleIds.size && !ruleIds.has(step.id)) {
+      problems.push(`${file} ${at}: toggles unknown rule "${step.id}".`);
+    }
+    if (step.type === 'subagent') checkSteps(step.steps, `${at}.steps`, file, ruleIds);
+  }
+}
+
+for (const [file, script] of scripts) {
+  walkTranslations(script, 'script', file);
+
+  const ruleIds = new Set((script.rules ?? []).map((r) => r.id));
+  const intents = script.intents ?? [];
+
+  for (const intent of intents) {
+    if (!(intent.match ?? []).length) {
+      problems.push(`${file} intent "${intent.id}": no match keywords.`);
+    }
+    checkSteps(intent.steps, `intent "${intent.id}"`, file, ruleIds);
+  }
+  checkSteps(script.fallback, 'fallback', file, ruleIds);
+
+  for (const scenario of script.scenarios ?? []) {
+    if (!(scenario.commands ?? []).length) {
+      problems.push(`${file} scenario "${scenario.id}": no commands.`);
+    }
     for (const command of scenario.commands ?? []) {
       // A neutral string is one command, not one per language.
       const variants =
-        typeof command === 'string'
-          ? [['*', command]]
-          : LOCALES.map((l) => [l, command[l]]);
+        typeof command === 'string' ? [['*', command]] : LOCALES.map((l) => [l, command[l]]);
       for (const [locale, line] of variants) {
         if (typeof line !== 'string') continue;
         if (line.startsWith('/')) {
           const name = line.slice(1).trim().split(/\s+/)[0];
-          if (!slashCommands.has(name)) {
-            problems.push(`transcript.json scenario "${scenario.id}": unknown command /${name}.`);
+          // Either a built-in, or a project command the script defines itself.
+          if (!SLASH.has(name) && !intents.some((intent) => intent.command === name)) {
+            problems.push(`${file} scenario "${scenario.id}": unknown command /${name}.`);
           }
           continue;
         }
         const needle = line.toLowerCase();
-        const hit = (transcript.intents ?? []).some((intent) =>
-          (intent.match ?? []).some((m) => needle.includes(m)),
-        );
-        if (!hit) {
+        if (!intents.some((intent) => (intent.match ?? []).some((m) => needle.includes(m)))) {
           problems.push(
-            `transcript.json scenario "${scenario.id}" (${locale}): "${line}" matches no intent — it would fall through to the fallback.`,
+            `${file} scenario "${scenario.id}" (${locale}): "${line}" matches no intent — it would fall through to the fallback.`,
           );
         }
       }
     }
-  }
-
-  // Every intent must be reachable in both languages, or one half of the
-  // audience simply cannot trigger it.
-  for (const intent of transcript.intents ?? []) {
-    if (!(intent.match ?? []).length) {
-      problems.push(`transcript.json intent "${intent.id}": no match keywords.`);
+    for (const server of Object.keys(scenario.mcp ?? {})) {
+      if (!SERVER_IDS.has(server)) {
+        problems.push(`${file} scenario "${scenario.id}": unknown MCP server "${server}".`);
+      }
     }
+    for (const rule of Object.keys(scenario.rules ?? {})) {
+      if (!ruleIds.has(rule)) {
+        problems.push(`${file} scenario "${scenario.id}": unknown rule "${rule}".`);
+      }
+    }
+  }
+}
+
+// Every chapter must have a terminal script, or its page would fail to build.
+for (const slug of byLocale[reference].keys()) {
+  if (!scripts.has(`${slug}.json`)) {
+    problems.push(`src/lib/terminal/scripts/${slug}.json is missing (chapter "${slug}" exists).`);
   }
 }
 
@@ -180,9 +252,8 @@ if (problems.length) {
   process.exit(1);
 }
 
-const intents = transcript?.intents?.length ?? 0;
-const scenarios = transcript?.scenarios?.length ?? 0;
+const scenarioCount = [...scripts.values()].reduce((n, s) => n + (s.scenarios?.length ?? 0), 0);
 console.log(
   `✓ Chapter check passed — ${count} chapters × ${LOCALES.length} locales, ` +
-    `playground transcript with ${intents} intents and ${scenarios} scenarios.`,
+    `${scripts.size} terminal scripts with ${scenarioCount} scenarios.`,
 );

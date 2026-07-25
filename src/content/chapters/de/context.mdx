@@ -5,6 +5,8 @@ part: 1
 order: 2
 ---
 
+import Terminal from '../../../components/demos/Terminal.astro';
+
 **Context** ist alles, was das Modell für eine Aufgabe sieht — es gibt keine Information außerhalb davon. Und: **Ein Sprachmodell ist zustandslos.** Was wie Gedächtnis aussieht, ist keins — bei jedem Aufruf wird der gesamte bisherige Verlauf erneut mitgeschickt.
 
 ## Woraus eine Anfrage besteht
@@ -39,6 +41,8 @@ Die Leitfrage jeder Sitzung:
 > Welche Informationen braucht das Modell für diese Aufgabe — und wie bekomme ich genau die hinein, ohne alles andere mitzuschleppen?
 
 Die Werkzeuge dafür ziehen sich durch das Tutorial: [Skills](../skills/) laden Anleitungen erst bei Bedarf, [Sub-Agenten](../multi-agent/) halten Recherchen aus dem Hauptverlauf, Compaction fasst alte Runden zusammen.
+
+<Terminal script="context" locale="de" variant="inline" />
 
 <KeyTakeaway>
 - Context ist alles, was das Modell sieht — Modelle sind zustandslos, der Verlauf geht jedes Mal komplett mit.

@@ -5,6 +5,8 @@ part: 4
 order: 4
 ---
 
+import Terminal from '../../../components/demos/Terminal.astro';
+
 In Claude Code heißt Multi-Agent: Die Hauptsitzung startet für eine Teilaufgabe einen **Sub-Agenten** mit frischem Context — etwa „durchsuche das Monorepo nach allen Verwendungen dieser Schnittstelle". Das Muster dahinter:
 
 ```
@@ -57,6 +59,8 @@ Claude Code bringt Sub-Agenten eingebaut mit — für den Teamalltag reicht das,
 - **LangGraph** — Ablauf als Graph, mehr Kontrolle über Zustand und Verzweigungen
 - **OpenAI Agents SDK** — schlanker Ansatz mit Übergaben zwischen Agenten
 </Deep>
+
+<Terminal script="multi-agent" locale="de" variant="inline" />
 
 <KeyTakeaway>
 - Sub-Agenten bringen Parallelisierung — und, wichtiger, Context-Isolation: Rohmaterial bleibt draußen.

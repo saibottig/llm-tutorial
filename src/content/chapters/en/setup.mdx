@@ -5,6 +5,8 @@ part: 3
 order: 2
 ---
 
+import Terminal from '../../../components/demos/Terminal.astro';
+
 JUnit 4 tests instead of JUnit 5, Maven instead of Gradle, classes in directories that do not exist — these are not model weaknesses but missing project context. The fix is one file: **`CLAUDE.md`** in the project directory, read at every session start.
 
 ## What belongs in it: three categories
@@ -67,6 +69,8 @@ No credentials, tokens or internal hostnames in the CLAUDE.md — it is part of 
 <Callout type="praxis">
 Extension trigger: typing the same correction for the second time. Written into the file once, it applies to every future session — in chat, exactly once.
 </Callout>
+
+<Terminal script="setup" locale="en" variant="inline" input />
 
 <KeyTakeaway>
 - CLAUDE.md = commands + conventions + boundaries; it replaces guessing.

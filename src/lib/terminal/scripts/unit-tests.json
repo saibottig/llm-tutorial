@@ -1,0 +1,155 @@
+{
+  "_comment": "The chapter's correction is that green says nothing. The session runs the counter-check: remove the rule the test claims to cover and see whether the test notices.",
+
+  "title": { "de": "Grün heißt noch nichts", "en": "Green does not mean anything yet" },
+
+  "strings": {
+    "greeting": {
+      "de": "Zwei Testläufe, beide grün. Einer misst etwas, der andere betet die Implementierung nach. Die Gegenprobe zeigt, welcher welcher ist.",
+      "en": "Two test runs, both green. One measures something, the other parrots the implementation. The counter-check shows which is which."
+    }
+  },
+
+  "scenarios": [
+    {
+      "id": "write",
+      "label": { "de": "Tests schreiben lassen", "en": "Have tests written" },
+      "hint": {
+        "de": "Erst lesen, wie im Projekt getestet wird — dann schreiben.",
+        "en": "First read how this project tests — then write."
+      },
+      "reset": true,
+      "commands": [
+        { "de": "Schreib Unit-Tests für BerthAllocationService", "en": "Write unit tests for BerthAllocationService" }
+      ]
+    },
+    {
+      "id": "counter-check",
+      "label": { "de": "Die Gegenprobe", "en": "The counter-check" },
+      "hint": {
+        "de": "Regel aus dem Code entfernen. Ein guter Test wird jetzt rot — ein wertloser bleibt grün.",
+        "en": "Remove the rule from the code. A good test goes red now — a worthless one stays green."
+      },
+      "reset": true,
+      "commands": [
+        { "de": "Schreib Unit-Tests für BerthAllocationService", "en": "Write unit tests for BerthAllocationService" },
+        { "de": "Entferne die ETA-Regel und lass die Tests nochmal laufen", "en": "Remove the ETA rule and run the tests again" }
+      ]
+    }
+  ],
+
+  "intents": [
+    {
+      "id": "write-tests",
+      "match": ["unit-test", "unit test", "tests für", "tests for", "schreib test", "write test", "junit"],
+      "steps": [
+        {
+          "type": "assistant",
+          "text": {
+            "de": "Bevor ich Tests schreibe, lese ich die Klasse und schaue, wie hier sonst getestet wird.",
+            "en": "Before writing tests I read the class and check how tests are written here."
+          }
+        },
+        {
+          "type": "tool",
+          "name": "Read",
+          "arg": "src/main/java/com/terminal/berth/BerthAllocationService.java",
+          "kind": "files",
+          "tokens": 4180,
+          "out": [{ "de": "384 Zeilen", "en": "384 lines" }]
+        },
+        {
+          "type": "tool",
+          "name": "Grep",
+          "arg": "assertThat -g '**/*Test.java'",
+          "tokens": 320,
+          "out": [{ "de": "41 Treffer in 6 Dateien — AssertJ, kein Hamcrest", "en": "41 matches in 6 files — AssertJ, not Hamcrest" }]
+        },
+        {
+          "type": "assistant",
+          "text": {
+            "de": "Drei Fälle: Zuweisung bei freiem Liegeplatz, Ablehnung bei zu großem Tiefgang, Kollision zweier Anläufe im selben Fenster. Den letzten deckt bisher nichts ab.",
+            "en": "Three cases: allocation to a free berth, rejection when the draft is too deep, collision of two calls in the same window. Nothing covers the last one today."
+          }
+        },
+        {
+          "type": "tool",
+          "name": "Write",
+          "arg": "src/test/java/com/terminal/berth/BerthAllocationServiceTest.java",
+          "ask": true,
+          "detail": {
+            "de": "Neue Datei, 96 Zeilen, drei Testmethoden.",
+            "en": "New file, 96 lines, three test methods."
+          },
+          "tokens": 980,
+          "out": [{ "de": "96 Zeilen geschrieben", "en": "96 lines written" }]
+        },
+        {
+          "type": "tool",
+          "name": "Bash",
+          "arg": "./gradlew test --tests '*BerthAllocationServiceTest'",
+          "tokens": 410,
+          "out": ["BUILD SUCCESSFUL in 11s", "3 tests completed, 0 failed"]
+        },
+        {
+          "type": "note",
+          "text": {
+            "de": "Drei grüne Tests. Das ist der Moment, in dem man aufhört zu prüfen — und genau der falsche.",
+            "en": "Three green tests. This is the moment people stop checking — and exactly the wrong one."
+          }
+        }
+      ]
+    },
+    {
+      "id": "mutate",
+      "match": ["entferne", "remove the", "gegenprobe", "counter-check", "eta-regel", "eta rule", "nochmal laufen", "run the tests again"],
+      "steps": [
+        {
+          "type": "assistant",
+          "text": {
+            "de": "Ich nehme die ETA-Bedingung aus der Sortierung heraus. Wenn die Tests etwas messen, muss jetzt einer rot werden.",
+            "en": "Let me take the ETA condition out of the sort. If the tests measure anything, one of them has to go red now."
+          }
+        },
+        {
+          "type": "tool",
+          "name": "Edit",
+          "arg": "src/main/java/com/terminal/berth/BerthAllocationService.java",
+          "ask": true,
+          "detail": {
+            "de": "Absichtlicher Defekt: die ETA-Sortierung fällt weg. Nur zum Prüfen der Tests.",
+            "en": "Deliberate defect: the ETA ordering is dropped. Purely to check the tests."
+          },
+          "tokens": 210,
+          "out": ["+0 −3"]
+        },
+        {
+          "type": "tool",
+          "name": "Bash",
+          "arg": "./gradlew test --tests '*BerthAllocationServiceTest'",
+          "tokens": 640,
+          "out": [
+            "BerthAllocationServiceTest > allocatesFreeBerth PASSED",
+            "BerthAllocationServiceTest > rejectsTooDeepDraft PASSED",
+            "BerthAllocationServiceTest > waitingListOrdersByEta FAILED",
+            "1 test failed"
+          ]
+        },
+        {
+          "type": "assistant",
+          "text": {
+            "de": "Einer von dreien hat es gemerkt. Der Kollisionstest misst tatsächlich die Regel; die beiden anderen hätten den Defekt durchgelassen — sie prüfen nur, dass die Methode zurückkommt.",
+            "en": "One of three noticed. The collision test genuinely measures the rule; the other two would have let the defect through — they only check that the method returns."
+          }
+        },
+        {
+          "type": "note",
+          "text": {
+            "de": "Das ist Mutation Testing von Hand. Automatisiert macht das PIT für die ganze Testsuite und meldet, welche Defekte niemand bemerkt hätte — siehe das Kapitel Evals.",
+            "en": "That is mutation testing by hand. PIT does it automatically for the whole suite and reports which defects nobody would have noticed — see the evals chapter."
+          }
+        }
+      ]
+    }
+  ]
+}

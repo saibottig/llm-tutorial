@@ -1,39 +1,103 @@
 ---
 /**
- * The terminal playground. Unlike the other five demos this one appears more
- * than once per page, so nothing here may rely on a fixed element id: the root
- * carries `data-terminal`, its configuration rides in a JSON script tag, and
- * the module script initialises every instance it finds.
+ * The terminal. Every chapter embeds one, so nothing here may rely on a fixed
+ * element id: the root carries `data-terminal`, its configuration rides in a
+ * JSON script tag, and the module script initialises every instance it finds.
  *
- * `variant="inline"` is the trimmed version for chapters — one scenario, no
- * server panel, no free input, and a link to the full page.
+ * Chapter content lives in `src/lib/terminal/scripts/<slug>.json` and is
+ * resolved to one language **here, at build time**. The browser therefore
+ * receives only the chapter it is showing, in only the language it is showing —
+ * no transcript import in the client bundle at all.
  */
 import { t, type Locale } from '../../i18n/ui';
 import { url } from '../../lib/chapters';
 import { MCP_SERVERS, SESSION } from '../../lib/terminal/world';
-import transcript from '../../lib/terminal/transcript.json';
+import { encode, decode } from 'gpt-tokenizer/encoding/o200k_base';
+import { encode as encodeLegacy } from 'gpt-tokenizer/encoding/cl100k_base';
+import common from '../../lib/terminal/scripts/common.json';
 
 interface Props {
   locale: Locale;
+  /** Base name of the script in src/lib/terminal/scripts, e.g. "token". */
+  script: string;
   variant?: 'full' | 'inline';
-  /** Scenario ids to offer, in order. Defaults to all of them. */
+  /** Scenario ids to offer, in order. Defaults to all in the script. */
   scenarios?: string[];
   /** Show the MCP server panel. */
   servers?: boolean;
+  /** Show the permission rule panel. Defaults to on when the script has rules. */
+  permissions?: boolean;
   /** Allow free-text input. */
   input?: boolean;
-  /** Servers enabled at start; falls back to the presets in world.ts. */
+  /** Servers enabled at start; falls back to the script, then to world.ts. */
   mcp?: Record<string, boolean>;
-  /** Show the “open the full playground” link (inline instances). */
+  /** Show the “open the full playground” link. */
   more?: boolean;
   title?: string;
 }
 
+const SCRIPTS = import.meta.glob<{ default: Record<string, unknown> }>(
+  '../../lib/terminal/scripts/*.json',
+  { eager: true },
+);
+
+/** Collapses every {de, en} pair to the language this page is being built in. */
+function localise(node: unknown, locale: Locale): unknown {
+  if (Array.isArray(node)) return node.map((item) => localise(item, locale));
+  if (node && typeof node === 'object') {
+    const record = node as Record<string, unknown>;
+    if ('de' in record && 'en' in record) return record[locale];
+    const out: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(record)) {
+      if (key === '_comment') continue;
+      out[key] = localise(value, locale);
+    }
+    return out;
+  }
+  return node;
+}
+
+/**
+ * Fills in the token chips for scripted `/tokens` steps at build time — the
+ * same reason the tokenizer demo did it: the page shows a real split without
+ * shipping the 1 MB BPE table to every reader. Only text someone types
+ * themselves needs the lazy load.
+ */
+function precomputeChips(node: unknown): void {
+  if (Array.isArray(node)) {
+    for (const item of node) precomputeChips(item);
+    return;
+  }
+  if (!node || typeof node !== 'object') return;
+  const record = node as Record<string, unknown>;
+  if (record.type === 'compare' && !record.result) {
+    const de = String(record.textDe);
+    const en = String(record.textEn);
+    record.result = {
+      deModern: encode(de).length,
+      enModern: encode(en).length,
+      deLegacy: encodeLegacy(de).length,
+      enLegacy: encodeLegacy(en).length,
+    };
+  }
+  if (record.type === 'chips' && typeof record.text === 'string' && !record.pieces) {
+    record.pieces = encode(record.text).map((id) => {
+      const piece = decode([id]);
+      // A single token can be half of a multi-byte character; show a marker
+      // rather than a bare replacement glyph when that happens.
+      return { text: piece.includes('�') ? '◌' : piece, id };
+    });
+  }
+  for (const value of Object.values(record)) precomputeChips(value);
+}
+
 const {
   locale,
+  script: scriptName,
   variant = 'full',
   scenarios,
   servers = variant === 'full',
+  permissions,
   input = variant === 'full',
   mcp,
   more = variant === 'inline',
@@ -42,37 +106,83 @@ const {
 
 const tr = t(locale);
 
-const chosen = scenarios
-  ? scenarios
-      .map((id) => transcript.scenarios.find((s) => s.id === id))
-      .filter((s): s is (typeof transcript.scenarios)[number] => Boolean(s))
-  : transcript.scenarios;
+const module = SCRIPTS[`../../lib/terminal/scripts/${scriptName}.json`];
+if (!module) {
+  throw new Error(
+    `Terminal: no script "${scriptName}.json" in src/lib/terminal/scripts — ` +
+      `available: ${Object.keys(SCRIPTS)
+        .map((path) => path.split('/').pop()?.replace('.json', ''))
+        .join(', ')}`,
+  );
+}
 
-const config = { locale, variant, servers, input, mcp: mcp ?? null };
+const chapter = localise(module.default, locale) as Record<string, any>;
+const shared = localise(common, locale) as Record<string, any>;
 
-const startOn = (id: string) => mcp?.[id] ?? MCP_SERVERS.find((s) => s.id === id)!.on;
+const script = {
+  intents: chapter.intents ?? [],
+  scenarios: chapter.scenarios ?? [],
+  fallback: chapter.fallback ?? shared.fallback,
+  rules: chapter.rules ?? null,
+  // A chapter may override any shared string — `greeting` usually, to say what
+  // this particular session is about.
+  strings: { ...shared.strings, ...(chapter.strings ?? {}) },
+  blocks: shared.blocks,
+  help: shared.help,
+};
+
+if (scenarios) {
+  const wanted = new Set(scenarios);
+  const missing = scenarios.filter(
+    (id) => !script.scenarios.some((s: { id: string }) => s.id === id),
+  );
+  if (missing.length) {
+    throw new Error(`Terminal: ${scriptName}.json has no scenario "${missing.join('", "')}"`);
+  }
+  script.scenarios = scenarios
+    .map((id) => script.scenarios.find((s: { id: string }) => s.id === id))
+    .filter(Boolean);
+}
+
+precomputeChips(script.scenarios);
+precomputeChips(script.intents);
+precomputeChips(script.fallback);
+
+const startMcp: Record<string, boolean> = { ...(chapter.mcp ?? {}), ...(mcp ?? {}) };
+const showRules = permissions ?? Boolean(script.rules?.length);
+
+const config = {
+  variant,
+  input,
+  servers,
+  rules: showRules,
+  mcp: Object.keys(startMcp).length ? startMcp : null,
+  script,
+};
+
+const startOn = (id: string) => startMcp[id] ?? MCP_SERVERS.find((s) => s.id === id)!.on;
 ---
 
 <section class="demo term" data-terminal data-variant={variant}>
   <div class="demo__head">
     <span class="demo__badge">{tr('demo.title')}</span>
-    <span class="demo__title">{title ?? tr('term.title')}</span>
+    <span class="demo__title">{title ?? chapter.title ?? script.strings.title}</span>
   </div>
 
   <div class="demo__body term__body">
     {
-      chosen.length > 0 && (
+      script.scenarios.length > 0 && (
         <div class="term__scenarios">
-          <span class="term__panelLabel">{tr('term.scenarios')}</span>
+          <span class="term__panelLabel">{script.strings.scenarios}</span>
           <div class="term__chips">
-            {chosen.map((s) => (
+            {script.scenarios.map((scenario: { id: string; label: string; hint: string }) => (
               <button
                 class="term__chip"
                 type="button"
-                data-scenario={s.id}
-                title={s.hint[locale]}
+                data-scenario={scenario.id}
+                title={scenario.hint}
               >
-                {s.label[locale]}
+                {scenario.label}
               </button>
             ))}
           </div>
@@ -80,18 +190,35 @@ const startOn = (id: string) => mcp?.[id] ?? MCP_SERVERS.find((s) => s.id === id
       )
     }
 
-    <div class="term__grid" data-panel={servers ? 'true' : 'false'}>
+    <div class="term__grid" data-panel={servers || showRules ? 'true' : 'false'}>
       {
-        servers && (
-          <aside class="term__servers">
-            <span class="term__panelLabel">{tr('term.servers')}</span>
-            {MCP_SERVERS.map((s) => (
-              <label class="term__server">
-                <input type="checkbox" data-server={s.id} checked={startOn(s.id)} />
-                <span class="term__serverName">{s.name}</span>
-                <span class="term__serverMeta u-mono">{(s.tokens / 1000).toFixed(1)}k</span>
-              </label>
-            ))}
+        (servers || showRules) && (
+          <aside class="term__side">
+            {servers && (
+              <div class="term__panel">
+                <span class="term__panelLabel">{script.strings.servers}</span>
+                {MCP_SERVERS.map((server) => (
+                  <label class="term__toggle term__toggle--mcp">
+                    <input type="checkbox" data-server={server.id} checked={startOn(server.id)} />
+                    <span class="term__toggleName">{server.name}</span>
+                    <span class="term__toggleMeta u-mono">{(server.tokens / 1000).toFixed(1)}k</span>
+                  </label>
+                ))}
+              </div>
+            )}
+
+            {showRules && script.rules && (
+              <div class="term__panel">
+                <span class="term__panelLabel">{script.strings.rulesPanel}</span>
+                {script.rules.map((rule: { id: string; label: string; mode: string; on: boolean }) => (
+                  <label class="term__toggle" data-mode={rule.mode}>
+                    <input type="checkbox" data-rule={rule.id} checked={rule.on} />
+                    <span class="term__toggleName">{rule.label}</span>
+                    <span class="term__toggleMeta u-mono">{rule.mode}</span>
+                  </label>
+                ))}
+              </div>
+            )}
           </aside>
         )
       }
@@ -111,11 +238,11 @@ const startOn = (id: string) => mcp?.[id] ?? MCP_SERVERS.find((s) => s.id === id
                 type="text"
                 autocomplete="off"
                 spellcheck="false"
-                placeholder={tr('term.placeholder')}
-                aria-label={tr('term.placeholder')}
+                placeholder={script.strings.placeholder}
+                aria-label={script.strings.placeholder}
               />
               <button class="btn btn--primary term__send" type="submit">
-                {tr('term.run')}
+                {script.strings.run}
               </button>
             </form>
           ) : (
@@ -123,7 +250,7 @@ const startOn = (id: string) => mcp?.[id] ?? MCP_SERVERS.find((s) => s.id === id
               <span class="term__caret" aria-hidden="true">
                 &gt;
               </span>
-              <span class="term__hint">{tr('term.skip')}</span>
+              <span class="term__hint">{script.strings.skip}</span>
             </div>
           )
         }
@@ -137,88 +264,71 @@ const startOn = (id: string) => mcp?.[id] ?? MCP_SERVERS.find((s) => s.id === id
     </div>
 
     <div class="term__foot">
-      <button class="term__linkbtn" type="button" data-reset>{tr('term.reset')}</button>
+      <button class="term__linkbtn" type="button" data-reset>{script.strings.reset}</button>
       {
         input && (
           <button class="term__linkbtn" type="button" data-exact>
-            {tr('term.exact')}
+            {script.strings.exact}
           </button>
         )
       }
       {
         more && (
           <a class="term__linkbtn term__linkbtn--go" href={url(locale, 'playground')}>
-            {tr('term.openFull')}
+            {script.strings.openFull}
           </a>
         )
       }
     </div>
 
-    <p class="demo__note term__note" data-note>{tr('term.note')}</p>
+    <p class="demo__note term__note" data-note>{script.strings.note}</p>
   </div>
 
   {/* Configuration travels as data, not as define:vars — a define:vars script
-      is implicitly inline, which would leave the tokenizer's dynamic import as
-      a bare specifier the browser cannot resolve. */}
-  <script type="application/json" data-terminal-config is:inline set:html={JSON.stringify(config)} />
-
+      is implicitly inline, so Vite would leave the tokenizer's dynamic import
+      as a bare specifier the browser cannot resolve. */}
   <script
     type="application/json"
-    data-terminal-strings
+    data-terminal-config
     is:inline
-    set:html={JSON.stringify({
-      permission: tr('term.permission'),
-      allow: tr('term.allow'),
-      deny: tr('term.deny'),
-      context: tr('term.context'),
-      tool: tr('term.tool'),
-      tools: tr('term.tools'),
-      turn: tr('term.turn'),
-      turns: tr('term.turns'),
-      allowed: tr('term.allowed'),
-      deniedShort: tr('term.denied'),
-      exact: tr('term.exact'),
-      exactLoading: tr('term.exactLoading'),
-      exactDone: tr('term.exactDone'),
-      exactError: tr('term.exactError'),
-    })}
+    set:html={JSON.stringify(config).replace(/</g, '\\u003c')}
   />
 </section>
 
 <script>
-  import { createSession, resolve, type Locale, type Step, type Text } from '../../lib/terminal/engine';
+  import { createSession, type Script, type Step } from '../../lib/terminal/engine';
   import { BLOCK_COLOR, MCP_SERVERS } from '../../lib/terminal/world';
-  import raw from '../../lib/terminal/transcript.json';
-
-  const transcript = raw as unknown as import('../../lib/terminal/engine').Transcript;
 
   type Config = {
-    locale: Locale;
     variant: 'full' | 'inline';
-    servers: boolean;
     input: boolean;
+    servers: boolean;
+    rules: boolean;
     mcp: Record<string, boolean> | null;
+    script: Script;
   };
 
-  type Strings = Record<string, string>;
+  type Codec = { encode(text: string): number[]; decode(ids: number[]): string };
 
-  const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+  const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+  /** Shared across instances: the BPE table is big and identical for all of them. */
+  let codecPromise: Promise<Codec> | null = null;
+  function loadCodec(): Promise<Codec> {
+    codecPromise ??= import('gpt-tokenizer/encoding/o200k_base') as Promise<Codec>;
+    return codecPromise;
+  }
 
   function initTerminal(root: HTMLElement) {
     const config = JSON.parse(
       root.querySelector('[data-terminal-config]')!.textContent!,
     ) as Config;
-    const strings = JSON.parse(
-      root.querySelector('[data-terminal-strings]')!.textContent!,
-    ) as Strings;
 
-    const locale = config.locale;
-    const fmt = new Intl.NumberFormat(locale);
-    const session = createSession({
-      locale,
-      transcript,
-      mcp: config.mcp ?? undefined,
-    });
+    const script = config.script;
+    const str = script.strings;
+    const lang = document.documentElement.lang || 'de';
+    const fmt = new Intl.NumberFormat(lang);
+    const session = createSession({ script, mcp: config.mcp ?? undefined });
 
     const out = root.querySelector<HTMLElement>('[data-out]')!;
     const form = root.querySelector<HTMLFormElement>('[data-form]');
@@ -227,13 +337,11 @@ const startOn = (id: string) => mcp?.[id] ?? MCP_SERVERS.find((s) => s.id === id
     const meterEl = root.querySelector<HTMLElement>('[data-meter]')!;
     const noteEl = root.querySelector<HTMLElement>('[data-note]')!;
     const boxes = [...root.querySelectorAll<HTMLInputElement>('[data-server]')];
-
-    const text = (t: Text | undefined) => resolve(t, locale);
+    const ruleBoxes = [...root.querySelectorAll<HTMLInputElement>('[data-rule]')];
 
     /** Set while an Esc press should collapse the current animation. */
     let skip = false;
     let busy = false;
-    /** Flips once the real tokenizer replaced the character estimate. */
     let exactCounting = false;
     /** While a permission prompt is open, Esc means “deny”, not “skip”. */
     let awaitingPermission = false;
@@ -242,11 +350,14 @@ const startOn = (id: string) => mcp?.[id] ?? MCP_SERVERS.find((s) => s.id === id
 
     /* ── Output primitives ───────────────────────────────────────────── */
 
+    /** Where new lines go — the main log, or a sub-agent's indented block. */
+    let sink: HTMLElement = out;
+
     function line(cls: string, content?: string): HTMLElement {
       const el = document.createElement('div');
       el.className = 'term__line ' + cls;
       if (content !== undefined) el.textContent = content;
-      out.appendChild(el);
+      sink.appendChild(el);
       out.scrollTop = out.scrollHeight;
       return el;
     }
@@ -258,11 +369,11 @@ const startOn = (id: string) => mcp?.[id] ?? MCP_SERVERS.find((s) => s.id === id
       }
       // Fast enough to feel alive, slow enough to read the first words —
       // and long answers speed up so nobody waits on a paragraph.
-      const step = content.length > 220 ? 3 : 1;
+      const stride = content.length > 220 ? 3 : 1;
       const delay = content.length > 220 ? 6 : 12;
-      for (let i = 0; i < content.length; i += step) {
+      for (let i = 0; i < content.length; i += stride) {
         if (skip) break;
-        el.textContent = content.slice(0, i + step);
+        el.textContent = content.slice(0, i + stride);
         out.scrollTop = out.scrollHeight;
         await sleep(delay);
       }
@@ -270,7 +381,7 @@ const startOn = (id: string) => mcp?.[id] ?? MCP_SERVERS.find((s) => s.id === id
       out.scrollTop = out.scrollHeight;
     }
 
-    function toolLine(step: Extract<Step, { type: 'tool' }>) {
+    function toolLine(step: Extract<Step, { type: 'tool' }>, verdict?: string) {
       const el = line('term__line--tool');
       const name = document.createElement('b');
       name.textContent = step.name;
@@ -281,13 +392,44 @@ const startOn = (id: string) => mcp?.[id] ?? MCP_SERVERS.find((s) => s.id === id
         arg.textContent = step.arg;
         el.appendChild(arg);
       }
+      if (verdict) {
+        const tag = document.createElement('span');
+        tag.className = 'term__tag';
+        tag.textContent = verdict;
+        el.appendChild(tag);
+      }
       if (step.tokens) {
         const cost = document.createElement('span');
         cost.className = 'term__cost';
         cost.textContent = '+' + fmt.format(step.tokens);
         el.appendChild(cost);
       }
-      for (const item of step.out ?? []) line('term__line--out', '  ' + text(item));
+
+      if (step.foreign || step.injected) {
+        const box = document.createElement('div');
+        box.className = 'term__foreign';
+        const label = document.createElement('div');
+        label.className = 'term__foreignLabel';
+        label.textContent = str.foreign;
+        box.appendChild(label);
+        for (const item of step.out ?? []) {
+          const row = document.createElement('div');
+          row.className = 'term__line term__line--out';
+          row.textContent = item;
+          box.appendChild(row);
+        }
+        if (step.injected) {
+          const inj = document.createElement('div');
+          inj.className = 'term__injected';
+          inj.textContent = step.injected;
+          box.appendChild(inj);
+        }
+        sink.appendChild(box);
+        if (step.injected) line('term__line--note', str.injected);
+      } else {
+        for (const item of step.out ?? []) line('term__line--out', '  ' + item);
+      }
+      out.scrollTop = out.scrollHeight;
     }
 
     function meterBar(): HTMLElement {
@@ -333,12 +475,123 @@ const startOn = (id: string) => mcp?.[id] ?? MCP_SERVERS.find((s) => s.id === id
 
       wrap.appendChild(stack);
       wrap.appendChild(legend);
-      out.appendChild(wrap);
+      sink.appendChild(wrap);
       out.scrollTop = out.scrollHeight;
       return wrap;
     }
 
-    function askPermission(step: Extract<Step, { type: 'permission' }>): Promise<boolean> {
+    function chipRow(pieces: { text: string; id: number }[], text: string) {
+      const wrap = document.createElement('div');
+      wrap.className = 'term__chipRow';
+      pieces.slice(0, 400).forEach((piece, i) => {
+        const chip = document.createElement('span');
+        chip.className = 'term__tokchip';
+        chip.dataset.alt = i % 2 === 1 ? 'true' : 'false';
+        chip.title = '#' + piece.id;
+        chip.textContent = piece.text.replace(/ /g, '·').replace(/\n/g, '↵');
+        wrap.appendChild(chip);
+      });
+      if (pieces.length > 400) {
+        const more = document.createElement('span');
+        more.className = 'term__tokchip term__tokchip--more';
+        more.textContent = '+' + (pieces.length - 400);
+        wrap.appendChild(more);
+      }
+      sink.appendChild(wrap);
+
+      const chars = [...text].length;
+      line(
+        'term__line--out',
+        str.chipsSummary
+          .replace('{tokens}', fmt.format(pieces.length))
+          .replace('{chars}', fmt.format(chars))
+          .replace('{ratio}', pieces.length ? (chars / pieces.length).toFixed(2) : '–'),
+      );
+      out.scrollTop = out.scrollHeight;
+    }
+
+    async function generate(step: Extract<Step, { type: 'generate' }>) {
+      // Deliberately slowed down, and labelled as such. The point is the shape:
+      // one parallel pass, then one serial token at a time.
+      const ttft = 0.18 + step.promptTokens / 14000;
+      const speed = 44;
+
+      const prefill = line('term__line--phase');
+      const bar = document.createElement('span');
+      bar.className = 'term__bar term__bar--prefill';
+      prefill.append(str.prefill + ' ');
+      prefill.appendChild(bar);
+      const prefillNum = document.createElement('span');
+      prefillNum.className = 'term__phaseNum';
+      prefillNum.textContent = `${fmt.format(step.promptTokens)} · ${ttft.toFixed(2)} s ${str.ttft}`;
+      prefill.appendChild(prefillNum);
+      if (!skip) {
+        bar.style.width = '0%';
+        await sleep(20);
+        bar.style.width = '100%';
+        await sleep(420);
+      } else {
+        bar.style.width = '100%';
+      }
+
+      const decode = line('term__line--phase');
+      decode.append(str.decode + ' ');
+      const dots = document.createElement('span');
+      dots.className = 'term__dots';
+      decode.appendChild(dots);
+      const decodeNum = document.createElement('span');
+      decodeNum.className = 'term__phaseNum';
+      decode.appendChild(decodeNum);
+
+      const shown = Math.min(step.outputTokens, 60);
+      for (let i = 1; i <= shown; i++) {
+        if (skip) break;
+        dots.textContent = '▍'.repeat(i);
+        decodeNum.textContent = `${fmt.format(Math.round((i / shown) * step.outputTokens))} · ${speed} ${str.speed}`;
+        await sleep(28);
+      }
+      dots.textContent = '▍'.repeat(shown);
+      decodeNum.textContent = `${fmt.format(step.outputTokens)} · ${speed} ${str.speed}`;
+
+      if (step.text) {
+        const el = line('term__line--assistant');
+        await type(el, step.text);
+      }
+      line(
+        'term__line--note',
+        str.generateNote
+          .replace('{prompt}', fmt.format(step.promptTokens))
+          .replace('{output}', fmt.format(step.outputTokens)),
+      );
+    }
+
+    function cacheReport() {
+      const { seen, lastCached, lastFresh } = session.state;
+      if (!seen || lastCached + lastFresh === 0) {
+        line('term__line--note', str.cacheCold);
+        return;
+      }
+      const share = Math.round((lastCached / (lastCached + lastFresh)) * 100);
+      const el = line('term__line--cache');
+      el.textContent = str.cacheReport
+        .replace('{cached}', fmt.format(lastCached))
+        .replace('{fresh}', fmt.format(lastFresh))
+        .replace('{share}', String(share));
+
+      const bar = document.createElement('div');
+      bar.className = 'term__cacheBar';
+      const hit = document.createElement('span');
+      hit.style.flex = `1 1 ${share}%`;
+      hit.className = 'term__cacheHit';
+      const miss = document.createElement('span');
+      miss.style.flex = `1 1 ${100 - share}%`;
+      miss.className = 'term__cacheMiss';
+      bar.append(hit, miss);
+      sink.appendChild(bar);
+      out.scrollTop = out.scrollHeight;
+    }
+
+    function askPermission(step: Extract<Step, { type: 'tool' }>): Promise<boolean> {
       awaitingPermission = true;
       return new Promise((done) => {
         const box = document.createElement('div');
@@ -346,7 +599,7 @@ const startOn = (id: string) => mcp?.[id] ?? MCP_SERVERS.find((s) => s.id === id
 
         const head = document.createElement('div');
         head.className = 'term__permHead';
-        head.textContent = strings.permission;
+        head.textContent = str.permission;
         box.appendChild(head);
 
         const what = document.createElement('div');
@@ -357,7 +610,7 @@ const startOn = (id: string) => mcp?.[id] ?? MCP_SERVERS.find((s) => s.id === id
         if (step.detail) {
           const detail = document.createElement('p');
           detail.className = 'term__permDetail';
-          detail.textContent = text(step.detail);
+          detail.textContent = step.detail;
           box.appendChild(detail);
         }
 
@@ -366,15 +619,15 @@ const startOn = (id: string) => mcp?.[id] ?? MCP_SERVERS.find((s) => s.id === id
         const yes = document.createElement('button');
         yes.type = 'button';
         yes.className = 'btn btn--primary';
-        yes.textContent = strings.allow;
+        yes.textContent = str.allow;
         const no = document.createElement('button');
         no.type = 'button';
         no.className = 'btn';
-        no.textContent = strings.deny;
+        no.textContent = str.deny;
         row.append(yes, no);
         box.appendChild(row);
 
-        out.appendChild(box);
+        sink.appendChild(box);
         out.scrollTop = out.scrollHeight;
         yes.focus({ preventScroll: true });
 
@@ -385,7 +638,7 @@ const startOn = (id: string) => mcp?.[id] ?? MCP_SERVERS.find((s) => s.id === id
           row.remove();
           const verdict = document.createElement('div');
           verdict.className = 'term__permVerdict';
-          verdict.textContent = ok ? '✓ ' + strings.allowed : '✗ ' + strings.deniedShort;
+          verdict.textContent = ok ? '✓ ' + str.allowed : '✗ ' + str.deniedShort;
           box.appendChild(verdict);
           done(ok);
         };
@@ -409,16 +662,11 @@ const startOn = (id: string) => mcp?.[id] ?? MCP_SERVERS.find((s) => s.id === id
 
     /* ── Status line ─────────────────────────────────────────────────── */
 
-    /** An empty screen reads as broken; the opening line says what this is. */
-    function greet() {
-      line(
-        'term__line--greeting',
-        text(config.input ? transcript.greeting : transcript.greetingInline),
-      );
-    }
-
-    function syncBoxes() {
+    function syncPanels() {
       for (const box of boxes) box.checked = Boolean(session.mcpOn.get(box.dataset.server!));
+      for (const box of ruleBoxes) {
+        box.checked = Boolean(session.rules.find((r) => r.id === box.dataset.rule)?.on);
+      }
     }
 
     function updateStatus() {
@@ -427,9 +675,9 @@ const startOn = (id: string) => mcp?.[id] ?? MCP_SERVERS.find((s) => s.id === id
       const approx = session.state.turns > 0 && !exactCounting ? '≈' : '';
       const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
       statusEl.textContent =
-        `${strings.context} ${approx}${(used / 1000).toFixed(1)}k / ${session.windowSize / 1000}k (${share.toFixed(0)} %)` +
-        ` · ${plural(session.state.toolCalls, strings.tool, strings.tools)}` +
-        ` · ${plural(session.state.turns, strings.turn, strings.turns)}`;
+        `${str.context} ${approx}${(used / 1000).toFixed(1)}k / ${session.windowSize / 1000}k (${share.toFixed(0)} %)` +
+        ` · ${plural(session.state.toolCalls, str.tool, str.tools)}` +
+        ` · ${plural(session.state.turns, str.turn, str.turns)}`;
 
       meterEl.textContent = '';
       for (const block of session.breakdown()) {
@@ -444,60 +692,188 @@ const startOn = (id: string) => mcp?.[id] ?? MCP_SERVERS.find((s) => s.id === id
 
     /* ── Running steps ───────────────────────────────────────────────── */
 
-    async function runSteps(steps: Step[]) {
+    /**
+     * `bill: false` renders a step without booking its tokens — used for the
+     * inside of a sub-agent, whose spend happens in its own window and must
+     * never land in the main thread. Getting this wrong makes delegation look
+     * exactly as expensive as doing it inline, which is the opposite of the
+     * point the multi-agent chapter makes.
+     */
+    async function runSteps(steps: Step[], bill = true): Promise<boolean> {
+      const apply = (step: Step) => {
+        if (bill) session.applyStep(step);
+      };
+
       for (const step of steps) {
         switch (step.type) {
           case 'assistant': {
-            session.applyStep(step);
+            apply(step);
             const el = line('term__line--assistant');
-            await type(el, text(step.text));
+            await type(el, step.text);
             break;
           }
+
+          case 'generate':
+            apply(step);
+            await generate(step);
+            break;
+
           case 'tool': {
-            session.applyStep(step);
-            toolLine(step);
-            if (!skip) await sleep(260);
-            break;
-          }
-          case 'permission': {
-            const ok = await askPermission(step);
-            if (!ok) {
-              line('term__line--note', text(transcript.denied));
-              return;
+            const mode = session.decide(step);
+            if (mode === 'deny') {
+              toolLine({ ...step, tokens: undefined, out: undefined }, '✗');
+              line('term__line--bad', str.blocked);
+              return false;
             }
+            if (mode === 'ask') {
+              const ok = await askPermission(step);
+              if (!ok) {
+                line('term__line--note', str.denied);
+                return false;
+              }
+            }
+            apply(step);
+            toolLine(step, mode === 'allow' && step.ask ? '✓' : undefined);
+            if (mode === 'allow' && step.ask) line('term__line--note', str.autoAllowed);
+            if (!skip) await sleep(240);
             break;
           }
-          case 'note':
-            line('term__line--note', text(step.text));
+
+          case 'subagent': {
+            const box = document.createElement('div');
+            box.className = 'term__subagent';
+            const head = document.createElement('div');
+            head.className = 'term__subHead';
+            head.textContent = `${str.subagent} · ${step.name}`;
+            box.appendChild(head);
+            const task = document.createElement('div');
+            task.className = 'term__subTask';
+            task.textContent = step.task;
+            box.appendChild(task);
+            sink.appendChild(box);
+
+            const parent = sink;
+            sink = box;
+            await runSteps(step.steps, false);
+            sink = parent;
+
+            line('term__line--assistant', step.summaryText);
+            apply(step);
+            line(
+              'term__line--note',
+              str.subagentReturn
+                .replace('{tokens}', fmt.format(step.tokens))
+                .replace('{summary}', fmt.format(step.summary)),
+            );
             break;
+          }
+
+          case 'invalidate':
+            apply(step);
+            line(
+              'term__line--note',
+              str.invalidated
+                .replace('{block}', script.blocks[step.at])
+                .replace('{why}', step.why),
+            );
+            break;
+
+          case 'chips': {
+            if (step.label) line('term__line--out', step.label);
+            let pieces = step.pieces;
+            if (!pieces) {
+              const status = line('term__line--out', str.tokensLoading);
+              try {
+                const codec = await loadCodec();
+                pieces = codec.encode(step.text).map((id) => {
+                  const piece = codec.decode([id]);
+                  return { text: piece.includes('�') ? '◌' : piece, id };
+                });
+                status.remove();
+              } catch {
+                status.textContent = str.exactError;
+                break;
+              }
+            }
+            chipRow(pieces, step.text);
+            break;
+          }
+
+          case 'compare': {
+            const r = step.result!;
+            const surcharge = (de: number, en: number) => Math.round((de / en - 1) * 100);
+            const table = document.createElement('div');
+            table.className = 'term__compare';
+            for (const [name, era, de, en] of [
+              ['o200k_base', str.compareCurrent, r.deModern, r.enModern],
+              ['cl100k_base', str.compareOlder, r.deLegacy, r.enLegacy],
+            ] as [string, string, number, number][]) {
+              const row = document.createElement('div');
+              row.className = 'term__compareRow';
+              row.innerHTML = '';
+              const label = document.createElement('span');
+              label.className = 'term__compareName';
+              label.textContent = name;
+              const eraEl = document.createElement('em');
+              eraEl.textContent = era;
+              label.appendChild(eraEl);
+              const counts = document.createElement('span');
+              counts.className = 'u-mono';
+              counts.textContent = `DE ${fmt.format(de)} · EN ${fmt.format(en)}`;
+              const delta = document.createElement('strong');
+              delta.className = 'term__compareDelta';
+              delta.dataset.high = surcharge(de, en) > 30 ? 'true' : 'false';
+              delta.textContent = `+${surcharge(de, en)} %`;
+              row.append(label, counts, delta);
+              table.appendChild(row);
+            }
+            sink.appendChild(table);
+            line('term__line--note', str.compareNote);
+            out.scrollTop = out.scrollHeight;
+            break;
+          }
+
+          case 'note':
+            line('term__line--note', step.text);
+            break;
+
           case 'out': {
             const tone = step.tone ? ' term__line--' + step.tone : '';
-            for (const item of step.lines) line('term__line--out' + tone, text(item));
+            for (const item of step.lines) line('term__line--out' + tone, item);
             break;
           }
+
           case 'meter':
             meterBar();
-            if (session.isOverflowing()) line('term__line--bad', text(transcript.overflow));
+            if (session.isOverflowing()) line('term__line--bad', str.overflow);
             break;
+
+          case 'cache':
+            cacheReport();
+            break;
+
           case 'compact': {
             const result = session.compact();
             line(
               'term__line--note',
-              text(transcript.compacted)
+              str.compacted
                 .replace('{before}', fmt.format(result.before))
                 .replace('{after}', fmt.format(result.after))
                 .replace('{kept}', fmt.format(result.kept)),
             );
             break;
           }
+
           case 'clear':
-            session.applyStep(step);
+            apply(step);
             out.textContent = '';
+            sink = out;
             greet();
             break;
+
           case 'mcp': {
-            session.applyStep(step);
-            syncBoxes();
+            apply(step);
+            syncPanels();
             const server = MCP_SERVERS.find((s) => s.id === step.id)!;
             line(
               'term__line--out',
@@ -505,10 +881,24 @@ const startOn = (id: string) => mcp?.[id] ?? MCP_SERVERS.find((s) => s.id === id
             );
             break;
           }
+
+          case 'rule': {
+            apply(step);
+            syncPanels();
+            const rule = session.rules.find((r) => r.id === step.id);
+            if (rule) line('term__line--out', `${step.on ? '●' : '○'} ${rule.label} (${rule.mode})`);
+            break;
+          }
         }
         updateStatus();
-        if (!skip) await sleep(120);
+        if (!skip) await sleep(110);
       }
+      return true;
+    }
+
+    /** An empty screen reads as broken; the opening line says what this is. */
+    function greet() {
+      line('term__line--greeting', config.input ? str.greeting : str.greetingInline);
     }
 
     async function submit(raw: string) {
@@ -521,12 +911,17 @@ const startOn = (id: string) => mcp?.[id] ?? MCP_SERVERS.find((s) => s.id === id
       history.push(value);
       historyIndex = history.length;
       line('term__line--user', '> ' + value);
-      if (!value.startsWith('/')) session.bookInput(value);
+      const isPrompt = !value.startsWith('/');
+      if (isPrompt) session.bookInput(value);
       updateStatus();
 
       try {
         await runSteps(session.plan(value));
+        // A prompt is one request; slash commands are local to the harness and
+        // never reach the model, so they do not settle a cache turn.
+        if (isPrompt) session.settleTurn();
       } finally {
+        sink = out;
         busy = false;
         skip = false;
         root.dataset.busy = 'false';
@@ -535,23 +930,38 @@ const startOn = (id: string) => mcp?.[id] ?? MCP_SERVERS.find((s) => s.id === id
     }
 
     async function runScenario(id: string) {
-      const scenario = transcript.scenarios.find((s) => s.id === id);
+      const scenario = script.scenarios.find((s) => s.id === id);
       if (!scenario || busy) return;
 
+      // `busy` drops between the commands a scenario replays; this stays set for
+      // the whole run, so "is it finished" has an answer from outside.
+      root.dataset.running = 'true';
+      try {
+        await replay(scenario);
+      } finally {
+        root.dataset.running = 'false';
+      }
+    }
+
+    async function replay(scenario: (typeof script.scenarios)[number]) {
       if (scenario.reset) {
         session.reset();
         out.textContent = '';
+        sink = out;
         greet();
       }
       if (scenario.mcp) {
         for (const [server, on] of Object.entries(scenario.mcp)) session.toggleMcp(server, on);
-        syncBoxes();
       }
+      if (scenario.rules) {
+        for (const [rule, on] of Object.entries(scenario.rules)) session.toggleRule(rule, on);
+      }
+      syncPanels();
       updateStatus();
 
-      for (const command of scenario.commands as Text[]) {
-        await submit(text(command));
-        if (!skip) await sleep(340);
+      for (const command of scenario.commands) {
+        await submit(command);
+        if (!skip) await sleep(320);
       }
       inputEl?.focus({ preventScroll: true });
     }
@@ -565,7 +975,17 @@ const startOn = (id: string) => mcp?.[id] ?? MCP_SERVERS.find((s) => s.id === id
       submit(value);
     });
 
-    const COMMANDS = ['/context', '/compact', '/clear', '/mcp', '/model', '/help'];
+    const COMMANDS = [
+      '/context',
+      '/cache',
+      '/compact',
+      '/clear',
+      '/tokens',
+      '/mcp',
+      '/permissions',
+      '/model',
+      '/help',
+    ];
 
     inputEl?.addEventListener('keydown', (e) => {
       if (e.key === 'ArrowUp' && history.length) {
@@ -600,32 +1020,38 @@ const startOn = (id: string) => mcp?.[id] ?? MCP_SERVERS.find((s) => s.id === id
       });
     }
 
+    for (const box of ruleBoxes) {
+      box.addEventListener('change', () => {
+        session.toggleRule(box.dataset.rule!, box.checked);
+      });
+    }
+
     root.querySelector('[data-reset]')?.addEventListener('click', () => {
       session.reset();
       out.textContent = '';
+      sink = out;
       greet();
-      syncBoxes();
+      syncPanels();
       updateStatus();
       inputEl?.focus({ preventScroll: true });
     });
 
-    /* The 1 MB BPE table stays behind an explicit click, exactly as in the
-       tokenizer demo — the scripted figures are fixed either way, this only
-       sharpens the count for what you type yourself. */
+    /* The 1 MB BPE table stays behind an explicit click — the scripted figures
+       are fixed either way, this only sharpens the count for what you type. */
     const exactBtn = root.querySelector<HTMLButtonElement>('[data-exact]');
     exactBtn?.addEventListener('click', async () => {
       exactBtn.disabled = true;
       const original = exactBtn.textContent;
-      exactBtn.textContent = strings.exactLoading;
+      exactBtn.textContent = str.exactLoading;
       try {
-        const codec = await import('gpt-tokenizer/encoding/o200k_base');
+        const codec = await loadCodec();
         session.setCounter((value: string) => codec.encode(value).length);
         exactCounting = true;
         exactBtn.remove();
-        noteEl.textContent = strings.exactDone + ' ' + noteEl.textContent;
+        noteEl.textContent = str.exactDone + ' ' + noteEl.textContent;
         updateStatus();
       } catch {
-        exactBtn.textContent = strings.exactError;
+        exactBtn.textContent = str.exactError;
         exactBtn.disabled = false;
         setTimeout(() => (exactBtn.textContent = original), 4000);
       }
@@ -672,6 +1098,7 @@ const startOn = (id: string) => mcp?.[id] ?? MCP_SERVERS.find((s) => s.id === id
     background: var(--surface);
     color: var(--text-dim);
     cursor: pointer;
+    text-align: left;
   }
 
   .term__chip:hover {
@@ -686,7 +1113,7 @@ const startOn = (id: string) => mcp?.[id] ?? MCP_SERVERS.find((s) => s.id === id
   }
 
   .term__grid[data-panel='true'] {
-    grid-template-columns: 11rem minmax(0, 1fr);
+    grid-template-columns: 11.5rem minmax(0, 1fr);
   }
 
   @media (max-width: 46rem) {
@@ -695,14 +1122,21 @@ const startOn = (id: string) => mcp?.[id] ?? MCP_SERVERS.find((s) => s.id === id
     }
   }
 
-  .term__servers {
+  .term__side {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    min-width: 0;
+  }
+
+  .term__panel {
     display: flex;
     flex-direction: column;
     gap: 0.25rem;
     min-width: 0;
   }
 
-  .term__server {
+  .term__toggle {
     display: grid;
     grid-template-columns: auto minmax(0, 1fr) auto;
     align-items: center;
@@ -714,29 +1148,59 @@ const startOn = (id: string) => mcp?.[id] ?? MCP_SERVERS.find((s) => s.id === id
     cursor: pointer;
   }
 
-  .term__server:hover {
+  .term__toggle:hover {
     background: var(--surface);
   }
 
-  .term__server:has(input:checked) {
+  .term__toggle--mcp:has(input:checked) {
     border-color: color-mix(in srgb, var(--warn) 40%, transparent);
     background: var(--warn-wash);
   }
 
-  .term__server input {
+  .term__toggle--mcp input {
     accent-color: var(--warn);
+  }
+
+  .term__toggle[data-mode='allow']:has(input:checked) {
+    border-color: color-mix(in srgb, var(--accent) 45%, transparent);
+    background: var(--accent-wash);
+  }
+
+  .term__toggle[data-mode='allow'] input {
+    accent-color: var(--accent);
+  }
+
+  .term__toggle[data-mode='deny']:has(input:checked) {
+    border-color: color-mix(in srgb, var(--danger) 45%, transparent);
+    background: var(--danger-wash);
+  }
+
+  .term__toggle[data-mode='deny'] input {
+    accent-color: var(--danger);
+  }
+
+  .term__toggle[data-mode='ask']:has(input:checked) {
+    border-color: color-mix(in srgb, var(--info) 45%, transparent);
+    background: var(--info-wash);
+  }
+
+  .term__toggle[data-mode='ask'] input {
+    accent-color: var(--info);
+  }
+
+  .term__toggle input {
     margin: 0;
     cursor: pointer;
   }
 
-  .term__serverName {
+  .term__toggleName {
     font-weight: 600;
     overflow: hidden;
     text-overflow: ellipsis;
   }
 
-  .term__serverMeta {
-    font-size: 0.68rem;
+  .term__toggleMeta {
+    font-size: 0.66rem;
     color: var(--text-faint);
   }
 
@@ -752,7 +1216,7 @@ const startOn = (id: string) => mcp?.[id] ?? MCP_SERVERS.find((s) => s.id === id
 
   .term__out {
     padding: 0.75rem 0.85rem;
-    height: 22rem;
+    height: 23rem;
     overflow-y: auto;
     overflow-x: hidden;
     font-family: var(--font-mono);
@@ -762,7 +1226,7 @@ const startOn = (id: string) => mcp?.[id] ?? MCP_SERVERS.find((s) => s.id === id
   }
 
   [data-variant='inline'] .term__out {
-    height: 15rem;
+    height: 17rem;
   }
 
   /* Prompt + status ---------------------------------------------------- */
@@ -934,6 +1398,16 @@ const startOn = (id: string) => mcp?.[id] ?? MCP_SERVERS.find((s) => s.id === id
     min-height: 1.35em;
   }
 
+  .term__line--greeting {
+    font-family: var(--font-sans);
+    font-size: 0.8rem;
+    color: var(--text-faint);
+    line-height: 1.55;
+    padding-bottom: 0.3rem;
+    border-bottom: 1px dashed var(--border);
+    margin-bottom: 0.3rem;
+  }
+
   .term__line--tool {
     color: var(--info);
     display: flex;
@@ -959,6 +1433,12 @@ const startOn = (id: string) => mcp?.[id] ?? MCP_SERVERS.find((s) => s.id === id
     overflow-wrap: anywhere;
   }
 
+  .term__tag {
+    color: var(--accent);
+    font-size: 0.72rem;
+    flex: none;
+  }
+
   .term__cost {
     margin-left: auto;
     color: var(--warn);
@@ -969,16 +1449,6 @@ const startOn = (id: string) => mcp?.[id] ?? MCP_SERVERS.find((s) => s.id === id
 
   .term__line--out {
     color: var(--text-faint);
-  }
-
-  .term__line--greeting {
-    font-family: var(--font-sans);
-    font-size: 0.8rem;
-    color: var(--text-faint);
-    line-height: 1.55;
-    padding-bottom: 0.3rem;
-    border-bottom: 1px dashed var(--border);
-    margin-bottom: 0.3rem;
   }
 
   .term__line--note {
@@ -1003,6 +1473,13 @@ const startOn = (id: string) => mcp?.[id] ?? MCP_SERVERS.find((s) => s.id === id
     margin: 0.4rem 0;
   }
 
+  .term__line--cache {
+    font-family: var(--font-sans);
+    font-size: 0.82rem;
+    color: var(--text);
+    margin-top: 0.5rem;
+  }
+
   .term__breakdown {
     margin: 0.6rem 0 0.8rem;
   }
@@ -1015,6 +1492,198 @@ const startOn = (id: string) => mcp?.[id] ?? MCP_SERVERS.find((s) => s.id === id
     font-size: 0.72rem;
     gap: 0.35rem 0.9rem;
   }
+
+  /* Cache split -------------------------------------------------------- */
+
+  .term__cacheBar {
+    display: flex;
+    height: 1.1rem;
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+    border: 1px solid var(--border);
+    margin: 0.35rem 0 0.7rem;
+  }
+
+  .term__cacheHit {
+    background: var(--accent);
+  }
+
+  .term__cacheMiss {
+    background: var(--warn);
+  }
+
+  /* Prefill / decode --------------------------------------------------- */
+
+  .term__line--phase {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--text-dim);
+    margin-top: 0.35rem;
+  }
+
+  .term__bar {
+    display: inline-block;
+    height: 0.6rem;
+    width: 0;
+    min-width: 0;
+    flex: 0 0 auto;
+    border-radius: 999px;
+    background: var(--info);
+    transition: width 0.4s ease;
+  }
+
+  .term__bar--prefill {
+    width: 0;
+    max-width: 9rem;
+  }
+
+  .term__bar[style*='100%'] {
+    width: 9rem;
+  }
+
+  .term__dots {
+    color: var(--accent);
+    letter-spacing: -0.12em;
+    overflow-wrap: anywhere;
+    min-width: 0;
+  }
+
+  .term__phaseNum {
+    margin-left: auto;
+    font-variant-numeric: tabular-nums;
+    font-size: 0.72rem;
+    color: var(--text-faint);
+    flex: none;
+  }
+
+  /* Sub-agent ---------------------------------------------------------- */
+
+  .term__subagent {
+    margin: 0.6rem 0;
+    padding: 0.5rem 0.7rem;
+    border: 1px dashed color-mix(in srgb, var(--info) 50%, transparent);
+    border-radius: var(--radius-sm);
+    background: var(--info-wash);
+  }
+
+  .term__subHead {
+    font-family: var(--font-sans);
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--info);
+  }
+
+  .term__subTask {
+    font-family: var(--font-sans);
+    font-size: 0.8rem;
+    color: var(--text-dim);
+    margin-bottom: 0.3rem;
+  }
+
+  /* Foreign text ------------------------------------------------------- */
+
+  .term__foreign {
+    margin: 0.4rem 0;
+    padding: 0.5rem 0.7rem;
+    border: 1px solid color-mix(in srgb, var(--danger) 40%, transparent);
+    border-radius: var(--radius-sm);
+    background: var(--danger-wash);
+  }
+
+  .term__foreignLabel {
+    font-family: var(--font-sans);
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--danger);
+    margin-bottom: 0.2rem;
+  }
+
+  .term__injected {
+    margin-top: 0.35rem;
+    padding: 0.35rem 0.5rem;
+    border-left: 2px solid var(--danger);
+    background: color-mix(in srgb, var(--danger) 12%, transparent);
+    color: var(--text);
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
+
+  /* Token chips -------------------------------------------------------- */
+
+  .term__chipRow {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2px;
+    margin: 0.35rem 0;
+  }
+
+  .term__tokchip {
+    font-family: var(--font-mono);
+    font-size: 0.76rem;
+    line-height: 1.5;
+    padding: 0.06rem 0.26rem;
+    border-radius: 4px;
+    background: color-mix(in srgb, var(--accent) 16%, transparent);
+    color: var(--text);
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
+
+  .term__tokchip[data-alt='true'] {
+    background: color-mix(in srgb, var(--info) 18%, transparent);
+  }
+
+  .term__tokchip--more {
+    background: var(--surface-hi);
+    color: var(--text-faint);
+  }
+
+  .term__compare {
+    margin: 0.5rem 0;
+    padding: 0.6rem 0.75rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+  }
+
+  .term__compareRow {
+    display: flex;
+    align-items: baseline;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    font-size: 0.8rem;
+    padding: 0.15rem 0;
+  }
+
+  .term__compareName {
+    font-family: var(--font-mono);
+    color: var(--text-dim);
+    min-width: 10rem;
+  }
+
+  .term__compareName em {
+    font-style: normal;
+    color: var(--text-faint);
+    font-size: 0.72rem;
+    margin-left: 0.4rem;
+  }
+
+  .term__compareDelta {
+    margin-left: auto;
+    font-family: var(--font-mono);
+    color: var(--accent);
+  }
+
+  .term__compareDelta[data-high='true'] {
+    color: var(--warn);
+  }
+
+  /* Permission --------------------------------------------------------- */
 
   .term__permission {
     margin: 0.6rem 0;

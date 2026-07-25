@@ -1,0 +1,117 @@
+{
+  "_comment": "Replaces the context-window demo. Instead of sliders, an actual session that fills up and then has to be compacted.",
+
+  "title": { "de": "Ein Fenster füllen, bis nichts mehr geht", "en": "Filling a window until nothing fits" },
+
+  "strings": {
+    "greeting": {
+      "de": "Das Fenster fasst 200.000 Token — und ist belegt, bevor du das erste Wort tippst. Schau der Statusline zu.",
+      "en": "The window holds 200,000 tokens — and is already occupied before you type a word. Watch the status line."
+    }
+  },
+
+  "scenarios": [
+    {
+      "id": "floor",
+      "label": { "de": "Was schon drin ist", "en": "What is already in there" },
+      "hint": {
+        "de": "Leere Sitzung, /context — der Sockel gehört zu jeder Anfrage, nicht zum Gespräch.",
+        "en": "Empty session, /context — the floor belongs to every request, not to the conversation."
+      },
+      "reset": true,
+      "commands": ["/context"]
+    },
+    {
+      "id": "fill",
+      "label": { "de": "Bis zum Überlauf", "en": "All the way to overflow" },
+      "hint": {
+        "de": "Drei geschwätzige Befehle reichen für 200.000 Token — das ist kein Sonderfall.",
+        "en": "Three chatty commands are enough for 200,000 tokens — this is not an edge case."
+      },
+      "reset": true,
+      "mcp": { "jira": true, "confluence": true, "bitbucket": true, "filesystem": true, "postgres": true, "browser": true, "sentry": true },
+      "commands": [
+        { "de": "Zeig mir den vollen Build-Log", "en": "Show me the full build log" },
+        { "de": "Zeig mir die Git-Historie der Berth-Klassen", "en": "Show me the git history of the berth classes" },
+        { "de": "Zeig mir die Container-Logs", "en": "Show me the container logs" },
+        "/context"
+      ]
+    },
+    {
+      "id": "rescue",
+      "label": { "de": "Compaction als Rettung", "en": "Compaction to the rescue" },
+      "hint": {
+        "de": "Was /compact freiräumt — und was es prinzipiell nicht anfassen kann.",
+        "en": "What /compact frees — and what it fundamentally cannot touch."
+      },
+      "reset": true,
+      "mcp": { "jira": true, "confluence": true, "bitbucket": true, "filesystem": true, "postgres": true, "browser": true, "sentry": true },
+      "commands": [
+        { "de": "Zeig mir den vollen Build-Log", "en": "Show me the full build log" },
+        { "de": "Zeig mir die Git-Historie der Berth-Klassen", "en": "Show me the git history of the berth classes" },
+        { "de": "Zeig mir die Container-Logs", "en": "Show me the container logs" },
+        "/compact",
+        "/context"
+      ]
+    }
+  ],
+
+  "intents": [
+    {
+      "id": "build-log",
+      "match": ["build-log", "build log", "vollen build", "full build", "gradlew build", "--info"],
+      "steps": [
+        {
+          "type": "tool",
+          "name": "Bash",
+          "arg": "./gradlew build --info",
+          "tokens": 78000,
+          "out": [
+            "BUILD SUCCESSFUL in 1m 48s",
+            { "de": "4.130 Zeilen Log — vollständig im Context", "en": "4,130 log lines — all of it in context" }
+          ]
+        },
+        {
+          "type": "note",
+          "text": {
+            "de": "78.000 Token aus einem einzigen Befehl — 39 % des Fensters. Ausführliche Befehlsausgabe ist der schnellste Weg, ein Context Window zu füllen.",
+            "en": "78,000 tokens from a single command — 39 % of the window. Verbose command output is the fastest way to fill a context window."
+          }
+        }
+      ]
+    },
+    {
+      "id": "git-history",
+      "match": ["git log", "historie", "history", "git-historie", "letzten commits", "recent commits"],
+      "steps": [
+        {
+          "type": "tool",
+          "name": "Bash",
+          "arg": "git log -p -30 -- src/main/java/com/terminal/berth",
+          "tokens": 62000,
+          "out": [{ "de": "30 Commits mit vollem Diff", "en": "30 commits with full diffs" }]
+        }
+      ]
+    },
+    {
+      "id": "container-logs",
+      "match": ["container", "docker", "compose logs", "container-logs", "podman"],
+      "steps": [
+        {
+          "type": "tool",
+          "name": "Bash",
+          "arg": "docker compose logs --tail=5000 berth-service",
+          "tokens": 41000,
+          "out": [{ "de": "5.000 Zeilen, davon 4.900 Health-Checks", "en": "5,000 lines, 4,900 of them health checks" }]
+        },
+        {
+          "type": "note",
+          "text": {
+            "de": "Ein grep -v health davor hätte 40.000 Token gespart. Die Frage ist nie „passt das rein?“, sondern „muss das rein?“.",
+            "en": "A grep -v health in front would have saved 40,000 tokens. The question is never “does this fit?” but “does this need to be in there?”."
+          }
+        }
+      ]
+    }
+  ]
+}

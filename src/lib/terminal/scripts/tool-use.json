@@ -1,0 +1,196 @@
+{
+  "_comment": "The tool loop itself. Every step is one pass: model asks, harness executes, result goes back into the context, model decides again.",
+  "title": {
+    "de": "Die Tool-Schleife, Schritt für Schritt",
+    "en": "The tool loop, step by step"
+  },
+  "strings": {
+    "greeting": {
+      "de": "Jede ⏺-Zeile ist ein Durchlauf der Schleife: Das Modell fordert an, der Harness führt aus, das Ergebnis landet im Context. Vier Durchläufe für eine Aufgabe.",
+      "en": "Every ⏺ line is one pass of the loop: the model requests, the harness executes, the result lands in the context. Four passes for one task."
+    }
+  },
+  "scenarios": [
+    {
+      "id": "loop",
+      "label": {
+        "de": "Vier Durchläufe, eine Aufgabe",
+        "en": "Four passes, one task"
+      },
+      "hint": {
+        "de": "Suchen, lesen, ändern, testen, antworten — die Schleife endet, wenn das Modell nichts mehr anfordert.",
+        "en": "Search, read, edit, test, answer — the loop ends when the model stops requesting."
+      },
+      "reset": true,
+      "commands": [
+        {
+          "de": "Behebe die NPE in der Warteliste",
+          "en": "Fix the NPE in the waiting list"
+        }
+      ]
+    },
+    {
+      "id": "error",
+      "label": {
+        "de": "Wenn ein Tool fehlschlägt",
+        "en": "When a tool fails"
+      },
+      "hint": {
+        "de": "Der Fehler geht vollständig zurück ins Modell — genau daraus entsteht die Nachbesserung.",
+        "en": "The error goes back to the model in full — that is what the correction is made of."
+      },
+      "reset": true,
+      "commands": [
+        {
+          "de": "Lass die Tests laufen",
+          "en": "Run the tests"
+        }
+      ]
+    }
+  ],
+  "intents": [
+    {
+      "id": "fix-npe",
+      "match": [
+        "npe",
+        "warteliste",
+        "waiting list",
+        "behebe",
+        "fix the",
+        "nullpointer"
+      ],
+      "steps": [
+        {
+          "type": "assistant",
+          "text": {
+            "de": "Ich suche erst die Stelle, statt die ganze Datei zu lesen.",
+            "en": "Let me find the spot first instead of reading the whole file."
+          }
+        },
+        {
+          "type": "tool",
+          "name": "Grep",
+          "arg": "getEta\\(\\)",
+          "tokens": 280,
+          "out": [
+            "BerthAllocationService.java:212",
+            "BerthAllocationService.java:248"
+          ]
+        },
+        {
+          "type": "tool",
+          "name": "Read",
+          "arg": "src/main/java/com/terminal/berth/BerthAllocationService.java",
+          "kind": "files",
+          "tokens": 4180,
+          "out": [
+            {
+              "de": "384 Zeilen",
+              "en": "384 lines"
+            }
+          ]
+        },
+        {
+          "type": "assistant",
+          "text": {
+            "de": "Zeile 248 vergleicht ETAs ohne Null-Prüfung. Anläufe ohne bestätigte ETA kippen dort die Sortierung.",
+            "en": "Line 248 compares ETAs without a null check. Calls without a confirmed ETA topple the sort there."
+          }
+        },
+        {
+          "type": "tool",
+          "name": "Edit",
+          "arg": "src/main/java/com/terminal/berth/BerthAllocationService.java",
+          "ask": true,
+          "detail": {
+            "de": "Das Modell hat diesen Aufruf formuliert. Ausgeführt wird er erst, wenn du zustimmst — hier sitzt die Kontrolle.",
+            "en": "The model formulated this call. It runs only once you agree — this is where control sits."
+          },
+          "tokens": 240,
+          "out": [
+            "+2 −1"
+          ]
+        },
+        {
+          "type": "tool",
+          "name": "Bash",
+          "arg": "./gradlew test",
+          "tokens": 520,
+          "out": [
+            "BUILD SUCCESSFUL in 34s",
+            "129 tests completed, 0 failed"
+          ]
+        },
+        {
+          "type": "assistant",
+          "text": {
+            "de": "Fertig. Vier Tool-Aufrufe, dann hatte ich nichts mehr anzufordern — das ist die Abbruchbedingung.",
+            "en": "Done. Four tool calls, then I had nothing left to request — that is the stopping condition."
+          }
+        },
+        {
+          "type": "note",
+          "text": {
+            "de": "Mehr ist ein „Agent“ nicht: diese Schleife plus Abbruchbedingung. Jeder Durchlauf hängt sein Ergebnis an den Context, und der wächst entsprechend mit.",
+            "en": "That is all an “agent” is: this loop plus a stopping condition. Every pass appends its result to the context, which grows accordingly."
+          }
+        }
+      ]
+    },
+    {
+      "id": "failing-test",
+      "match": [
+        "tests laufen",
+        "run the tests",
+        "gradlew test",
+        "teste",
+        "test aus"
+      ],
+      "steps": [
+        {
+          "type": "tool",
+          "name": "Bash",
+          "arg": "./gradlew test",
+          "tokens": 890,
+          "out": [
+            "BerthAllocationServiceTest > waitingListOrdersByEta FAILED",
+            "    java.lang.NullPointerException",
+            "        at BerthAllocationService.java:248",
+            "128 tests completed, 1 failed"
+          ]
+        },
+        {
+          "type": "assistant",
+          "text": {
+            "de": "Der Stacktrace nennt Datei und Zeile — damit kann ich direkt weiterarbeiten. Genau deshalb gehören Fehler vollständig zurückgemeldet: eine verschluckte Exception hätte mir nur „fehlgeschlagen“ gesagt.",
+            "en": "The stack trace names file and line — that is enough to keep going. This is exactly why errors must be reported in full: a swallowed exception would only have told me “failed”."
+          }
+        },
+        {
+          "type": "tool",
+          "name": "Edit",
+          "arg": "src/main/java/com/terminal/berth/BerthAllocationService.java",
+          "ask": true,
+          "detail": {
+            "de": "Comparator.nullsLast(...) in Zeile 248.",
+            "en": "Comparator.nullsLast(...) on line 248."
+          },
+          "tokens": 240,
+          "out": [
+            "+2 −1"
+          ]
+        },
+        {
+          "type": "tool",
+          "name": "Bash",
+          "arg": "./gradlew test",
+          "tokens": 520,
+          "out": [
+            "BUILD SUCCESSFUL in 33s",
+            "129 tests completed, 0 failed"
+          ]
+        }
+      ]
+    }
+  ]
+}

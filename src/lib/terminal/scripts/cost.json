@@ -1,0 +1,139 @@
+{
+  "_comment": "Cost is shown in tokens, never in prices — prices age faster than this tutorial is maintained. The same task twice, carelessly and deliberately, is the whole argument.",
+
+  "title": { "de": "Dieselbe Aufgabe, ein Zehntel der Token", "en": "The same task, a tenth of the tokens" },
+
+  "strings": {
+    "greeting": {
+      "de": "Zweimal dieselbe Frage, zwei Herangehensweisen. Die Statusline zählt mit — in Token, nicht in Euro, weil Preise schneller altern als dieses Tutorial gepflegt wird.",
+      "en": "The same question twice, two approaches. The status line counts along — in tokens, not in currency, because prices age faster than this tutorial is maintained."
+    }
+  },
+
+  "scenarios": [
+    {
+      "id": "careless",
+      "label": { "de": "Mit Anlauf", "en": "The running start" },
+      "hint": {
+        "de": "Alle Server an, alles gelesen, dann gefragt. Funktioniert — und kostet das Zehnfache.",
+        "en": "All servers on, everything read, then ask. It works — and costs ten times as much."
+      },
+      "reset": true,
+      "mcp": { "jira": true, "confluence": true, "bitbucket": true, "filesystem": true, "postgres": true, "browser": true, "sentry": true },
+      "commands": [
+        { "de": "Lies dich ins Berth-Modul ein und sag mir, wo die ETA verglichen wird", "en": "Read yourself into the berth module and tell me where the ETA is compared" }
+      ]
+    },
+    {
+      "id": "careful",
+      "label": { "de": "Direkt", "en": "Straight at it" },
+      "hint": {
+        "de": "Nur der Server, der gebraucht wird. Grep statt Read. Dieselbe Antwort.",
+        "en": "Only the server that is needed. Grep instead of read. Same answer."
+      },
+      "reset": true,
+      "mcp": { "jira": false, "confluence": false, "bitbucket": false, "filesystem": false, "postgres": false, "browser": false, "sentry": false },
+      "commands": [
+        { "de": "Wo wird die ETA verglichen?", "en": "Where is the ETA compared?" }
+      ]
+    }
+  ],
+
+  "intents": [
+    {
+      "id": "careless",
+      "match": ["lies dich ein", "read yourself into", "berth-modul", "berth module", "einlesen"],
+      "steps": [
+        {
+          "type": "tool",
+          "name": "Glob",
+          "arg": "src/main/java/com/terminal/**/*.java",
+          "tokens": 260,
+          "out": [{ "de": "7 Dateien", "en": "7 files" }]
+        },
+        {
+          "type": "tool",
+          "name": "Read",
+          "arg": "src/main/java/com/terminal/berth/BerthAllocationService.java",
+          "kind": "files",
+          "tokens": 4180,
+          "out": [{ "de": "384 Zeilen", "en": "384 lines" }]
+        },
+        {
+          "type": "tool",
+          "name": "Read",
+          "arg": "src/main/java/com/terminal/berth/BerthAllocationController.java",
+          "kind": "files",
+          "tokens": 1020,
+          "out": [{ "de": "96 Zeilen", "en": "96 lines" }]
+        },
+        {
+          "type": "tool",
+          "name": "Read",
+          "arg": "src/main/java/com/terminal/vessel/Vessel.java",
+          "kind": "files",
+          "tokens": 690,
+          "out": [{ "de": "71 Zeilen", "en": "71 lines" }]
+        },
+        {
+          "type": "tool",
+          "name": "Read",
+          "arg": "src/main/java/com/terminal/yard/ReeferSlotPlanner.java",
+          "kind": "files",
+          "tokens": 2340,
+          "out": [{ "de": "212 Zeilen — mit ETA nichts zu tun", "en": "212 lines — nothing to do with ETA" }]
+        },
+        {
+          "type": "assistant",
+          "text": {
+            "de": "In BerthAllocationService, Zeile 248.",
+            "en": "In BerthAllocationService, line 248."
+          }
+        },
+        { "type": "meter" },
+        {
+          "type": "note",
+          "text": {
+            "de": "Richtige Antwort, vier gelesene Dateien, sieben MCP-Server im Rücken. Drei der vier Dateien waren überflüssig — und bleiben bis zum Sitzungsende im Context, also in jeder weiteren Anfrage.",
+            "en": "Correct answer, four files read, seven MCP servers in tow. Three of the four files were unnecessary — and stay in the context until the session ends, so in every further request."
+          }
+        }
+      ]
+    },
+    {
+      "id": "careful",
+      "match": ["wo wird die eta", "where is the eta", "eta verglichen", "eta compared"],
+      "steps": [
+        {
+          "type": "tool",
+          "name": "Grep",
+          "arg": "getEta\\(\\)",
+          "tokens": 280,
+          "out": ["BerthAllocationService.java:212", "BerthAllocationService.java:248"]
+        },
+        {
+          "type": "assistant",
+          "text": {
+            "de": "In BerthAllocationService, Zeile 248 — Zeile 212 ist nur die Zuweisung.",
+            "en": "In BerthAllocationService, line 248 — line 212 is just the assignment."
+          }
+        },
+        { "type": "meter" },
+        {
+          "type": "note",
+          "text": {
+            "de": "Dieselbe Antwort, ein Zehntel des Contexts. Die drei Hebel waren: nur nötige Server, gezielt suchen statt lesen, und die Frage so stellen, dass sie beantwortbar ist.",
+            "en": "The same answer, a tenth of the context. The three levers were: only the servers you need, search instead of read, and ask a question that can be answered."
+          }
+        },
+        {
+          "type": "note",
+          "text": {
+            "de": "Kostenbewusst heißt nicht sparsam fragen. Es heißt, dem Modell nicht zu geben, was es nicht braucht — und lange Sitzungen rechtzeitig zu beenden statt sie mitzuschleppen.",
+            "en": "Cost-conscious does not mean asking less. It means not handing the model what it does not need — and ending long sessions in time instead of dragging them along."
+          }
+        }
+      ]
+    }
+  ]
+}

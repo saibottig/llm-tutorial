@@ -36,7 +36,7 @@ const related = RELATED.map((slug) => chapters.find((c) => slugOf(c) === slug)).
       <p class="chapterhead__desc">{tr('playground.intro')}</p>
     </header>
 
-    <Terminal locale={locale} variant="full" />
+    <Terminal locale={locale} script="playground" variant="full" />
 
     <p class="pg__hints">
       <b>{tr('playground.hintsTitle')}</b>

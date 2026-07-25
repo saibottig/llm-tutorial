@@ -5,6 +5,8 @@ part: 5
 order: 4
 ---
 
+import Terminal from '../../../components/demos/Terminal.astro';
+
 A **hallucination** is an output that sounds plausible and is wrong: invented sources, non-existent methods, wrong figures with a correct-looking decimal place. The mechanism: the model repeatedly picks the most likely next token — it asks "what fits here?", not "is this true?". Where knowledge is missing, no gap appears but the most plausible continuation — produced by the same rules as a correct answer, and therefore indistinguishable from one.
 
 <Callout type="merke">
@@ -42,6 +44,8 @@ For research with citations: actually fetch every URL given. Invented sources su
 ## The design question
 
 For every place a model output is used further: **what happens if this is pure invention?** "Nothing bad" → grounding suffices. "Nobody would notice and it causes damage" → add a verification stage. The same principle as [prompt injection](../prompt-injection/): control belongs outside the model.
+
+<Terminal script="hallucinations" locale="en" variant="inline" />
 
 <KeyTakeaway>
 - Hallucinations arise from probability, not truth-checking — no fixable defect.

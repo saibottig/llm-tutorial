@@ -5,6 +5,8 @@ part: 4
 order: 1
 ---
 
+import Terminal from '../../../components/demos/Terminal.astro';
+
 Tests für bestehenden Code sind der beste Einstieg in Claude Code — nicht als Verlegenheitslösung, sondern weil das Ergebnis **maschinell prüfbar** ist: Ein Test kompiliert und läuft grün oder nicht. Begrenzter Scope, kein Produktionscode, kleiner Schaden im Fehlerfall. ([Anwendungsfälle finden](../use-cases/) verallgemeinert diese Kriterien.)
 
 ## Der Ablauf in drei Schritten
@@ -44,6 +46,8 @@ Fehlende unbequeme Fälle im Prompt benennen — dann kommen sie auch. Wie man T
 <Callout type="praxis">
 Wirksamster Zuschnitt: **diff-basiert**. „Hier ist mein Branch-Diff — Tests für das geänderte Verhalten" statt „teste dieses Modul". Kleiner Context, scharfe Aufgabe, prüfbares Ergebnis.
 </Callout>
+
+<Terminal script="unit-tests" locale="de" variant="inline" />
 
 <KeyTakeaway>
 - Unit-Tests sind der ideale Einstieg: begrenzter Scope, maschinell prüfbar, kein Produktionscode.

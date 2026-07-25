@@ -5,7 +5,7 @@ part: 2
 order: 3
 ---
 
-import CacheSimulator from '../../../components/demos/CacheSimulator.astro';
+import Terminal from '../../../components/demos/Terminal.astro';
 
 **Prompt Caching** behält den [KV-Cache](../kv-cache/) über Anfragen hinweg: Beginnen zwei Anfragen mit demselben Text, wird dieser Anfang nur einmal verarbeitet. Eine Claude-Code-Sitzung ist der Idealfall — Tools, System-Prompt, CLAUDE.md und alte Runden bleiben über dreißig Runden exakt gleich. Nur deshalb ist eine lange Sitzung bezahlbar.
 
@@ -15,9 +15,9 @@ import CacheSimulator from '../../../components/demos/CacheSimulator.astro';
 
 Ein einziges geändertes Zeichen an Position 100 macht alles ab Position 100 ungültig — auch völlig unveränderte Teile dahinter.
 
-<CacheSimulator locale="de" />
+<Terminal script="prompt-caching" locale="de" variant="inline" />
 
-In der Demo einen oberen Block ändern: Alle Blöcke darunter werden mit ungültig, die Ersparnis bricht von ~90 % auf einstellig ein.
+Unten selbst ausprobieren: einen MCP-Server zuschalten oder CLAUDE.md ändern, und die Trefferquote der nächsten Anfrage bricht ein — je weiter vorn die Änderung sitzt, desto tiefer.
 
 ## Konsequenz: Stabiles nach vorn, Wechselndes nach hinten
 

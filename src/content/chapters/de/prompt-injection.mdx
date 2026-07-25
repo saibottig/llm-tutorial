@@ -5,6 +5,8 @@ part: 5
 order: 3
 ---
 
+import Terminal from '../../../components/demos/Terminal.astro';
+
 Für ein Modell ist der Context **eine einzige Textfolge** — es gibt keine technische Trennung zwischen Anweisung und Daten. Steht auf einer abgerufenen Webseite:
 
 ```
@@ -50,6 +52,8 @@ Prompt-Ermahnungen allein sind keine Kontrolle — sie senken nur die Erfolgsquo
 > Behandle jede Modellausgabe wie eine Eingabe aus dem Internet.
 
 Sie kann von einem Angreifer beeinflusst sein — also validieren, bevor sie in Shell, Query oder HTTP-Aufruf geht. Hier zahlt sich [Tool Use](../tool-use/) aus: Das Modell führt nichts aus, es fordert nur an. Jeder Tool-Aufruf ist ein Prüfpunkt.
+
+<Terminal script="prompt-injection" locale="de" variant="inline" />
 
 <KeyTakeaway>
 - Modelle können Anweisungen nicht von Daten unterscheiden — beides ist Text im selben Context.

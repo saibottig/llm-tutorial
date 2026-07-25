@@ -5,6 +5,8 @@ part: 2
 order: 1
 ---
 
+import Terminal from '../../../components/demos/Terminal.astro';
+
 Der **KV-Cache** ist der Mechanismus hinter zwei Alltagsbeobachtungen: warum lange Kontexte teuer sind und warum [Prompt Caching](../prompt-caching/) so viel spart.
 
 ## Problem und Lösung in vier Sätzen
@@ -40,6 +42,8 @@ Drei Techniken, die in Modellbeschreibungen auftauchen:
 ## Die Brücke zum nächsten Kapitel
 
 Der KV-Cache lebt normalerweise nur eine Anfrage lang. Ihn über Anfragen hinweg zu behalten, wenn der Anfang gleich bleibt, ist **Prompt Caching** — der größte Kostenhebel überhaupt, gerade für Claude-Code-Sitzungen mit ihrem stabilen Anfang. [Weiter dort](../prompt-caching/).
+
+<Terminal script="kv-cache" locale="de" variant="inline" />
 
 <KeyTakeaway>
 - Der KV-Cache speichert die Zwischenwerte verarbeiteter Token — aus quadratischem Aufwand wird linearer.

@@ -5,6 +5,8 @@ part: 5
 order: 1
 ---
 
+import Terminal from '../../../components/demos/Terminal.astro';
+
 Billing is per token, input and output separately. The surprising truth behind it: **in Claude Code sessions, input dominates at 80–95 % of cost** — although output is about five times more expensive per token. The reason is in the [Context](../context/) chapter: every turn resends the entire history; turn 30 pays for the beginning for the thirtieth time.
 
 <Deep title="Price structure of the model classes">
@@ -57,6 +59,8 @@ As soon as Claude Code runs headless in a pipeline ([Agentic Workflows](../agent
 - **Measure per operation, not per request** — one pipeline run is easily fifty calls.
 - **Plan for the worst case** — costs are right-skewed: most operations cheap, a few explode.
 - **Hard ceilings per operation** — without a limit, a loop is not a glitch but a bill → [Multi-Agent](../multi-agent/).
+
+<Terminal script="cost" locale="en" variant="inline" />
 
 <KeyTakeaway>
 - Input dominates at 80–95 % because the history travels every turn — saving means saving context.

@@ -5,6 +5,8 @@ part: 5
 order: 5
 ---
 
+import Terminal from '../../../components/demos/Terminal.astro';
+
 Man schärft die CLAUDE.md oder einen Skill nach, das nächste Ergebnis sieht besser aus — Änderung oder Zufall? Ohne Messung ist das nicht zu beantworten. **Evals** sind die Antwort: eine feste Menge Testfälle mit definierter Bewertung, gegen die jede Änderung läuft.
 
 Warum Ausprobieren nicht reicht:
@@ -50,6 +52,8 @@ Der größte Nutzen ist **Regressionsschutz**: Jeder Fall, der einmal falsch war
 Nach Monaten [Unit-Tests mit Claude Code](../unit-tests/): Ist die Testqualität gestiegen — oder nur die Anzahl? Zeilenabdeckung beantwortet das nicht (ein nachbetender Test deckt viel ab und findet nichts). Ehrlicher: **Mutation Testing** (Java: PIT) — baut gezielt Fehler in den Produktionscode ein und misst, wie viele die Tests bemerken. Auf je ein Modul mit generierten und handgeschriebenen Tests angewendet, zeigt es, ob die generierte Suite prüft oder nur grün ist.
 
 Fast alles in diesem Tutorial ist eine messbare Änderung: Modellwahl, CLAUDE.md-Umbau, weniger [MCP-Server](../mcp/), anderer [Sub-Agenten](../multi-agent/)-Zuschnitt, Prüfstufe gegen [Halluzinationen](../hallucinations/). Ohne Evals sind das Vermutungen — mit Evals Entscheidungen.
+
+<Terminal script="evals" locale="de" variant="inline" />
 
 <KeyTakeaway>
 - Modelle sind nicht deterministisch — Einzelläufe und Eindrücke taugen nicht als Beleg.

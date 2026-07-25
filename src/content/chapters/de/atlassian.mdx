@@ -5,6 +5,8 @@ part: 4
 order: 3
 ---
 
+import Terminal from '../../../components/demos/Terminal.astro';
+
 Der Arbeitstag beginnt mit einem Jira-Ticket und endet mit einem Bitbucket-PR — über [MCP](../mcp/) erreicht Claude Code alle Stationen dazwischen. Cloud: offizieller Atlassian-Remote-Server (einmal OAuth). Data Center: Community-Server per `claude mcp add`. Was freigeschaltet ist, regelt die [zentrale Konfiguration](../claude-code/).
 
 ## Der Durchstich in fünf Schritten
@@ -32,6 +34,8 @@ Ein falscher Kommentar am falschen Ticket ist öffentlich; eine falsch editierte
 <Callout type="achtung">
 Alles über MCP Gelesene ist fremder Input: Ticket-Texte, Kommentare und Confluence-Seiten können Text enthalten, der wie eine Anweisung aussieht — und Claude kann ihn als Auftrag interpretieren. Warum das strukturell schwer verhinderbar ist: [Prompt Injection](../prompt-injection/).
 </Callout>
+
+<Terminal script="atlassian" locale="de" variant="inline" />
 
 <KeyTakeaway>
 - Über Atlassian-MCP erreicht Claude Code Jira, Confluence und Bitbucket — vom Ticket bis zum PR.

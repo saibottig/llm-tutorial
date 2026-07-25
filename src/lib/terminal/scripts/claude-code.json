@@ -1,0 +1,98 @@
+{
+  "_comment": "The harness chapter. The session shows what Claude Code assembles before the model ever sees a word, and what the slash commands actually do to it.",
+
+  "title": { "de": "Was der Harness mitschickt", "en": "What the harness sends along" },
+
+  "strings": {
+    "greeting": {
+      "de": "Diese Sitzung ist leer — und trotzdem nicht kostenlos. /context zeigt, was Claude Code vor deinem ersten Wort zusammenstellt.",
+      "en": "This session is empty — and still not free. /context shows what Claude Code assembles before your first word."
+    }
+  },
+
+  "scenarios": [
+    {
+      "id": "before-you-type",
+      "label": { "de": "Bevor du tippst", "en": "Before you type" },
+      "hint": {
+        "de": "System-Prompt, CLAUDE.md, Tool-Definitionen, MCP — das ist der Harness bei der Arbeit.",
+        "en": "System prompt, CLAUDE.md, tool definitions, MCP — that is the harness at work."
+      },
+      "reset": true,
+      "commands": ["/context"]
+    },
+    {
+      "id": "diagnose",
+      "label": { "de": "Erste Diagnose bei seltsamem Verhalten", "en": "First diagnosis when it behaves oddly" },
+      "hint": {
+        "de": "Nicht „welches Modell?“, sondern „was stand im Context?“.",
+        "en": "Not “which model?” but “what was in the context?”."
+      },
+      "reset": true,
+      "commands": [
+        { "de": "Warum benutzt du überall JUnit 4?", "en": "Why are you using JUnit 4 everywhere?" },
+        "/context"
+      ]
+    },
+    {
+      "id": "housekeeping",
+      "label": { "de": "Aufräumen: /compact und /clear", "en": "Housekeeping: /compact and /clear" },
+      "hint": {
+        "de": "Der Unterschied zwischen zusammenfassen und wegwerfen — und was beides nicht kann.",
+        "en": "The difference between summarising and discarding — and what neither can do."
+      },
+      "reset": true,
+      "commands": [
+        { "de": "Warum benutzt du überall JUnit 4?", "en": "Why are you using JUnit 4 everywhere?" },
+        "/compact",
+        "/clear",
+        "/context"
+      ]
+    }
+  ],
+
+  "intents": [
+    {
+      "id": "stale-claudemd",
+      "match": ["junit 4", "junit4", "warum benutzt", "why are you using", "veraltet", "outdated"],
+      "steps": [
+        {
+          "type": "assistant",
+          "text": {
+            "de": "Weil es so in den Projektanweisungen steht, die ich bei jeder Anfrage bekomme. Ich sehe nach.",
+            "en": "Because that is what the project instructions I receive with every request say. Let me look."
+          }
+        },
+        {
+          "type": "tool",
+          "name": "Read",
+          "arg": "CLAUDE.md",
+          "kind": "files",
+          "tokens": 1150,
+          "out": ["Tests: JUnit 4 + Mockito, keine AssertJ-Assertions"]
+        },
+        {
+          "type": "tool",
+          "name": "Grep",
+          "arg": "org.junit.jupiter",
+          "tokens": 190,
+          "out": [{ "de": "112 Treffer in 34 Dateien", "en": "112 matches in 34 files" }]
+        },
+        {
+          "type": "assistant",
+          "text": {
+            "de": "Das Projekt ist längst auf JUnit 5 — nur CLAUDE.md nicht. Nicht das Modell lag falsch, sondern das, was ihm mitgegeben wurde.",
+            "en": "The project moved to JUnit 5 long ago — only CLAUDE.md did not. The model was not wrong; what it was handed was."
+          }
+        },
+        {
+          "type": "note",
+          "text": {
+            "de": "Genau das ist die häufigste Ursache für seltsames Verhalten: etwas Veraltetes im Context. Deshalb ist /context die erste Frage, nicht die Modellwahl.",
+            "en": "That is the most common cause of odd behaviour: something outdated in the context. Which is why /context is the first question, not the choice of model."
+          }
+        }
+      ]
+    }
+  ]
+}

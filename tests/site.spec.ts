@@ -130,10 +130,17 @@ test.describe('source guards', () => {
     expect(source).not.toContain('getElementById');
   });
 
-  test('the MCP figures have a single source', async () => {
-    const demo = await readFile('src/components/demos/McpCost.astro', 'utf8');
-    expect(demo).toContain("from '../../lib/terminal/world'");
-    // The presets must not be re-declared next to the import.
-    expect(demo).not.toMatch(/const SERVERS\s*=\s*\[/);
+  test('chapter content is resolved at build time, not shipped twice', async () => {
+    const source = await readFile('src/components/demos/Terminal.astro', 'utf8');
+    // The client script must not import a script file: the whole point of
+    // resolving in frontmatter is that a page carries one chapter, one language.
+    const client = source.slice(source.indexOf('<script>'));
+    expect(client).not.toMatch(/from '\.\.\/\.\.\/lib\/terminal\/scripts/);
+  });
+
+  test('the deleted demos are really gone', async () => {
+    for (const name of ['Tokenizer', 'ContextWindow', 'PrefillDecode', 'CacheSimulator', 'McpCost']) {
+      await expect(readFile(`src/components/demos/${name}.astro`, 'utf8')).rejects.toThrow();
+    }
   });
 });

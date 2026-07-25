@@ -5,7 +5,7 @@ part: 2
 order: 3
 ---
 
-import CacheSimulator from '../../../components/demos/CacheSimulator.astro';
+import Terminal from '../../../components/demos/Terminal.astro';
 
 **Prompt caching** keeps the [KV cache](../kv-cache/) across requests: when two requests begin with the same text, that beginning is processed only once. A Claude Code session is the ideal case — tools, system prompt, CLAUDE.md and old turns stay exactly the same across thirty turns. That alone is what makes a long session affordable.
 
@@ -15,9 +15,9 @@ import CacheSimulator from '../../../components/demos/CacheSimulator.astro';
 
 A single changed character at position 100 invalidates everything from position 100 on — including completely unchanged parts behind it.
 
-<CacheSimulator locale="en" />
+<Terminal script="prompt-caching" locale="en" variant="inline" />
 
-Edit an upper block in the demo: every block below it is invalidated too, and the saving collapses from ~90 % to single digits.
+Try it below: switch on an MCP server or edit CLAUDE.md, and the hit rate of the next request collapses — the further forward the change sits, the harder it falls.
 
 ## Consequence: stable to the front, changing to the back
 

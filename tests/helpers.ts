@@ -50,11 +50,13 @@ export class Terminal {
    * the page, so a replayed scenario is not mistaken for finished between two of
    * its commands.
    */
-  async settle(timeout = 30_000) {
+  async settle(timeout = 60_000) {
     await this.page.waitForFunction(
       () => {
         const nodes = [...document.querySelectorAll<HTMLElement>('[data-terminal]')];
-        return nodes.every((n) => n.dataset.busy !== 'true');
+        // `busy` alone drops between the commands a scenario replays, which
+        // reads as "finished" far too early; `running` covers the whole replay.
+        return nodes.every((n) => n.dataset.busy !== 'true' && n.dataset.running !== 'true');
       },
       undefined,
       { timeout },
@@ -64,6 +66,16 @@ export class Terminal {
   async run(line: string) {
     await this.type(line);
     await this.settle();
+  }
+
+  /** Replays a scenario and waits for all of it. */
+  async play(id: string) {
+    await this.scenario(id).click();
+    await this.settle();
+  }
+
+  rule(id: string) {
+    return this.root.locator(`[data-rule="${id}"]`);
   }
 
   /** Context tokens as a number, e.g. "Context ≈27.7k / 200k …" → 27.7. */

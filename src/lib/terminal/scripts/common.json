@@ -1,0 +1,198 @@
+{
+  "_comment": "Shared terminal text: chrome, slash-command output, block labels and the default fallback. Chapter-specific content lives next to this file, one <slug>.json per chapter. Entries carry de and en side by side so a gap is visible while reading, and scripts/check-translations.mjs refuses to build without both. Plain strings are language-neutral on purpose: commands, paths, code and build output are not translated.",
+
+  "strings": {
+    "title": { "de": "Simulierte Claude-Code-Sitzung", "en": "Simulated Claude Code session" },
+    "placeholder": { "de": "Prompt eingeben oder /help …", "en": "Type a prompt or /help …" },
+    "run": { "de": "Ausführen", "en": "Run" },
+    "reset": { "de": "Sitzung zurücksetzen", "en": "Reset session" },
+    "scenarios": { "de": "Szenarien", "en": "Scenarios" },
+    "servers": { "de": "MCP-Server", "en": "MCP servers" },
+    "rulesPanel": { "de": "Permissions", "en": "Permissions" },
+    "skip": { "de": "Esc überspringt die Animation", "en": "Esc skips the animation" },
+    "openFull": {
+      "de": "Im vollen Playground weiterspielen →",
+      "en": "Keep playing in the full playground →"
+    },
+    "note": {
+      "de": "Simulation: Die Tool-Ausgaben sind hinterlegt, kein Modell und kein Server werden angefragt. Die Token-Zahlen sind realistische Größenordnungen aus dem Tutorial, keine Live-Messung; eigene Eingaben werden geschätzt (≈), bis der echte Tokenizer geladen ist.",
+      "en": "Simulated: tool output is scripted, no model and no server is called. The token figures are realistic orders of magnitude taken from the tutorial, not a live measurement; your own input is estimated (≈) until the real tokenizer is loaded."
+    },
+
+    "permission": { "de": "Freigabe nötig", "en": "Approval needed" },
+    "allow": { "de": "Erlauben (y)", "en": "Allow (y)" },
+    "deny": { "de": "Ablehnen (n)", "en": "Deny (n)" },
+    "allowed": { "de": "Erlaubt", "en": "Allowed" },
+    "deniedShort": { "de": "Abgelehnt", "en": "Denied" },
+    "denied": {
+      "de": "Abgelehnt. Der Tool-Aufruf wurde nicht ausgeführt, der Agent bricht den Schritt ab. Genau hier greift die Kontrolle: das Modell fordert an, ausgeführt wird erst nach Freigabe.",
+      "en": "Denied. The tool call was not executed and the agent stops there. This is exactly where control sits: the model requests, execution happens only after approval."
+    },
+    "blocked": {
+      "de": "Von einer Regel blockiert — es wurde nicht einmal gefragt. Das Modell hat den Aufruf formuliert, das Harness hat ihn verworfen.",
+      "en": "Blocked by a rule — nothing was even asked. The model formulated the call, the harness dropped it."
+    },
+    "autoAllowed": {
+      "de": "Ohne Rückfrage gelaufen: eine Regel erlaubt genau diesen Aufruf.",
+      "en": "Ran without asking: a rule allows exactly this call."
+    },
+
+    "context": { "de": "Context", "en": "Context" },
+    "tool": { "de": "Tool-Aufruf", "en": "tool call" },
+    "tools": { "de": "Tool-Aufrufe", "en": "tool calls" },
+    "turn": { "de": "Runde", "en": "turn" },
+    "turns": { "de": "Runden", "en": "turns" },
+
+    "cacheReport": {
+      "de": "Diese Anfrage: {cached} Token aus dem Cache, {fresh} neu berechnet ({share} % Treffer).",
+      "en": "This request: {cached} tokens from cache, {fresh} recomputed ({share} % hit)."
+    },
+    "cacheCold": {
+      "de": "Erste Anfrage der Sitzung — es gibt noch nichts zu treffen, alles wird berechnet.",
+      "en": "First request of the session — there is nothing to hit yet, everything is computed."
+    },
+    "invalidated": {
+      "de": "Cache ab „{block}“ ungültig: {why} Alles davor bleibt gültig, alles danach wird neu berechnet.",
+      "en": "Cache invalid from “{block}” on: {why} Everything before it stays valid, everything after is recomputed."
+    },
+
+    "subagent": { "de": "Sub-Agent", "en": "Sub-agent" },
+    "subagentReturn": {
+      "de": "{tokens} Token im eigenen Fenster verbraucht, {summary} kommen zurück. Der Rest hat den Hauptthread nie berührt.",
+      "en": "{tokens} tokens spent in its own window, {summary} come back. The rest never touched the main thread."
+    },
+
+    "foreign": { "de": "Fremder Text", "en": "Foreign text" },
+    "injected": {
+      "de": "Hier steckt eine Anweisung im Inhalt. Für das Modell ist das dieselbe Textsorte wie dein Prompt — es gibt keinen technischen Unterschied.",
+      "en": "There is an instruction inside that content. To the model it is the same kind of text as your prompt — there is no technical difference."
+    },
+
+    "prefill": { "de": "Prefill", "en": "Prefill" },
+    "decode": { "de": "Decode", "en": "Decode" },
+    "ttft": { "de": "bis zum ersten Token", "en": "to first token" },
+    "speed": { "de": "Token/s", "en": "tokens/s" },
+    "generateNote": {
+      "de": "Prefill verarbeitet {prompt} Prompt-Token auf einmal. Decode erzeugt {output} Token nacheinander — jedes einzeln, jedes mit dem ganzen Modell.",
+      "en": "Prefill processes {prompt} prompt tokens at once. Decode produces {output} tokens one after another — each on its own, each through the whole model."
+    },
+
+    "chipsSummary": {
+      "de": "{tokens} Token, {chars} Zeichen — {ratio} Zeichen pro Token.",
+      "en": "{tokens} tokens, {chars} characters — {ratio} characters per token."
+    },
+    "compareCurrent": { "de": "aktuell", "en": "current" },
+    "compareOlder": { "de": "älter", "en": "older" },
+    "compareNote": {
+      "de": "Aufschlag für Deutsch gegenüber demselben Inhalt auf Englisch, hier beim Bauen der Seite gemessen. Derselbe Text, zwei Tokenizer-Generationen — die Zahl hängt am Modell, nicht am Text. Die verbreitete Regel „Deutsch kostet 2–3×“ stammt aus der Zeit der unteren Zeile.",
+      "en": "Surcharge for German against the same content in English, measured here while the page was built. Same text, two tokenizer generations — the number depends on the model, not the text. The common rule of thumb “German costs 2–3×” dates from the era of the lower row."
+    },
+    "tokensUsage": {
+      "de": "Nutzung: /tokens <text> — zerlegt den Text so, wie das Modell ihn sieht.",
+      "en": "Usage: /tokens <text> — splits the text the way the model sees it."
+    },
+    "tokensLoading": { "de": "Lade Tokenizer (~1 MB) …", "en": "Loading tokenizer (~1 MB) …" },
+
+    "exact": { "de": "Eingaben exakt tokenisieren", "en": "Tokenize input exactly" },
+    "exactLoading": { "de": "Lade Tokenizer …", "en": "Loading tokenizer …" },
+    "exactDone": {
+      "de": "Eingaben werden exakt tokenisiert (o200k_base).",
+      "en": "Input is tokenized exactly (o200k_base)."
+    },
+    "exactError": {
+      "de": "Tokenizer konnte nicht geladen werden — Schätzung bleibt aktiv.",
+      "en": "Could not load the tokenizer — the estimate stays active."
+    },
+
+    "greeting": {
+      "de": "Simulierte Sitzung in ~/projekte/terminal-suite — Spring Boot 3, Gradle, 7 Java-Dateien. Tippe /help, oder klick oben ein Szenario an.",
+      "en": "Simulated session in ~/projects/terminal-suite — Spring Boot 3, Gradle, 7 Java files. Type /help, or pick a scenario above."
+    },
+    "greetingInline": {
+      "de": "Klick oben auf das Szenario — die Sitzung läuft dann Schritt für Schritt ab.",
+      "en": "Click the scenario above — the session then plays out step by step."
+    },
+
+    "modelLine": {
+      "de": "Opus 5 · Context-Fenster 200.000 Token · Simulation, keine echte Sitzung",
+      "en": "Opus 5 · context window 200,000 tokens · simulated, not a live session"
+    },
+    "mcpUsage": {
+      "de": "Nutzung: /mcp on jira · /mcp off confluence — die Server-IDs stehen links.",
+      "en": "Usage: /mcp on jira · /mcp off confluence — the server ids are listed on the left."
+    },
+    "noRules": {
+      "de": "Diese Sitzung hat keine Regelliste — Freigaben entscheidet der Aufruf selbst.",
+      "en": "This session has no rule list — each call decides its own approval."
+    },
+    "unknownCommand": {
+      "de": "Unbekannter Befehl. /help zeigt, was hier hinterlegt ist.",
+      "en": "Unknown command. /help lists what is available here."
+    },
+    "cleared": {
+      "de": "Sitzung zurückgesetzt. System-Prompt, CLAUDE.md und Tool-Definitionen sind sofort wieder da — sie gehören nicht zum Verlauf, sondern zu jeder Anfrage.",
+      "en": "Session reset. System prompt, CLAUDE.md and tool definitions are back immediately — they are not part of the history, they are part of every request."
+    },
+    "compacted": {
+      "de": "Verlauf komprimiert: {before} → {after} Token. Zusammengefasst wurden nur Verlauf, Dateien und Antworten ({kept} Token bleiben als Zusammenfassung). System-Prompt, Tools und MCP-Definitionen bleiben unangetastet — die schickt der Harness bei jeder Anfrage neu.",
+      "en": "History compacted: {before} → {after} tokens. Only history, files and output were summarised ({kept} tokens remain as the summary). System prompt, tools and MCP definitions are untouched — the harness re-sends those on every request."
+    },
+    "overflow": {
+      "de": "Context Window übergelaufen. In einer echten Sitzung bricht die Anfrage hier ab oder Compaction springt automatisch an.",
+      "en": "Context window overflowed. In a real session the request fails here, or compaction kicks in automatically."
+    },
+    "requiresMissing": {
+      "de": "Dafür braucht der Agent Zugriff auf: {servers}. Der Server ist gerade aus — einschalten mit /mcp on <id>.",
+      "en": "The agent needs access to: {servers}. That server is currently off — switch it on with /mcp on <id>."
+    }
+  },
+
+  "blocks": {
+    "system": { "de": "System-Prompt + CLAUDE.md", "en": "System prompt + CLAUDE.md" },
+    "tools": { "de": "Eingebaute Tools", "en": "Built-in tools" },
+    "mcp": { "de": "MCP-Server", "en": "MCP servers" },
+    "files": { "de": "Gelesene Dateien", "en": "Files read" },
+    "history": { "de": "Verlauf", "en": "Conversation history" },
+    "output": { "de": "Antworten", "en": "Model output" }
+  },
+
+  "help": [
+    { "de": "Slash-Commands:", "en": "Slash commands:" },
+    "  /context            → Aufschlüsselung · breakdown",
+    "  /cache              → Cache-Treffer der letzten Anfrage · cache hit of the last request",
+    "  /compact            → Verlauf zusammenfassen · summarise history",
+    "  /clear              → Sitzung zurücksetzen · reset the session",
+    "  /tokens <text>      → Text zerlegen · split text into tokens",
+    "  /mcp [on|off] <id>  → MCP-Server schalten · toggle a server",
+    "  /permissions        → geltende Regeln · active rules",
+    "  /model              → Modell und Fenstergröße · model and window size",
+    {
+      "de": "Alles ohne / ist ein Prompt an das Modell. Die Szenarien oben zeigen, was in diesem Kapitel hinterlegt ist.",
+      "en": "Anything without a / is a prompt to the model. The scenarios above show what is scripted for this chapter."
+    }
+  ],
+
+  "fallback": [
+    {
+      "type": "assistant",
+      "text": {
+        "de": "Dazu ist in dieser Simulation nichts hinterlegt — ich sehe mich trotzdem kurz im Projekt um, damit du siehst, was ein Prompt an Context kostet.",
+        "en": "Nothing is scripted for that in this simulation — but I will still look around the project, so you can see what a prompt costs in context."
+      }
+    },
+    {
+      "type": "tool",
+      "name": "Glob",
+      "arg": "**/*.java",
+      "tokens": 260,
+      "out": [{ "de": "7 Dateien", "en": "7 files" }]
+    },
+    {
+      "type": "note",
+      "text": {
+        "de": "Nimm eines der Szenarien oben — sie führen genau das vor, worum es in diesem Kapitel geht.",
+        "en": "Pick one of the scenarios above — they demonstrate exactly what this chapter is about."
+      }
+    }
+  ]
+}

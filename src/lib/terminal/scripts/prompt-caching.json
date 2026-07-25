@@ -1,0 +1,183 @@
+{
+  "_comment": "Replaces the cache simulator. Instead of abstract blocks, the same session run twice — once leaving the prefix alone, once touching it early.",
+  "title": {
+    "de": "Was der Cache trägt — und was ihn kippt",
+    "en": "What the cache carries — and what topples it"
+  },
+  "strings": {
+    "greeting": {
+      "de": "Nach jeder Anfrage zeigt /cache, wie viel aus dem Cache kam. Interessant wird es, sobald du etwas weit vorne änderst.",
+      "en": "After every request, /cache shows how much came from cache. It gets interesting as soon as you change something near the front."
+    }
+  },
+  "scenarios": [
+    {
+      "id": "warm",
+      "label": {
+        "de": "Cache läuft warm",
+        "en": "The cache warms up"
+      },
+      "hint": {
+        "de": "Drei Runden hintereinander — die Trefferquote steigt, weil der Anfang stehen bleibt.",
+        "en": "Three turns in a row — the hit rate climbs because the front stays put."
+      },
+      "reset": true,
+      "commands": [
+        {
+          "de": "Welche Klasse plant die Liegeplätze?",
+          "en": "Which class plans the berths?"
+        },
+        "/cache",
+        {
+          "de": "Und was passiert bei einer Kollision?",
+          "en": "And what happens on a collision?"
+        },
+        "/cache"
+      ]
+    },
+    {
+      "id": "break",
+      "label": {
+        "de": "Ein Server an, Cache hin",
+        "en": "One server on, cache gone"
+      },
+      "hint": {
+        "de": "MCP steht vor den Dateien. Ein Schalter dort entwertet alles dahinter.",
+        "en": "MCP sits in front of the files. One switch there devalues everything behind it."
+      },
+      "reset": true,
+      "commands": [
+        {
+          "de": "Welche Klasse plant die Liegeplätze?",
+          "en": "Which class plans the berths?"
+        },
+        "/cache",
+        "/mcp on sentry",
+        {
+          "de": "Und was passiert bei einer Kollision?",
+          "en": "And what happens on a collision?"
+        },
+        "/cache"
+      ]
+    },
+    {
+      "id": "claudemd",
+      "label": {
+        "de": "CLAUDE.md mitten in der Sitzung ändern",
+        "en": "Editing CLAUDE.md mid-session"
+      },
+      "hint": {
+        "de": "Der schlimmste Ort für eine Änderung: ganz vorne. Die nächste Anfrage trifft nichts mehr.",
+        "en": "The worst place for a change: right at the front. The next request hits nothing at all."
+      },
+      "reset": true,
+      "commands": [
+        {
+          "de": "Welche Klasse plant die Liegeplätze?",
+          "en": "Which class plans the berths?"
+        },
+        "/cache",
+        {
+          "de": "Ergänze die Testregel in CLAUDE.md",
+          "en": "Add the testing rule to CLAUDE.md"
+        },
+        "/cache"
+      ]
+    }
+  ],
+  "intents": [
+    {
+      "id": "which-class",
+      "match": [
+        "welche klasse",
+        "which class",
+        "liegeplätze",
+        "liegeplatze",
+        "berths",
+        "plant"
+      ],
+      "steps": [
+        {
+          "type": "tool",
+          "name": "Read",
+          "arg": "src/main/java/com/terminal/berth/BerthAllocationService.java",
+          "kind": "files",
+          "tokens": 4180,
+          "out": [
+            {
+              "de": "384 Zeilen",
+              "en": "384 lines"
+            }
+          ]
+        },
+        {
+          "type": "assistant",
+          "text": {
+            "de": "BerthAllocationService — Tiefgang, Länge, Zeitfenster.",
+            "en": "BerthAllocationService — draft, length, time window."
+          }
+        }
+      ]
+    },
+    {
+      "id": "collision",
+      "match": [
+        "kollision",
+        "collision",
+        "was passiert",
+        "what happens"
+      ],
+      "steps": [
+        {
+          "type": "assistant",
+          "text": {
+            "de": "Der frühere bestätigte ETA gewinnt, der andere Anlauf geht auf die Warteliste.",
+            "en": "The earlier confirmed ETA wins, the other call goes on the waiting list."
+          }
+        }
+      ]
+    },
+    {
+      "id": "edit-claudemd",
+      "match": [
+        "claude.md",
+        "claudemd",
+        "testregel",
+        "testing rule",
+        "ergänze die",
+        "add the testing"
+      ],
+      "steps": [
+        {
+          "type": "tool",
+          "name": "Edit",
+          "arg": "CLAUDE.md",
+          "ask": true,
+          "detail": {
+            "de": "Eine Zeile in CLAUDE.md — die Datei, die ganz am Anfang jeder Anfrage steht.",
+            "en": "One line in CLAUDE.md — the file that sits at the very front of every request."
+          },
+          "tokens": 120,
+          "out": [
+            "+1 −0"
+          ]
+        },
+        {
+          "type": "invalidate",
+          "at": "system",
+          "why": {
+            "de": "CLAUDE.md wurde geändert.",
+            "en": "CLAUDE.md was edited."
+          }
+        },
+        {
+          "type": "note",
+          "text": {
+            "de": "Deshalb gehört Wechselndes ans Ende und Stabiles nach vorn: System-Prompt und CLAUDE.md ändert man zwischen Sitzungen, nicht mittendrin.",
+            "en": "This is why volatile things belong at the end and stable things at the front: system prompt and CLAUDE.md are changed between sessions, not in the middle of one."
+          }
+        }
+      ]
+    }
+  ]
+}
