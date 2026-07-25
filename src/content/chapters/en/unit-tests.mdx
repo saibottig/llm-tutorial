@@ -1,0 +1,58 @@
+---
+title: 'The First Use Case: Unit Tests'
+description: How "just write some tests" becomes a reliable workflow — with verification instead of hope.
+part: 4
+order: 1
+---
+
+For most people in the company it is their first contact with Claude Code: having tests written for existing code. That is no accident and no makeshift job — it is the best entry point there is.
+
+The reason: the result is **machine-checkable**. A test compiles and runs green, or it does not. The scope is bounded, no production code is touched, and a bad test does less damage than a bad feature. Exactly the properties the [Finding Use Cases](../use-cases/) chapter later generalises into an evaluation grid.
+
+## The workflow that works
+
+Using a service from the vessel domain as the example:
+
+**1. State the task with context.** Not "write tests for the BerthAllocationService", but: which class, which methods, what is the expected behaviour? Claude Code reads the class and its dependencies itself — but it helps to point at the particulars: "The quay wall has draught restrictions; the interesting case is a vessel that can only berth at high tide."
+
+**2. Conventions come from the [CLAUDE.md](../setup/).** If it says "JUnit 5, Mockito, AssertJ, slices over `@SpringBootTest`", nobody has to repeat that in every prompt — and the results look like the team wrote them.
+
+**3. Claude writes, runs, fixes.** This is the decisive step: Claude Code should **execute the tests itself** (`./gradlew test --tests "BerthAllocationServiceTest"`) and iterate on failures until they pass. A test that has never run is a text suggestion, not a test.
+
+<Callout type="merke">
+The verification loop is the single most important habit when working with Claude Code: always give the model a way to check its own result. With tests, that way is built in — which is why this use case works so well. For everything else you have to create it deliberately.
+</Callout>
+
+## Spring Boot and Angular specifics
+
+**Test slices over full context.** `@WebMvcTest` for controllers, `@DataJpaTest` for repositories, plain unit tests with Mockito for domain logic. A `@SpringBootTest` that boots the whole context makes the verification loop sluggish — and Claude then iterates less, because every run costs minutes.
+
+**Mock deliberately.** Mockito stubs for external dependencies (`TidalWindowClient`, `CraneScheduleRepository`), `ArgumentCaptor` where the behaviour at the boundary matters. What Claude tends to overdo: mocks for things that could just as well be instantiated for real.
+
+**In the Angular frontend** the same pattern applies with `TestBed` and Jest or Karma: component, expected behaviour, `ng test` as verification. Here too the workspace's CLAUDE.md pays off.
+
+## Where generated tests fail
+
+<Callout type="korrektur">
+"The tests are green, so they are good" — the most common fallacy when starting out. Green only means: the test does not contradict the current implementation. A test that parrots the implementation line by line — verifying every mock call instead of checking domain behaviour — is green and still worthless: it breaks on every refactoring and finds not a single bug.
+</Callout>
+
+What to look for in review:
+
+- **Does it test behaviour or implementation?** "A draught above the limit rejects the berth" is behaviour. "`repository.save()` was called once" is usually implementation.
+- **Are the uncomfortable cases missing?** Boundary values, empty lists, timezones — exactly what tests are for. Name them in the prompt and you get them.
+- **Is anything trivially tested?** Getter and constructor tests inflate the suite without securing anything.
+
+Human review therefore stays part of the workflow — how to measure quality systematically beyond spot checks is the subject of the [Evals](../evals/) chapter.
+
+<Callout type="praxis">
+The most effective framing in practice: work diff-based. Not "test this module", but "here is my branch diff — write tests for the changed behaviour". That keeps the context small, the task sharp and the result checkable.
+</Callout>
+
+<KeyTakeaway>
+- Unit tests are the ideal entry point: bounded scope, no production code, a machine-checkable result.
+- Claude Code must run the tests itself and iterate — a test that never ran is just a text suggestion.
+- Conventions belong in the CLAUDE.md, not in every prompt; test slices keep the loop fast.
+- Green does not mean good: tests that parrot the implementation survive no refactoring and find no bugs.
+- Work diff-based rather than module-wide — smaller context, sharper task, better result.
+</KeyTakeaway>

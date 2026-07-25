@@ -1,0 +1,79 @@
+---
+title: 'Project Setup: CLAUDE.md and Permissions'
+description: Why the same question gets better answers in a configured project — and what belongs in the CLAUDE.md.
+part: 3
+order: 2
+---
+
+Claude suggests JUnit 4 tests although the team moved to JUnit 5 long ago. It builds with Maven although the project uses Gradle. It puts a class into a directory that does not even exist here. These are not model weaknesses — they are missing project context.
+
+The fix is one file: `CLAUDE.md` in the project directory. Claude Code reads it at every session start and treats it as the project's constitution.
+
+## What belongs in the CLAUDE.md
+
+Three categories, no more:
+
+**Commands.** How to build, how to test, how to lint? Exactly the commands a new colleague would need on day one.
+
+**Conventions.** Test framework and style, naming schemes, architectural rules — everything Claude would otherwise have to guess.
+
+**Boundaries.** What must not be touched? Generated code, migration scripts, other teams' modules.
+
+A realistic example for one of our services:
+
+```markdown
+# berth-planning-service
+
+Spring Boot 3 / Java 21, Gradle. Part of the vessel domain.
+
+## Commands
+- Build: ./gradlew build
+- Single test: ./gradlew test --tests "BerthAllocationServiceTest"
+- Static analysis: ./gradlew spotlessCheck
+
+## Conventions
+- Tests: JUnit 5 + Mockito + AssertJ. Slices (@WebMvcTest, @DataJpaTest)
+  over @SpringBootTest where possible.
+- DTOs are records. MapStruct for mapping, no manual copying.
+- Timestamps are always Instant; timezone logic only at the edge (REST layer).
+
+## Do not touch
+- src/generated/** (generated from OpenAPI)
+- Flyway migrations under db/migration — new files only, never edit
+```
+
+<Callout type="merke">
+The CLAUDE.md is a constitution, not a handbook. It travels with **every request** as part of the [context](../context/) — so every line costs tokens on every turn. Anything needed only occasionally belongs in a [skill](../skills/) or the Confluence docs, not here.
+</Callout>
+
+## Monorepo and microservices
+
+We have both, and the file scales differently:
+
+**In the monorepo** a lean `CLAUDE.md` sits at the root (build system, cross-cutting rules) and one in each module that has conventions of its own. Claude Code reads the files along the path to the file being worked on — the module file supplements the root file.
+
+**With microservices** every repo has its own file. The temptation is to copy the same one everywhere — better is a shared core (say, a template in Confluence) plus the three or four lines that make this service special.
+
+**In the Angular workspace** the same principle applies: test commands (`ng test`, whether Jest or Karma), component conventions (standalone components? signals?), and where shared UI building blocks live.
+
+## Permissions
+
+By default Claude Code asks before executing anything that changes your machine. Initially that is right — and becomes tedious once every test run is a confirmation prompt.
+
+In `.claude/settings.json` this can be tiered per project: `./gradlew test` and `ng test` may run without asking, `git push` needs confirmation, destructive commands stay blocked. The file belongs in the repo — then the whole team benefits, and the rollout phase does not produce twenty private rule sets. Central company policies sit above it and can only be tightened project-side, never loosened.
+
+<Callout type="achtung">
+Never put credentials, tokens or internal hostnames into the CLAUDE.md. The file is part of every request and lives in the repo — it is the single worst place for secrets there is.
+</Callout>
+
+<Callout type="praxis">
+The best moment to extend the CLAUDE.md is the moment you type the same correction to Claude for the second time. "We use AssertJ, not Hamcrest" written into the file once applies to every future session — the same correction in chat applies exactly once.
+</Callout>
+
+<KeyTakeaway>
+- The CLAUDE.md provides commands, conventions and boundaries — the context Claude would otherwise guess.
+- It travels with every request: keep it lean, move rarely needed material into skills or docs.
+- Monorepo: root plus module files; microservices: shared core plus service specifics.
+- Tier permissions per project in settings.json and check it into the repo instead of clicking away every prompt individually.
+- Repeated corrections are the signal to extend the file — and secrets never belong in it.
+</KeyTakeaway>

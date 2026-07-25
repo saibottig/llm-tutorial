@@ -1,0 +1,48 @@
+---
+title: Ticket zu Pull Request
+description: Der Durchstich von Jira über den Code bis zum Bitbucket-PR — und wo man die Grenze zieht.
+part: 4
+order: 3
+---
+
+Der normale Arbeitstag beginnt selten mit Code. Er beginnt mit einem Jira-Ticket, führt über den Code und endet mit einem Pull Request in Bitbucket — und idealerweise einer aktualisierten Confluence-Seite. Über [MCP](../mcp/) kann Claude Code alle diese Stationen erreichen.
+
+## Die Anbindung
+
+Für die Cloud-Produkte gibt es den offiziellen Atlassian-Remote-MCP-Server: einmal per OAuth verbunden, kann Claude Code Jira-Tickets lesen und anlegen, Confluence-Seiten durchsuchen und schreiben und mit Bitbucket-Repositories arbeiten. Für Data-Center-Installationen existieren entsprechende Community-Server, die sich per `claude mcp add` einbinden lassen — was davon bei uns freigeschaltet ist, regelt die zentrale Konfiguration aus dem Kapitel [Claude Code](../claude-code/).
+
+Die Kostenseite nicht vergessen: Jeder verbundene Server legt seine Tool-Definitionen in jeden Request. Die Demo im Kapitel [MCP](../mcp/) zeigt das konkret — Server, die man gerade nicht braucht, bleiben aus.
+
+## Der Durchstich
+
+So sieht der Ablauf aus, wenn er rund läuft:
+
+**1. Ticket statt Nacherzählung.** „Setz TOS-4711 um" reicht als Startpunkt: Claude liest Titel, Beschreibung, Akzeptanzkriterien und die Kommentare — inklusive der Diskussion, in der die Anforderung präzisiert wurde. Das ist regelmäßig mehr Kontext, als eine mündliche Zusammenfassung transportiert.
+
+**2. Plan Mode vor dem ersten Edit.** Im Plan Mode liest Claude Code nur — Ticket, Code, betroffene Module — und legt einen Umsetzungsplan vor, bevor es irgendetwas ändert. Bei allem, was mehr als eine Handvoll Dateien berührt, lohnt dieser Zwischenschritt doppelt: Man fängt Missverständnisse ab, bevor sie Code werden, und ein verworfener Plan kostet einen Bruchteil einer verworfenen Implementierung — das Argument aus dem Kapitel [Kostenbewusst arbeiten](../cost/).
+
+**3. Umsetzung mit Verifikation.** Implementierung und Tests, wie im Kapitel [Unit-Tests](../unit-tests/) beschrieben: Claude führt Build und Tests selbst aus und iteriert.
+
+**4. Branch und Pull Request.** Branch nach Team-Schema (`feature/TOS-4711-…`), Commits, PR gegen den Hauptzweig. Die PR-Beschreibung schreibt Claude aus Diff und Ticket zusammen — was geändert wurde, warum, und was Reviewer wissen müssen.
+
+**5. Doku, wenn sie dazugehört.** Ändert die Umsetzung ein dokumentiertes Verhalten, kann Claude die betroffene Confluence-Seite gleich mit aktualisieren — als Vorschlag, den man prüft, nicht als stiller Automatismus.
+
+<Callout type="praxis">
+Der unterschätzte Teil dieses Ablaufs ist Schritt 4. Eine gute PR-Beschreibung braucht genau das, was Claude in dem Moment ohnehin im Context hat: den vollständigen Diff und das Ticket. Reviewer merken den Unterschied sofort — und es kostet nichts extra.
+</Callout>
+
+## Wo die Grenze verläuft
+
+**Lesen breit, schreiben schmal.** Tickets und Confluence-Seiten lesen ist risikoarm und fast immer nützlich. Schreibzugriffe — Tickets kommentieren, Seiten ändern, PRs anlegen — sollten einzeln freigegeben oder zumindest vor dem Absenden angezeigt werden. Ein falscher Kommentar am falschen Ticket ist nach außen sichtbar; eine falsch editierte Datei ist es nicht.
+
+<Callout type="achtung">
+Alles, was Claude über MCP liest, ist fremder Input: Ticket-Beschreibungen, Kommentare, Confluence-Seiten können Text enthalten, der wie eine Anweisung aussieht — böswillig platziert oder schlicht missverständlich. Claude kann solchen Text als Auftrag interpretieren. Warum das strukturell schwer zu verhindern ist und wie man das Risiko begrenzt, behandelt das Kapitel [Prompt Injection](../prompt-injection/).
+</Callout>
+
+<KeyTakeaway>
+- Über den Atlassian-MCP-Server erreicht Claude Code Jira, Confluence und Bitbucket — den kompletten Weg vom Ticket zum PR.
+- Ein Ticket-Verweis transportiert mehr Kontext als jede Nacherzählung: Beschreibung, Akzeptanzkriterien, Kommentare.
+- Plan Mode vor der Umsetzung: Ein verworfener Plan ist billig, eine verworfene Implementierung nicht.
+- PR-Beschreibungen aus Diff und Ticket generieren lassen — der unterschätzte Gewinn des Ablaufs.
+- Lesen breit, schreiben schmal — und alles Gelesene ist fremder Input, siehe Prompt Injection.
+</KeyTakeaway>
