@@ -310,5 +310,13 @@ Voraussetzung im Repo: Settings → Pages → Source: **GitHub Actions**, und
 `main` muss für die `github-pages`-Environment freigegeben sein (als
 Default-Branch automatisch).
 
+**Direkt auf `main` pushen ist erwünscht** — kein PR nötig. Bei Inhaltsarbeit
+ist die veröffentlichte Seite das Review; ein PR verzögert nur den Blick
+darauf. Gilt für Menschen und für Agenten-Sessions in diesem Repo
+gleichermaßen. Branch und PR nur, wenn wirklich jemand vorher draufschauen
+soll. Absicherung ist das Build-Gate aus Abschnitt 4: Es läuft in CI und
+lässt eine fehlende Übersetzung oder einen toten Link gar nicht erst
+deployen. `npm run check` vor dem Push meldet dasselbe eine Minute früher.
+
 `base: '/llm-tutorial'` in `astro.config.mjs` hängt am Repository-Namen — bei
 Umbenennung mitziehen.

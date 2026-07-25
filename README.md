@@ -73,5 +73,17 @@ Pushing to `main` builds and publishes to GitHub Pages via
 `.github/workflows/deploy.yml`. The repository needs **Settings → Pages →
 Source: GitHub Actions** enabled once.
 
+**Push straight to `main`.** No pull request is required — for content work
+the published site is the review, and a PR only delays seeing it. This
+applies to humans and to agents working in this repo alike: commit, push to
+`main`, look at the result. Open a branch and a PR only when you actually
+want a second pair of eyes before it goes live.
+
+The build gate is what makes that safe: `npm run build` runs
+`scripts/check-translations.mjs` first, in CI as well, so a missing
+translation or a dead cross-link fails the deploy instead of reaching the
+site. Run `npm run check` before pushing and you will catch it a minute
+earlier.
+
 `base` in `astro.config.mjs` is `/llm-tutorial` — change it alongside the
 repository name if that ever moves.
