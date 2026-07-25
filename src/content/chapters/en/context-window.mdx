@@ -28,7 +28,7 @@ When the window overflows there are essentially three responses:
 2. **Truncation.** The oldest messages are dropped. Cheap, but the model abruptly "forgets" the beginning.
 3. **Compaction.** Older turns are summarised and the summary replaces them. Considerably better, but lossy.
 
-Good harnesses do the third, and do it in good time rather than at the wall.
+Claude Code does the third: it compacts automatically before the wall is reached, and `/compact` lets you place the cut deliberately — ideally at a point where a unit of work is finished. What the session currently occupies is shown by `/context`.
 
 ## The more important point: quality before capacity
 
@@ -50,7 +50,7 @@ Then there is the second effect, which builds up over long agent sessions and is
 - **Relevance beats completeness.** Three well-chosen files beat half the repository.
 - **Cleaning up is a feature, not a detail.** Removing old tool results matters as much as adding new ones.
 - **Important things belong at the edges.** Whatever absolutely must be honoured belongs at the start or the end — not in the middle of a pile of material.
-- **Long sessions need cuts.** A deliberate restart with a clean summary often beats a session dragged on indefinitely.
+- **Long sessions need cuts.** A deliberate restart with `/clear` and a cleanly stated task often beats a session dragged on indefinitely. One session per task is the healthy default.
 
 <KeyTakeaway>
 - The context window is the ceiling in tokens, including the response still to be generated.

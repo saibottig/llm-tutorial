@@ -2,10 +2,10 @@
 title: Evals
 description: How you know whether a change improved anything — the least glamorous and most consequential discipline.
 part: 5
-order: 4
+order: 5
 ---
 
-You change a phrase in the system prompt. The next answer looks better. Was it the change, or was it chance?
+You change a phrase in the CLAUDE.md or sharpen a skill. The next result looks better. Was it the change, or was it chance?
 
 Without measurement that question cannot be answered. **Evals** are the answer: a fixed set of test cases with a defined scoring method, against which every change is run.
 
@@ -62,9 +62,15 @@ The last is the most commonly forgotten. A setup that is good on average and occ
 Evals are most useful not as a grand quality measurement but as **regression protection**. Every case that was once wrong goes into the collection. Then the next rebuild tells you immediately if it breaks again. That collection grows on its own and after a few months is the most valuable artefact in the whole project.
 </Callout>
 
+## The team question: are the generated tests any good?
+
+For the rollout phase there is one concrete application of this thinking. After a few months of [unit tests with Claude Code](../unit-tests/), the question arrives: has test quality risen — or only the test count?
+
+Line coverage alone cannot answer that: a test that parrots the implementation covers many lines and still finds nothing. A more honest sample comes from **mutation testing** (for Java, e.g. PIT): it deliberately plants bugs in the production code and measures how many of them the tests notice. Applied to one or two modules — one with generated tests, one with hand-written ones — it shows whether the generated suite genuinely checks or is merely green. That is the programmatic scoring kind from the table above, applied to your own workflow.
+
 ## The connection to everything else
 
-Almost everything in this tutorial is a change whose effect you should measure: a different model, a reworked prompt, fewer active [MCP servers](../mcp/), a different split across [sub-agents](../multi-agent/), an extra verification stage against [hallucinations](../hallucinations/).
+Almost everything in this tutorial is a change whose effect you should measure: a different model, a reworked CLAUDE.md, fewer active [MCP servers](../mcp/), a different split across [sub-agents](../multi-agent/), an extra verification stage against [hallucinations](../hallucinations/).
 
 Without evals those are all guesses. With evals they are decisions.
 

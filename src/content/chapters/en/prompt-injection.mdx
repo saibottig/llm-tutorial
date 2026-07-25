@@ -2,10 +2,10 @@
 title: Prompt Injection
 description: Why a model cannot tell instructions from data — and what can actually be done about it.
 part: 5
-order: 2
+order: 3
 ---
 
-As soon as a model uses tools and processes foreign content, a quality topic turns into a security topic.
+As soon as a model uses tools and processes foreign content, a quality topic turns into a security topic. A Claude Code session with the Atlassian connection does both constantly: it reads Jira tickets, Confluence pages and PR descriptions that need not come from your own team — the workflow from the [Ticket to Pull Request](../atlassian/) chapter.
 
 ## The underlying problem
 
@@ -29,8 +29,8 @@ This is not a hole that gets closed by an update. It follows from how these mode
 The attack does not have to arrive through the chat. Anything an agent reads is a possible carrier:
 
 - Web pages that get fetched
-- Emails, tickets, pull request descriptions, code comments
-- Files from a repository, including third-party dependencies
+- Jira tickets including their comments, Confluence pages, pull request descriptions
+- Files from a repository, including third-party dependencies and their code comments
 - Output from MCP servers
 - Documents users upload
 
@@ -48,7 +48,7 @@ Remove any one of the three and the damage is bounded. An agent that reads forei
 
 ## What actually helps
 
-**Limit permissions.** The most effective measure, and it has nothing to do with the model. An agent should have only the tools its task requires, and those with the narrowest possible rights. Read instead of write, one directory instead of the filesystem, one domain instead of the internet.
+**Limit permissions.** The most effective measure, and it has nothing to do with the model. An agent should have only the tools its task requires, and those with the narrowest possible rights. Read instead of write, one directory instead of the filesystem, one domain instead of the internet. That is exactly what the permissions from the [Project Setup](../setup/) chapter provide — they are security architecture, not a comfort sacrifice.
 
 **Confirmation for the irreversible.** Sending mail, deleting data, moving money, pushing outward — those belong behind a confirmation. The deciding property is reversibility, not importance.
 

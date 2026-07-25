@@ -2,10 +2,10 @@
 title: Agentic Workflows
 description: The difference between a fixed pipeline and an agent — and why the fixed pipeline is usually the better choice.
 part: 4
-order: 1
+order: 2
 ---
 
-If you do the same task repeatedly, you do not want to phrase it from scratch each time. "Create a Jira ticket for this task." "Write unit tests for this diff." "Summarise where this thread stands." That is what this chapter is about.
+If you do the same task repeatedly, you do not want to phrase it from scratch each time. "Create a Jira ticket for this task." "Write unit tests for this diff." "Summarise where this review stands." The [unit-test workflow](../unit-tests/) from the last chapter is exactly such a case — and this chapter shows how to pin such procedures down.
 
 Before building one, a distinction is worth making that saves a lot of money and trouble in practice.
 
@@ -57,6 +57,12 @@ If any answer is "no", a simpler construction is the better choice.
 
 **Think about failure.** What happens when the result is unusable? A workflow without an answer to that is unpleasant in production.
 
+## Where these procedures live in Claude Code
+
+**Slash commands and skills.** A recurring procedure gets stored in the repo as a [skill](../skills/) or a custom slash command — `/tests-for-diff` instead of a paragraph typed fresh every time. The procedure is then versioned, available to the whole team and improvable in one place.
+
+**Headless in the pipeline.** Claude Code also runs non-interactively (`claude -p "…"`). That allows steps inside Bitbucket Pipelines — say, an automatic review comment on every PR, or a nightly check. Here the workflow rules apply doubly: fixed output format, tight permissions, hard budget — nobody is sitting in the pipeline to intervene.
+
 <Callout type="praxis">
 A good way in is to do the thing manually three or four times — and note which information you needed each time. That list is the specification. Starting with the prompt instead reliably means forgetting half the context.
 </Callout>
@@ -71,5 +77,6 @@ That is often the best compromise — predictability in the large, flexibility i
 - Workflow: the steps are fixed and the model handles individual ones. Agent: the goal is fixed and the model chooses the steps.
 - If the steps are known in advance, a workflow is almost always better — cheaper, faster, testable.
 - Before building an agent: is the task open, is the cost justified, can the model do it, are errors catchable?
+- In Claude Code, procedures are versioned as skills or slash commands and run headless in Bitbucket Pipelines too.
 - Examples beat rules, and missing context is the most common cause of poor results.
 </KeyTakeaway>

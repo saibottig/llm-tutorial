@@ -9,7 +9,7 @@ import CacheSimulator from '../../../components/demos/CacheSimulator.astro';
 
 Der [KV-Cache](../kv-cache/) lebt normalerweise nur für die Dauer einer Anfrage. **Prompt Caching** behält ihn über Anfragen hinweg: Wenn zwei Anfragen mit demselben Text beginnen, muss dieser Anfang nur einmal verarbeitet werden.
 
-Das lohnt sich, weil bei den meisten Anwendungen der überwiegende Teil jeder Anfrage identisch ist — System-Prompt, Tool-Definitionen, Referenzdokumente, der bisherige Verlauf. Nur die neue Frage am Ende unterscheidet sich.
+Das lohnt sich, weil der überwiegende Teil jeder Anfrage identisch ist — System-Prompt, Tool-Definitionen, Referenzdokumente, der bisherige Verlauf. Nur die neue Frage am Ende unterscheidet sich. Eine Claude-Code-Sitzung ist der Idealfall: Über dreißig Runden hinweg bleibt der Anfang — Tools, System-Prompt, CLAUDE.md, alte Runden — exakt gleich, und genau deshalb ist eine lange Sitzung überhaupt bezahlbar.
 
 ## Die eine Regel
 
@@ -34,6 +34,8 @@ Die Bausteine werden in fester Reihenfolge zusammengesetzt: erst Tool-Definition
 | nie | ganz nach vorn, vor jeden Cache-Punkt |
 | pro Sitzung | nach dem festen Teil |
 | pro Anfrage | ans Ende, hinter den letzten Cache-Punkt |
+
+In Claude Code übernimmt das Harness diese Anordnung — die Bausteine liegen bereits cache-freundlich. Was man selbst beitragen kann: mitten in der Sitzung keine [MCP-Server](../mcp/) zu- oder abschalten und die CLAUDE.md zwischen Sitzungen ändern statt mittendrin. Beides steht vorn im Context und entwertet mit einem Schlag den gesamten Cache der laufenden Sitzung.
 
 ## Was den Cache heimlich zerstört
 

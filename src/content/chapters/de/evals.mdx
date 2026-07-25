@@ -2,10 +2,10 @@
 title: Evals
 description: Woher man weiß, ob eine Änderung etwas verbessert hat — die unspektakulärste und folgenreichste Disziplin.
 part: 5
-order: 4
+order: 5
 ---
 
-Man ändert eine Formulierung im System-Prompt. Die nächste Antwort sieht besser aus. War es die Änderung, oder war es Zufall?
+Man ändert eine Formulierung in der CLAUDE.md oder schärft einen Skill nach. Das nächste Ergebnis sieht besser aus. War es die Änderung, oder war es Zufall?
 
 Ohne Messung ist diese Frage nicht zu beantworten. **Evals** sind die Antwort darauf: eine feste Menge von Testfällen mit einer definierten Bewertung, gegen die jede Änderung läuft.
 
@@ -62,9 +62,15 @@ Der letzte Punkt ist der am häufigsten vergessene. Ein Aufbau, der im Schnitt g
 Am nützlichsten sind Evals nicht als große Qualitätsmessung, sondern als **Regressionsschutz**. Jeder Fall, der einmal falsch war, wandert in die Sammlung. Dann merkt man beim nächsten Umbau sofort, wenn er wieder kaputtgeht. Diese Sammlung wächst von allein und ist nach ein paar Monaten das wertvollste Artefakt am ganzen Projekt.
 </Callout>
 
+## Die Team-Frage: Sind die generierten Tests gut?
+
+Für die Einführungsphase gibt es eine konkrete Anwendung dieses Denkens. Nach ein paar Monaten [Unit-Tests mit Claude Code](../unit-tests/) steht die Frage im Raum: Ist die Testqualität gestiegen — oder nur die Testanzahl?
+
+Zeilenabdeckung allein beantwortet das nicht: Ein Test, der die Implementierung nachbetet, deckt viele Zeilen ab und findet trotzdem nichts. Eine ehrlichere Stichprobe liefert **Mutation Testing** (für Java etwa PIT): Es baut gezielt Fehler in den Produktionscode ein und misst, wie viele davon die Tests bemerken. Auf ein, zwei Module angewendet — je eines mit generierten und mit handgeschriebenen Tests — zeigt es, ob die generierte Suite wirklich prüft oder nur grün ist. Das ist die programmatische Bewertungssorte aus der Tabelle oben, angewendet auf den eigenen Workflow.
+
 ## Der Zusammenhang mit dem Rest
 
-Fast alles in diesem Tutorial ist eine Änderung, deren Wirkung man messen sollte: ein anderes Modell, ein umgestellter Prompt, weniger aktive [MCP-Server](../mcp/), ein anderer Zuschnitt bei [Sub-Agenten](../multi-agent/), eine zusätzliche Prüfstufe gegen [Halluzinationen](../hallucinations/).
+Fast alles in diesem Tutorial ist eine Änderung, deren Wirkung man messen sollte: ein anderes Modell, eine umgebaute CLAUDE.md, weniger aktive [MCP-Server](../mcp/), ein anderer Zuschnitt bei [Sub-Agenten](../multi-agent/), eine zusätzliche Prüfstufe gegen [Halluzinationen](../hallucinations/).
 
 Ohne Evals sind das alles Vermutungen. Mit Evals sind es Entscheidungen.
 

@@ -2,23 +2,24 @@
 title: Skills
 description: Instructions loaded only when needed — and why they are not a replacement for MCP but a different thing.
 part: 3
-order: 3
+order: 5
 ---
 
 A **skill** is a folder containing an instruction. At its core it is a file called `SKILL.md`, carrying a little metadata at the top and the actual instruction below:
 
 ```markdown
 ---
-name: quarterly-report
-description: Produces the quarterly report in house format. Use when a
-  quarterly or monthly report is requested.
+name: integration-test
+description: Writes Spring integration tests to house standard. Use when
+  integration tests for a service or repository are requested.
 ---
 
-# Producing the quarterly report
+# Integration tests to house standard
 
-1. Pull figures from the data warehouse (table `fct_revenue`)
-2. Check against prior-quarter values — flag deviations above 15 %
-3. Use the template at `templates/quarterly.docx`
+1. Use Testcontainers with Postgres, never H2 — dialect differences
+   have cost us production bugs twice already
+2. Extend the AbstractIntegrationTest base class (sets up Flyway)
+3. Build test data through the builders in testFixtures/, no SQL inserts
 ...
 ```
 
@@ -71,7 +72,7 @@ Progressive disclosure is not free. Somebody has to make the selection, and that
 Both are description problems, not content problems. If a skill is not taking effect, work on its description first — not on the instruction inside it.
 
 <Callout type="praxis">
-Skills suit anything you do repeatedly the same way and where your in-house procedure matters: report formats, code review criteria, approval processes, naming conventions. Precisely the knowledge a general model cannot have, because it only applies at your organisation.
+Skills suit anything you do repeatedly the same way and where your in-house procedure matters: the Flyway migration process, code review criteria, scaffolding a new microservice from the template, naming conventions. Precisely the knowledge a general model cannot have, because it only applies at your organisation. Placed in the repo under `.claude/skills/`, they are automatically available to the whole team — and they relieve the [CLAUDE.md](../setup/), which otherwise swells into a handbook.
 </Callout>
 
 <KeyTakeaway>

@@ -1,7 +1,6 @@
 # Handover
 
-Stand: 25.07.2026 · Commit `b9c899f` · live unter
-<https://saibottig.github.io/llm-tutorial/>
+Stand: 25.07.2026 · live unter <https://saibottig.github.io/llm-tutorial/>
 
 Dieses Dokument richtet sich an die Person (oder Session), die am Tutorial
 weiterarbeitet. Es beschreibt, was da ist, wie es zusammenhängt, welche
@@ -11,8 +10,17 @@ Entscheidungen bewusst so getroffen wurden — und wo die offenen Enden liegen.
 
 ## 1. Was existiert
 
-17 Kapitel in fünf Teilen, vollständig auf Deutsch und Englisch (je ~11.000
-Wörter), sechs interaktive Demos, statischer Astro-Build auf GitHub Pages.
+Ein Claude-Code-Tutorial für Entwicklungsteams in einem
+Container-Terminal-Softwareunternehmen (Java/Spring Boot, Angular,
+Jira/Confluence/Bitbucket): 20 Kapitel in fünf Teilen, vollständig auf Deutsch
+und Englisch, fünf interaktive Demos, statischer Astro-Build auf GitHub Pages.
+
+Das Tutorial war ursprünglich ein allgemeines LLM-Grundlagen-Tutorial und
+wurde im Juli 2026 um Claude Code als roten Faden herum umgebaut: Die
+technischen Grundlagenkapitel blieben erhalten und wurden auf die Zielgruppe
+zugeschnitten, fünf Kapitel kamen neu dazu (`claude-code`, `setup`,
+`unit-tests`, `atlassian`, `use-cases`), zwei entfielen (`vram-vs-ram` samt
+Demo; `harness`, dessen Inhalt im Kapitel `claude-code` aufging).
 
 | # | Slug | DE | EN | Demo |
 |---|---|---|---|---|
@@ -22,17 +30,20 @@ Wörter), sechs interaktive Demos, statischer Astro-Build auf GitHub Pages.
 | 2.1 | `kv-cache` | KV-Cache | KV Cache | — |
 | 2.2 | `prefill-decode` | Prefill und Decode | Prefill and Decode | PrefillDecode |
 | 2.3 | `prompt-caching` | Prompt Caching | Prompt Caching | CacheSimulator |
-| 2.4 | `vram-vs-ram` | VRAM und RAM | VRAM and RAM | VramCalculator |
-| 3.1 | `tool-use` | Tool Use | Tool Use | — |
-| 3.2 | `mcp` | MCP | MCP | McpCost |
-| 3.3 | `skills` | Skills | Skills | — |
-| 3.4 | `harness` | Harness | Harness | — |
-| 4.1 | `agentic-workflows` | Agentische Workflows | Agentic Workflows | — |
-| 4.2 | `multi-agent` | Multi-Agent-Orchestrierung | Multi-Agent Orchestration | — |
-| 5.1 | `cost` | Kosten | Cost | — |
-| 5.2 | `prompt-injection` | Prompt Injection | Prompt Injection | — |
-| 5.3 | `hallucinations` | Halluzinationen | Hallucinations | — |
-| 5.4 | `evals` | Evals | Evals | — |
+| 3.1 | `claude-code` | Claude Code | Claude Code | — |
+| 3.2 | `setup` | Projekt-Setup: CLAUDE.md und Permissions | Project Setup | — |
+| 3.3 | `tool-use` | Tool Use | Tool Use | — |
+| 3.4 | `mcp` | MCP | MCP | McpCost |
+| 3.5 | `skills` | Skills | Skills | — |
+| 4.1 | `unit-tests` | Der erste Anwendungsfall: Unit-Tests | The First Use Case: Unit Tests | — |
+| 4.2 | `agentic-workflows` | Agentische Workflows | Agentic Workflows | — |
+| 4.3 | `atlassian` | Ticket zu Pull Request | Ticket to Pull Request | — |
+| 4.4 | `multi-agent` | Multi-Agent-Orchestrierung | Multi-Agent Orchestration | — |
+| 5.1 | `cost` | Kostenbewusst arbeiten | Working Cost-Consciously | — |
+| 5.2 | `use-cases` | Anwendungsfälle finden | Finding Use Cases | — |
+| 5.3 | `prompt-injection` | Prompt Injection | Prompt Injection | — |
+| 5.4 | `hallucinations` | Halluzinationen | Hallucinations | — |
+| 5.5 | `evals` | Evals | Evals | — |
 
 Teil-Titel und alle UI-Strings stehen in `src/i18n/ui.ts`, nicht im Markup.
 
@@ -68,7 +79,7 @@ order: 3       # Position innerhalb des Teils
 ---
 ```
 
-Die Kapitelnummer (01–17) wird **fortlaufend über alle Teile hinweg** aus
+Die Kapitelnummer (01–20) wird **fortlaufend über alle Teile hinweg** aus
 `part`/`order` berechnet, nicht gepflegt. Wer ein Kapitel einschiebt,
 verschiebt nur `order` — die Nummerierung zieht überall nach.
 
@@ -110,13 +121,16 @@ Demos werden **explizit importiert** — jede wird nur in genau einem Kapitel
 verwendet, das lohnt keine Vorbindung:
 
 ```mdx
-import VramCalculator from '../../../components/demos/VramCalculator.astro';
+import CacheSimulator from '../../../components/demos/CacheSimulator.astro';
 
-<VramCalculator locale="de" />
+<CacheSimulator locale="de" />
 ```
 
 Gemeinsame Optik (`.demo`, `.stat`, `.field`, `.statusline`, `.stack`) liegt in
 `src/styles/demos.css`. Demo-spezifisches CSS bleibt in der Komponente.
+
+Die Server-Presets der McpCost-Demo (Jira, Confluence, Bitbucket, …) sind
+Daten in der Komponente selbst, keine ui.ts-Strings.
 
 ---
 
@@ -148,22 +162,35 @@ sonst fällt es auf:
 Demo (falls vorhanden) → praktische Konsequenzen → `<KeyTakeaway>` mit 4–5
 Punkten. Keine Zusammenfassung am Anfang.
 
+**Zielgruppe und Beispielwelt.** Entwickler:innen in einem
+Container-Terminal-Softwareunternehmen, Claude Code als zentral verwaltetes
+Enterprise-Werkzeug in der Einführungsphase. Codebeispiele nutzen die
+Terminal-Domäne (Vessel, Berth, Yard, Reefer, `BerthAllocationService` …) mit
+Spring Boot/Gradle bzw. Angular; Tool-Stack ist Jira/Confluence/Bitbucket.
+Diese Beispielwelt bitte konsistent halten — generische Beispiele fallen auf.
+
 **Querverweise statt Wiederholung.** Jeder Begriff wird an genau einer Stelle
 erklärt und sonst verlinkt. Wenn eine Erklärung zweimal auftaucht, gehört sie
 in ein eigenes Kapitel.
 
 **Zahlen werden gemessen, nicht behauptet.** Alle konkreten Werte im Tutorial
-sind entweder zur Build-Zeit berechnet (Tokenizer-Demo) oder gegen eine
-Referenzkonfiguration kalibriert (VRAM-Rechner). Wo keine Quelle vorlag, steht
-eine Größenordnung mit dem ausdrücklichen Hinweis, selbst zu messen — siehe
-Multi-Agent-Kosten. **Diese Linie bitte halten.** Sie ist der Grund, warum das
-Tutorial an drei Stellen von der verbreiteten Darstellung abweicht.
+sind entweder zur Build-Zeit berechnet (Tokenizer-Demo) oder als
+Größenordnung mit dem ausdrücklichen Hinweis versehen, selbst zu messen —
+siehe Multi-Agent-Kosten. **Diese Linie bitte halten.** Aus demselben Grund
+stehen im Kosten-Kapitel keine konkreten Kontingent- oder Enterprise-Preise:
+Sie veralten schneller, als das Tutorial gepflegt wird.
 
 **Korrekturen sind explizit.** Wo gängige Aussagen nicht stimmen, steht ein
 `<Callout type="korrektur">`, der die verbreitete Version benennt und dann
 richtigstellt. Nicht stillschweigend anders schreiben.
 
-### Die drei bewussten Abweichungen
+**Claude-Code-Oberfläche sparsam zitieren.** Slash-Commands (`/context`,
+`/compact`, `/clear`, `/model`, `!`-Präfix) werden benannt, aber nicht mit
+Screenshots oder detaillierten Menübeschreibungen dokumentiert — die
+Oberfläche ändert sich schneller als die Konzepte. Das Tutorial erklärt das
+Warum; das Wie steht in der offiziellen Doku.
+
+### Die bewussten Abweichungen
 
 Falls jemand meint, das sei ein Fehler — es ist keiner:
 
@@ -178,6 +205,9 @@ Falls jemand meint, das sei ein Fehler — es ist keiner:
 3. **Multi-Agent-Kosten** (`multi-agent`). Sub-Agenten sind primär
    *Context-Isolation*: mehr Tokens insgesamt, aber **weniger** Pollution im
    Hauptthread — nicht mehr, wie oft behauptet.
+4. **„Grün heißt gut"** (`unit-tests`). Generierte Tests, die die
+   Implementierung nachbeten, sind grün und wertlos. Das Kapitel `evals`
+   liefert mit Mutation Testing (PIT) die zugehörige Messmethode.
 
 ---
 
@@ -208,18 +238,22 @@ gesperrt; Warteschleifen gehören in einen Hintergrund-Task.
 
 ## 7. Offene Punkte
 
-**Quelle für „2,6× Multi-Agent-Kosten".** Die Zahl stand in der ursprünglichen
-Themenliste, ohne Beleg. Im Kapitel steht deshalb eine Spannbreite. Wenn die
-Quelle auftaucht: `multi-agent.mdx`, Abschnitt „Was es kostet" — eine Zeile,
-in beiden Sprachen.
+**Atlassian-MCP-Details prüfen, bevor sie intern verteilt werden.** Die
+Kapitel `mcp` und `atlassian` beschreiben den offiziellen Atlassian-Remote-
+MCP-Server (Cloud, OAuth) und Community-Server für Data Center bewusst auf
+Konzeptebene. Vor einem internen Rollout gehört einmal verifiziert, welche
+Variante das Unternehmen tatsächlich freigeschaltet hat, und ggf. eine
+konkrete Einrichtungsanleitung in Confluence ergänzt (nicht ins Tutorial —
+siehe Konvention „Oberfläche sparsam zitieren").
 
-**Keine Tests für die Demos.** Verifiziert wurde einmalig per Playwright-Skript
-(alle 34 Seiten, Querverweise, Prev/Next-Kette, Sprachumschalter,
-Demo-Initialisierung, 375 px). Das Skript ist nicht eingecheckt. Wer die Demos
-umbaut, sollte es neu aufsetzen — oder als Playwright-Test dauerhaft
-einchecken. Das wäre die sinnvollste nächste Investition.
+**Keine Tests für die Demos.** Verifiziert wurde einmalig per
+Playwright-Skript (alle Seiten, Querverweise, Prev/Next-Kette,
+Sprachumschalter, Demo-Initialisierung, 375 px). Das Skript ist nicht
+eingecheckt. Wer die Demos umbaut, sollte es neu aufsetzen — oder als
+Playwright-Test dauerhaft einchecken. Das wäre die sinnvollste nächste
+Investition.
 
-**Kein Suchfeld.** Bei 17 Kapiteln verschmerzbar, ab ~25 nicht mehr. Pagefind
+**Kein Suchfeld.** Bei 20 Kapiteln verschmerzbar, ab ~25 nicht mehr. Pagefind
 lässt sich in einen Astro-Build ohne Server einhängen.
 
 ---
@@ -231,13 +265,13 @@ Reihenfolge des Nutzens:
 
 | Thema | Wohin | Warum |
 |---|---|---|
-| RAG & Embeddings | neuer Teil oder 3.5 | Größte inhaltliche Lücke. Chunking, Vektorsuche, „RAG oder langer Context?" |
+| Hooks als Guardrails | 3.6 | Formatter/Linter nach jedem Edit erzwingen — passt zur Verifikations-Linie |
+| RAG & Embeddings | neuer Teil | Chunking, Vektorsuche, „RAG oder langer Context?" |
 | Sampling & Temperature | 1.4 | Erklärt Nicht-Determinismus, auf den sich das Evals-Kapitel bereits beruft |
-| Reasoning-/Thinking-Modelle | 2.5 | Thinking-Tokens sind Kosten- und Latenzfaktor, kommen aktuell nirgends vor |
-| Quantisierung im Detail | 2.5 | Aktuell nur ein Absatz in `vram-vs-ram`; verdient mehr |
-| Structured Output / JSON | 3.5 | Praktisch sehr relevant, technisch nah an Tool Use |
-| Fine-Tuning vs. Prompting vs. RAG | 5.5 | Entscheidungsbaum, guter Abschluss |
-| Context Engineering als Kapitel | 4.3 | Klammert Compaction, Sub-Agents, Skills zusammen — aktuell verteilt |
+| Reasoning-/Thinking-Modelle | 2.4 | Thinking-Tokens sind Kosten- und Latenzfaktor, kommen aktuell nirgends vor |
+| Structured Output / JSON | 3.6 | Praktisch relevant für Pipeline-Workflows, technisch nah an Tool Use |
+| Context Engineering als Kapitel | 4.5 | Klammert Compaction, Sub-Agents, Skills zusammen — aktuell verteilt |
+| Onboarding-Checkliste | Anhang | „Erste Woche mit Claude Code" als druckbare Seite |
 
 Nicht-inhaltliche Ideen: Volltextsuche (Pagefind), Glossar mit Tooltips über
 `ui.ts`, Druck-Stylesheet, RSS für neue Kapitel, `og:image` je Kapitel.

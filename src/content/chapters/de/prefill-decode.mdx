@@ -41,10 +41,10 @@ Die Demo zeigt den entscheidenden Zusammenhang: Ein längerer Prompt verschiebt 
 
 **Batching hilft nur beim Decode.** Weil beim Decode die Recheneinheiten unbeschäftigt sind, kann man mehrere Anfragen gleichzeitig durchschieben, fast ohne Zusatzkosten — die Gewichte werden ohnehin gelesen. Genau davon leben Anbieter beim Betrieb großer Modelle.
 
-**Die eigene Hardware ist beim Decode meist bandbreitenlimitiert.** Wer lokal ein Modell betreibt, merkt schnell: Eine schnellere GPU bringt für die Ausgabegeschwindigkeit wenig, wenn die Speicherbandbreite gleich bleibt. Das ist Thema des Kapitels [VRAM und RAM](../vram-vs-ram/).
+**Lange Sitzungen starten träge.** In einer vollen Claude-Code-Sitzung ist der Prompt bei jeder Runde der gesamte Verlauf — entsprechend wächst die Pause vor der ersten Reaktion mit der Sitzungslänge. [Prompt Caching](../prompt-caching/) entschärft genau das: Was im Cache liegt, muss im Prefill nicht neu berechnet werden.
 
 <Callout type="praxis">
-Wenn eine Anwendung sich träge anfühlt, lohnt es sich zu unterscheiden, welche Phase schuld ist. Lange Pause vor dem ersten Zeichen? Der Prompt ist zu lang — oder das Prompt Caching greift nicht. Antwort läuft langsam durch? Dann liegt es an Modellgröße und Bandbreite, und ein kürzerer Prompt hilft nicht.
+Wenn Claude Code sich träge anfühlt, lohnt es sich zu unterscheiden, welche Phase schuld ist. Lange Pause vor dem ersten Zeichen? Der Context ist groß — oder das Prompt Caching greift nicht. Antwort läuft langsam durch? Dann liegt es am Modell selbst, und ein kürzerer Context hilft nicht.
 </Callout>
 
 <KeyTakeaway>

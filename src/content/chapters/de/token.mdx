@@ -18,7 +18,7 @@ Die Zerlegung übernimmt der **Tokenizer**, und der gehört fest zum Modell. Er 
 <Callout type="korrektur">
 Man liest oft, die Tokenzahl hänge vom Server ab, auf dem das Modell läuft. Das stimmt nicht. Die Tokenisierung ist Teil des Modells und liegt fest.
 
-Vom Betreiber abhängt etwas anderes: die **nutzbare Kontextlänge**. Ein Modell mag technisch eine Million Token verarbeiten können — wenn der Anbieter nur so viel Speicher bereitstellt, dass 200.000 hineinpassen, ist bei 200.000 Schluss. Das ist eine Betriebsentscheidung, keine Eigenschaft des Modells. Mehr dazu im Kapitel [VRAM und RAM](../vram-vs-ram/).
+Vom Betreiber abhängt etwas anderes: die **nutzbare Kontextlänge**. Ein Modell mag technisch eine Million Token verarbeiten können — wenn der Anbieter nur so viel Speicher bereitstellt, dass 200.000 hineinpassen, ist bei 200.000 Schluss. Das ist eine Betriebsentscheidung, keine Eigenschaft des Modells.
 </Callout>
 
 ## Die Faustregel und ihr Verfallsdatum
@@ -33,7 +33,7 @@ Die Zahlen in dieser Demo sind nicht geschätzt, sondern beim Bauen der Seite mi
 
 ## Warum das praktisch wichtig ist
 
-Token sind die Recheneinheit für fast alles:
+Alles, was in einer Claude-Code-Sitzung vorkommt — die CLAUDE.md, eine Java-Klasse, ein Stacktrace, der Text eines Jira-Tickets — wird in Token gemessen. Token sind die Recheneinheit für fast alles:
 
 - **Abrechnung.** Anbieter rechnen pro Token ab, Ein- und Ausgabe getrennt und unterschiedlich teuer.
 - **Grenzen.** Das Context Window wird in Token gemessen, nicht in Zeichen oder Seiten.

@@ -2,10 +2,10 @@
 title: Agentische Workflows
 description: Der Unterschied zwischen einem festen Ablauf und einem Agenten — und warum der feste Ablauf meistens die bessere Wahl ist.
 part: 4
-order: 1
+order: 2
 ---
 
-Wer dieselbe Aufgabe wiederholt erledigt, will sie nicht jedes Mal neu formulieren. „Erstelle mir ein Jira-Ticket für diese Aufgabe." „Schreib Unit-Tests für diesen Diff." „Fasse den Stand dieses Threads zusammen." Genau darum geht es hier.
+Wer dieselbe Aufgabe wiederholt erledigt, will sie nicht jedes Mal neu formulieren. „Erstelle mir ein Jira-Ticket für diese Aufgabe." „Schreib Unit-Tests für diesen Diff." „Fasse den Stand dieses Reviews zusammen." Der [Unit-Test-Ablauf](../unit-tests/) aus dem letzten Kapitel ist genau so ein Fall — und dieses Kapitel zeigt, wie man solche Abläufe festhält.
 
 Bevor man so etwas baut, lohnt eine Unterscheidung, die in der Praxis viel Geld und Ärger spart.
 
@@ -57,6 +57,12 @@ Wenn eine Antwort „nein" lautet, ist ein einfacherer Aufbau die bessere Wahl.
 
 **Fehlerfall bedenken.** Was passiert, wenn das Ergebnis unbrauchbar ist? Ein Workflow ohne Antwort auf diese Frage ist im Betrieb unangenehm.
 
+## Wo solche Abläufe in Claude Code leben
+
+**Slash-Commands und Skills.** Ein wiederkehrender Ablauf wird als [Skill](../skills/) oder eigener Slash-Command im Repo abgelegt — `/tests-fuer-diff` statt eines jedes Mal neu getippten Absatzes. Damit ist der Ablauf versioniert, teamweit verfügbar und an einer Stelle verbesserbar.
+
+**Headless in der Pipeline.** Claude Code läuft auch nicht-interaktiv (`claude -p "…"`). Damit lassen sich Schritte in Bitbucket Pipelines einbauen — etwa ein automatischer Review-Kommentar zu jedem PR oder eine nächtliche Prüfung. Hier gelten die Workflow-Regeln verschärft: festes Ausgabeformat, enge Permissions, hartes Budget — in der Pipeline sitzt niemand, der eingreift.
+
 <Callout type="praxis">
 Ein guter Einstieg ist, drei- bis viermal manuell zu machen, was automatisiert werden soll — und dabei mitzuschreiben, welche Informationen man jedes Mal gebraucht hat. Diese Liste ist die Spezifikation. Wer direkt mit dem Prompt anfängt, vergisst regelmäßig die Hälfte des Kontexts.
 </Callout>
@@ -71,5 +77,6 @@ Das ist oft der beste Kompromiss — Vorhersagbarkeit im Groben, Flexibilität i
 - Workflow: Schritte stehen fest, das Modell erledigt einzelne. Agent: Ziel steht fest, das Modell wählt die Schritte.
 - Sind die Schritte im Voraus bekannt, ist der Workflow fast immer die bessere Wahl — billiger, schneller, testbar.
 - Vor einem Agenten: Ist die Aufgabe offen, lohnt der Aufwand, kann das Modell es, sind Fehler auffangbar?
+- In Claude Code werden Abläufe als Skills oder Slash-Commands versioniert und laufen headless auch in Bitbucket Pipelines.
 - Beispiele wirken stärker als Regeln, und fehlender Kontext ist der häufigste Grund für schlechte Ergebnisse.
 </KeyTakeaway>

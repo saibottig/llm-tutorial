@@ -1,10 +1,12 @@
-# LLM-Tutorial
+# Claude-Code-Tutorial
 
-A bilingual (German / English) tutorial on how language models actually work —
-tokens, context windows, KV cache, prompt caching, tool use, MCP, skills,
-harnesses, agents and what it takes to run any of it in production.
+A bilingual (German / English) tutorial for development teams introducing
+Claude Code in an enterprise Java/Spring Boot/Angular environment with a
+Jira/Confluence/Bitbucket tool stack — from tokens, context windows and
+prompt caching through CLAUDE.md setup, the unit-test workflow and the
+Jira-to-PR pass, to cost-conscious daily habits and finding new use cases.
 
-17 chapters in five parts, with six interactive demos.
+20 chapters in five parts, with five interactive demos.
 
 Continuing this project? Start with [HANDOVER.md](HANDOVER.md) — it covers
 the conventions, the deliberate deviations from common wisdom, and the open
@@ -61,8 +63,7 @@ the published site.
 | Context window | Context Window | Stacked bar; overflow and compaction are both reachable. |
 | Prefill / decode | Prefill and Decode | Animation pace and reported figures are deliberately decoupled. |
 | Cache simulator | Prompt Caching | Editing a block invalidates it and everything after it. |
-| MCP cost | MCP | Tool-definition tokens per request against a skills baseline. |
-| VRAM calculator | VRAM and RAM | Calibrated against a Llama-70B-class GQA layout. |
+| MCP cost | MCP | Tool-definition tokens per request (Atlassian-stack presets) against a skills baseline. |
 
 None of them make external requests; everything is computed in the page.
 

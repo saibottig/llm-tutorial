@@ -2,23 +2,24 @@
 title: Skills
 description: Anleitungen, die erst bei Bedarf geladen werden — und warum sie kein Ersatz für MCP sind, sondern etwas anderes.
 part: 3
-order: 3
+order: 5
 ---
 
 Ein **Skill** ist ein Ordner mit einer Anleitung. Im Kern besteht er aus einer Datei namens `SKILL.md`, die vorne ein paar Metadaten trägt und darunter die eigentliche Anleitung enthält:
 
 ```markdown
 ---
-name: quartalsbericht
-description: Erstellt den Quartalsbericht nach Hausformat. Verwenden, wenn
-  nach einem Quartals- oder Monatsbericht gefragt wird.
+name: integrationstest
+description: Schreibt Spring-Integrationstests nach Hausstandard. Verwenden,
+  wenn Integrationstests für einen Service oder ein Repository gefragt sind.
 ---
 
-# Quartalsbericht erstellen
+# Integrationstests nach Hausstandard
 
-1. Zahlen aus dem Data Warehouse ziehen (Tabelle `fct_revenue`)
-2. Gegen die Vorquartalswerte prüfen — Abweichungen über 15 % markieren
-3. Vorlage aus `templates/quarterly.docx` verwenden
+1. Testcontainers für Postgres verwenden, nie H2 — Dialektunterschiede
+   haben uns schon zweimal Produktionsfehler gekostet
+2. Basisklasse AbstractIntegrationTest erweitern (setzt Flyway auf)
+3. Testdaten über die Builder in testFixtures/ aufbauen, keine SQL-Inserts
 ...
 ```
 
@@ -71,7 +72,7 @@ Progressive Disclosure ist nicht umsonst zu haben. Die Auswahl muss jemand treff
 Beides ist ein Beschreibungsproblem, kein Inhaltsproblem. Wer merkt, dass ein Skill nicht greift, sollte zuerst an dessen Beschreibung arbeiten — nicht an der Anleitung darin.
 
 <Callout type="praxis">
-Skills eignen sich gut für alles, was ihr immer wieder gleich macht und wo es auf euer Hausverfahren ankommt: Berichtsformate, Code-Review-Kriterien, Freigabeprozesse, Namenskonventionen. Also genau das Wissen, das ein allgemeines Modell nicht haben kann, weil es nur bei euch gilt.
+Skills eignen sich gut für alles, was ihr immer wieder gleich macht und wo es auf euer Hausverfahren ankommt: der Flyway-Migrationsprozess, Code-Review-Kriterien, das Anlegen eines neuen Microservice nach Vorlage, Namenskonventionen. Also genau das Wissen, das ein allgemeines Modell nicht haben kann, weil es nur bei euch gilt. Im Repo unter `.claude/skills/` abgelegt, stehen sie automatisch dem ganzen Team zur Verfügung — und entlasten nebenbei die [CLAUDE.md](../setup/), die sonst zum Handbuch anschwillt.
 </Callout>
 
 <KeyTakeaway>

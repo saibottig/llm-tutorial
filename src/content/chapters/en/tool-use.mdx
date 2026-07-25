@@ -1,24 +1,24 @@
 ---
 title: Tool Use
-description: The mechanism MCP, skills and everything agentic sit on top of — and it is simpler than you might expect.
+description: The mechanism Claude Code uses to read files and run tests — and it is simpler than you might expect.
 part: 3
-order: 1
+order: 3
 ---
 
-A language model can do exactly one thing on its own: produce text. It cannot read a file, call an API or look anything up. **Tool use** — also called function calling — is the mechanism that closes that gap. It is the foundation [MCP](../mcp/), [skills](../skills/) and every agent build on. That is why it comes before all three here.
+A language model can do exactly one thing on its own: produce text. It cannot read a file, run `./gradlew test`, or look anything up. When Claude Code does all of that anyway, **tool use** — also called function calling — is what is behind it. It is the mechanism [MCP](../mcp/), [skills](../skills/) and everything agentic build on.
 
 ## How it works
 
 The flow is surprisingly plain:
 
-1. **You describe the tools.** For each one you send a name, a description and a schema of its parameters.
-2. **The model requests a call.** Instead of answering with text it emits structured output: "call `get_weather` with `{"city": "Berlin"}`."
-3. **You execute.** Your code — not the model — actually calls the function.
-4. **You send the result back.** It is appended to the conversation as a new message.
-5. **The model continues.** With the result in context it answers, or requests the next tool.
+1. **The harness describes the tools.** For each tool — read file, edit file, execute shell command — Claude Code sends a name, a description and a schema of the parameters.
+2. **The model requests a call.** Instead of answering with text it emits structured output: "run `bash` with `./gradlew test --tests 'BerthAllocationServiceTest'`."
+3. **The harness executes.** Claude Code — not the model — actually starts the command. This is where the permissions from the [Project Setup](../setup/) chapter apply.
+4. **The result goes back.** The test output is appended to the conversation as a new message.
+5. **The model continues.** With the result in context it answers, or requests the next tool — say, the edit that fixes the red test.
 
 <Callout type="merke">
-The point most often misunderstood: **the model executes nothing.** It only formulates a request. Whether that request is granted is decided entirely by your code.
+The point most often misunderstood: **the model executes nothing.** It only formulates a request. Whether that request is granted is decided entirely by the harness — and thus by the permissions you configured.
 
 That is not a limitation but the single most important security property of the whole arrangement. Every tool call is a point at which you can check, filter, log or ask for confirmation. See [Prompt Injection](../prompt-injection/).
 </Callout>
@@ -33,22 +33,22 @@ Request → Model → Tool call? ─yes→ execute → append result ─┐
                       └─no→ Answer                           └──┘
 ```
 
-That is all there is to it. An "agent" is essentially this loop plus a stopping condition. The rest — context management, permission checks, error handling — is the job of the [harness](../harness/).
+That is all there is to it. When Claude Code reads a class, writes the test, runs it, sees the failure and fixes it — that is this loop, traversed four times. The rest — context management, permission checks, error handling — is the harness's job, see [Claude Code](../claude-code/).
 
 ## What makes a good tool description
 
-The model decides purely from name, description and schema whether and how to use a tool. It does not see the code. The description is therefore not documentation but the actual steering mechanism.
+The model decides purely from name, description and schema whether and how to use a tool. It does not see the code. The description is therefore not documentation but the actual steering mechanism. That becomes practically relevant as soon as you connect your own tools — say, through an [MCP server](../mcp/) for an internal system.
 
 The most common mistake is to describe only *what* a tool does. Describing *when* it should be used matters at least as much:
 
 ```json
 {
-  "name": "lookup_customer",
-  "description": "Looks up a customer by name or customer number. Use this whenever specific customer information is requested — never answer from memory, the data changes daily.",
+  "name": "lookup_vessel_call",
+  "description": "Looks up a vessel call by ship name or call ID. Use this whenever a specific vessel call is requested — never answer from memory, arrival data changes constantly.",
   "input_schema": {
     "type": "object",
     "properties": {
-      "query": { "type": "string", "description": "Name or customer number" }
+      "query": { "type": "string", "description": "Ship name or call ID" }
     },
     "required": ["query"]
   }
@@ -58,9 +58,9 @@ The most common mistake is to describe only *what* a tool does. Describing *when
 Further points from practice:
 
 - **Few, clearly separated tools** beat many overlapping ones. Given too much choice, the model measurably picks wrong more often.
-- **Descriptive names.** `get_current_weather` beats `weather`.
-- **Errors belong back in the loop**, not swallowed. A comprehensible error message as a tool result lets the model try another route.
-- **Several calls at once** are possible and sensible when the calls are independent of each other.
+- **Descriptive names.** `lookup_vessel_call` beats `lookup`.
+- **Errors belong back in the loop**, not swallowed. A full stack trace as the tool result puts the model in a position to find the cause — a swallowed exception does not.
+- **Several calls at once** are possible and sensible when the calls are independent of each other — reading three files in parallel instead of one after another.
 
 ## The price: context
 
@@ -69,8 +69,9 @@ Every tool definition sits in the context — on **every single request**, wheth
 That is the starting point for the next chapter: [MCP](../mcp/) makes it easy to connect a great many tools — and thereby makes exactly this problem visible.
 
 <KeyTakeaway>
-- Tool use is how a model reaches the outside world — the foundation under MCP, skills and every agent.
-- The model only requests calls; your code executes them. That is where the central control point lies.
+- Tool use is how the model reaches the outside world — every file change and test run in Claude Code goes through it.
+- The model only requests calls; the harness executes them according to your permissions. That is where the central control point lies.
 - A tool description is steering, not documentation: it has to say when the tool should be used.
+- Errors and stack traces belong in the tool result in full — they are the raw material of the fix.
 - Every definition costs context on every request — even unused.
 </KeyTakeaway>
