@@ -1,0 +1,289 @@
+/* Shared chrome for the interactive demos. Component-specific rules live in
+   the components themselves; this file is only what all six have in common. */
+
+.demo {
+  margin: 2.2rem 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg-elev);
+  overflow: hidden;
+}
+
+.demo__head {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.7rem 1.1rem;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.demo__badge {
+  font-size: 0.63rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--accent);
+  background: var(--accent-wash);
+  border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent);
+  border-radius: 999px;
+  padding: 0.16rem 0.55rem;
+  flex: none;
+}
+
+.demo__title {
+  font-size: 0.9rem;
+  font-weight: 620;
+  letter-spacing: -0.01em;
+}
+
+.demo__body {
+  padding: 1.1rem;
+}
+
+.demo__note {
+  font-size: 0.82rem;
+  color: var(--text-faint);
+  line-height: 1.55;
+}
+
+/* Controls ------------------------------------------------------------- */
+
+.demo__controls {
+  display: grid;
+  gap: 0.9rem 1.4rem;
+  grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+  margin-bottom: 1.2rem;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
+.field__label {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0.5rem;
+  font-size: 0.74rem;
+  font-weight: 650;
+  letter-spacing: 0.03em;
+  color: var(--text-dim);
+}
+
+.field__value {
+  font-family: var(--font-mono);
+  font-size: 0.76rem;
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+
+input[type='range'] {
+  width: 100%;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+select,
+.demo input[type='text'],
+.demo textarea {
+  width: 100%;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 0.42rem 0.6rem;
+  font-size: 0.87rem;
+}
+
+.demo textarea {
+  resize: vertical;
+  min-height: 5.5rem;
+  font-family: var(--font-mono);
+  line-height: 1.55;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.45rem 0.85rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  font-size: 0.83rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btn:hover:not(:disabled) {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.btn--primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #06201d;
+}
+
+:root[data-theme='light'] .btn--primary {
+  color: #fff;
+}
+
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme='dark']) .btn--primary {
+    color: #fff;
+  }
+}
+
+.btn--primary:hover:not(:disabled) {
+  background: var(--accent-dim);
+  border-color: var(--accent-dim);
+  color: #06201d;
+}
+
+:root[data-theme='light'] .btn--primary:hover:not(:disabled) {
+  color: #fff;
+}
+
+.btnrow {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+/* Readouts ------------------------------------------------------------- */
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(7.5rem, 1fr));
+  gap: 0.6rem;
+  margin-top: 1rem;
+}
+
+.stat {
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  min-width: 0;
+}
+
+.stat__label {
+  font-size: 0.68rem;
+  font-weight: 650;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+  line-height: 1.3;
+}
+
+.stat__value {
+  font-family: var(--font-mono);
+  font-size: 1.15rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+  margin-top: 0.2rem;
+  line-height: 1.2;
+}
+
+.stat__value small {
+  font-size: 0.72rem;
+  color: var(--text-faint);
+  font-weight: 500;
+  margin-left: 0.15rem;
+}
+
+.stat--accent .stat__value {
+  color: var(--accent);
+}
+.stat--warn .stat__value {
+  color: var(--warn);
+}
+.stat--danger .stat__value {
+  color: var(--danger);
+}
+
+/* Status line ---------------------------------------------------------- */
+
+.statusline {
+  margin-top: 0.9rem;
+  padding: 0.55rem 0.8rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.84rem;
+  line-height: 1.5;
+  border: 1px solid transparent;
+}
+
+.statusline--ok {
+  background: var(--accent-wash);
+  border-color: color-mix(in srgb, var(--accent) 28%, transparent);
+  color: var(--text);
+}
+
+.statusline--warn {
+  background: var(--warn-wash);
+  border-color: color-mix(in srgb, var(--warn) 32%, transparent);
+  color: var(--text);
+}
+
+.statusline--bad {
+  background: var(--danger-wash);
+  border-color: color-mix(in srgb, var(--danger) 32%, transparent);
+  color: var(--text);
+}
+
+/* Stacked bar ---------------------------------------------------------- */
+
+.stack {
+  display: flex;
+  height: 2.4rem;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  border: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.stack__seg {
+  min-width: 0;
+  transition: flex-basis 0.25s ease;
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.1rem;
+  margin-top: 0.7rem;
+  font-size: 0.79rem;
+}
+
+.legend__item {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: var(--text-dim);
+}
+
+.legend__swatch {
+  width: 0.7rem;
+  height: 0.7rem;
+  border-radius: 3px;
+  flex: none;
+}
+
+.legend__num {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+}

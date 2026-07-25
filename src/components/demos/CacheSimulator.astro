@@ -1,0 +1,293 @@
+---
+import { t, type Locale } from '../../i18n/ui';
+
+interface Props {
+  locale: Locale;
+}
+const { locale } = Astro.props;
+const tr = t(locale);
+
+// The blocks render in the order the API assembles a prompt: tools, then
+// system, then the conversation.
+const BLOCKS = [
+  {
+    id: 'tools',
+    tokens: 4200,
+    de: { name: 'Tool-Definitionen', hint: 'Schemas aller aktiven Tools' },
+    en: { name: 'Tool definitions', hint: 'Schemas for every active tool' },
+  },
+  {
+    id: 'system',
+    tokens: 2600,
+    de: { name: 'System-Prompt', hint: 'Rolle, Regeln, Format' },
+    en: { name: 'System prompt', hint: 'Role, rules, format' },
+  },
+  {
+    id: 'docs',
+    tokens: 18000,
+    de: { name: 'Referenzdokumente', hint: 'Handbuch, Beispiele, Schema' },
+    en: { name: 'Reference documents', hint: 'Manual, examples, schema' },
+  },
+  {
+    id: 'history',
+    tokens: 7400,
+    de: { name: 'Bisheriger Verlauf', hint: 'Frühere Runden' },
+    en: { name: 'Conversation so far', hint: 'Earlier turns' },
+  },
+  {
+    id: 'question',
+    tokens: 180,
+    de: { name: 'Neue Frage', hint: 'Ändert sich jedes Mal' },
+    en: { name: 'New question', hint: 'Different every time' },
+  },
+];
+
+const blocks = BLOCKS.map((b) => ({ id: b.id, tokens: b.tokens, ...b[locale] }));
+---
+
+<section
+  class="demo cachesim"
+  id="cs-demo"
+  data-hit={tr('cache.hit')}
+  data-miss={tr('cache.miss')}
+  data-explain-hit={tr('cache.explainHit')}
+  data-explain-miss={tr('cache.explainMiss')}
+  data-edited={tr('cache.edited')}
+  data-vs={tr('cache.vsUncached')}
+>
+  <div class="demo__head">
+    <span class="demo__badge">{tr('demo.title')}</span>
+    <span class="demo__title">{tr('cache.title')}</span>
+  </div>
+  <div class="demo__body">
+    <ol class="cs__list">
+      {
+        blocks.map((b, i) => (
+          <li class="cs__block" data-id={b.id} data-index={i}>
+            <div class="cs__blockMain">
+              <span class="cs__state" data-state="hit" aria-hidden="true" />
+              <span class="cs__name">
+                {b.name}
+                <em class="cs__edited" hidden />
+              </span>
+              <span class="cs__hint">{b.hint}</span>
+              <span class="cs__tokens u-mono u-tabular">{b.tokens.toLocaleString(locale)}</span>
+              <button class="cs__edit btn" type="button" data-edit={b.id}>
+                {tr('cache.edit')}
+              </button>
+            </div>
+            <p class="cs__status" data-status={b.id} />
+          </li>
+        ))
+      }
+    </ol>
+
+    <p class="cs__breakpoint">
+      <span>↑ {tr('cache.breakpoint')}</span>
+    </p>
+
+    <div class="stats">
+      <div class="stat stat--accent">
+        <div class="stat__label">{tr('cache.hit')}</div>
+        <div class="stat__value" id="cs-hit">–</div>
+      </div>
+      <div class="stat stat--warn">
+        <div class="stat__label">{tr('cache.miss')}</div>
+        <div class="stat__value" id="cs-miss">–</div>
+      </div>
+      <div class="stat">
+        <div class="stat__label">{tr('cache.cost')}</div>
+        <div class="stat__value" id="cs-cost">–</div>
+      </div>
+    </div>
+
+    <p class="statusline statusline--ok" id="cs-explain"></p>
+
+    <div class="btnrow" style="margin-top:1rem">
+      <button class="btn" id="cs-reset" type="button">{tr('cache.reset')}</button>
+    </div>
+  </div>
+</section>
+
+<script>
+  const root = document.getElementById('cs-demo');
+  if (root) {
+    const blocks = [...root.querySelectorAll<HTMLElement>('.cs__block')];
+    const tokensOf = (el: HTMLElement) =>
+      Number(el.querySelector('.cs__tokens')!.textContent!.replace(/\D/g, ''));
+
+    // Cache reads cost about a tenth of the base input price; everything from
+    // the first changed block onwards is billed at full price.
+    const READ_MULTIPLIER = 0.1;
+
+    let editedIndex: number | null = null;
+    const lang = document.documentElement.lang || 'de';
+    const fmt = new Intl.NumberFormat(lang);
+
+    function update() {
+      let cached = 0;
+      let recomputed = 0;
+
+      blocks.forEach((block, i) => {
+        const tokens = tokensOf(block);
+        const isMiss = editedIndex !== null && i >= editedIndex;
+        // The final block always varies, so it is never a cache hit.
+        const alwaysFresh = i === blocks.length - 1;
+        const miss = isMiss || alwaysFresh;
+
+        if (miss) recomputed += tokens;
+        else cached += tokens;
+
+        block.dataset.miss = String(miss);
+        block.querySelector<HTMLElement>('.cs__state')!.dataset.state = miss ? 'miss' : 'hit';
+
+        const status = block.querySelector<HTMLElement>('.cs__status')!;
+        status.textContent = miss ? root.dataset.miss! : root.dataset.hit!;
+
+        const edited = block.querySelector<HTMLElement>('.cs__edited')!;
+        edited.hidden = editedIndex !== i;
+        edited.textContent = ` · ${root.dataset.edited}`;
+      });
+
+      const total = cached + recomputed;
+      const billed = cached * READ_MULTIPLIER + recomputed;
+      const saving = total ? (1 - billed / total) * 100 : 0;
+
+      document.getElementById('cs-hit')!.textContent = fmt.format(cached);
+      document.getElementById('cs-miss')!.textContent = fmt.format(recomputed);
+      document.getElementById('cs-cost')!.innerHTML =
+        `${saving.toFixed(0)} %<small> ${root.dataset.vs}</small>`;
+
+      const explain = document.getElementById('cs-explain')!;
+      explain.textContent =
+        editedIndex === null ? root.dataset.explainHit! : root.dataset.explainMiss!;
+      explain.className =
+        editedIndex === null ? 'statusline statusline--ok' : 'statusline statusline--warn';
+    }
+
+    root.querySelectorAll<HTMLButtonElement>('[data-edit]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const block = btn.closest<HTMLElement>('.cs__block')!;
+        const index = Number(block.dataset.index);
+        editedIndex = editedIndex === index ? null : index;
+        update();
+      });
+    });
+
+    document.getElementById('cs-reset')!.addEventListener('click', () => {
+      editedIndex = null;
+      update();
+    });
+
+    update();
+  }
+</script>
+
+<style>
+  .cs__list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .cs__block {
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+    padding: 0.55rem 0.7rem;
+    transition: background 0.2s, border-color 0.2s;
+  }
+
+  .cs__block[data-miss='true'] {
+    background: var(--warn-wash);
+    border-color: color-mix(in srgb, var(--warn) 35%, transparent);
+  }
+
+  .cs__blockMain {
+    display: grid;
+    grid-template-columns: 0.55rem minmax(6rem, auto) minmax(0, 1fr) auto auto;
+    align-items: center;
+    gap: 0.65rem;
+  }
+
+  .cs__state {
+    width: 0.55rem;
+    height: 0.55rem;
+    border-radius: 50%;
+    background: var(--accent);
+  }
+
+  .cs__state[data-state='miss'] {
+    background: var(--warn);
+  }
+
+  .cs__name {
+    font-size: 0.87rem;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  .cs__edited {
+    font-style: normal;
+    font-weight: 500;
+    font-size: 0.75rem;
+    color: var(--warn);
+  }
+
+  .cs__hint {
+    font-size: 0.78rem;
+    color: var(--text-faint);
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .cs__tokens {
+    font-size: 0.8rem;
+    color: var(--text-dim);
+  }
+
+  .cs__edit {
+    padding: 0.2rem 0.5rem;
+    font-size: 0.74rem;
+  }
+
+  .cs__status {
+    font-size: 0.74rem;
+    color: var(--text-faint);
+    margin: 0.25rem 0 0 1.2rem;
+  }
+
+  .cs__block[data-miss='true'] .cs__status {
+    color: var(--warn);
+  }
+
+  .cs__breakpoint {
+    display: flex;
+    justify-content: flex-end;
+    font-size: 0.72rem;
+    font-family: var(--font-mono);
+    color: var(--text-faint);
+    margin-top: 0.4rem;
+    padding-right: 0.3rem;
+  }
+
+  @media (max-width: 40rem) {
+    .cs__blockMain {
+      grid-template-columns: 0.55rem minmax(0, 1fr) auto;
+      row-gap: 0.35rem;
+    }
+    .cs__hint {
+      grid-column: 2 / -1;
+      white-space: normal;
+    }
+    .cs__edit {
+      grid-column: 3;
+      grid-row: 1;
+    }
+  }
+</style>

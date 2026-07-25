@@ -85,6 +85,8 @@ export const ui = {
     'pd.ttft': 'Zeit bis zum ersten Token',
     'pd.speed': 'Ausgabegeschwindigkeit',
     'pd.promptLen': 'Prompt-Länge',
+    'pd.animNote':
+      'Die Animation läuft bewusst verlangsamt. Die angezeigten Werte sind realistische Größenordnungen für ein mittelgroßes Modell auf einer GPU.',
 
     'cache.title': 'Prompt-Caching-Simulator',
     'cache.hit': 'Aus dem Cache gelesen',
@@ -202,6 +204,8 @@ export const ui = {
     'pd.ttft': 'Time to first token',
     'pd.speed': 'Output speed',
     'pd.promptLen': 'Prompt length',
+    'pd.animNote':
+      'The animation is deliberately slowed down. The figures shown are realistic orders of magnitude for a mid-sized model on one GPU.',
 
     'cache.title': 'Prompt caching simulator',
     'cache.hit': 'Read from cache',

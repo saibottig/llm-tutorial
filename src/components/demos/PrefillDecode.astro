@@ -1,0 +1,259 @@
+---
+import { t, type Locale } from '../../i18n/ui';
+
+interface Props {
+  locale: Locale;
+}
+const { locale } = Astro.props;
+const tr = t(locale);
+---
+
+<section class="demo pd" id="pd-demo">
+  <div class="demo__head">
+    <span class="demo__badge">{tr('demo.title')}</span>
+    <span class="demo__title">{tr('pd.title')}</span>
+  </div>
+  <div class="demo__body">
+    <div class="demo__controls">
+      <label class="field">
+        <span class="field__label">
+          <span>{tr('pd.promptLen')}</span>
+          <span class="field__value" id="pd-len-out">8k</span>
+        </span>
+        <input type="range" id="pd-len" min="1" max="40" step="1" value="16" />
+      </label>
+    </div>
+
+    <div class="pd__phase">
+      <span class="pd__phaseLabel" data-phase="prefill" id="pd-label-prefill">{tr('pd.prefill')}</span>
+      <span class="pd__phaseNote">{tr('pd.prefillNote')}</span>
+    </div>
+    <div class="pd__grid" id="pd-prompt" aria-hidden="true"></div>
+
+    <div class="pd__phase">
+      <span class="pd__phaseLabel" data-phase="decode" id="pd-label-decode">{tr('pd.decode')}</span>
+      <span class="pd__phaseNote">{tr('pd.decodeNote')}</span>
+    </div>
+    <div class="pd__grid pd__grid--out" id="pd-output" aria-hidden="true"></div>
+
+    <div class="stats">
+      <div class="stat stat--warn">
+        <div class="stat__label">{tr('pd.ttft')}</div>
+        <div class="stat__value" id="pd-ttft">–</div>
+      </div>
+      <div class="stat stat--accent">
+        <div class="stat__label">{tr('pd.speed')}</div>
+        <div class="stat__value" id="pd-speed">–</div>
+      </div>
+    </div>
+
+    <div class="btnrow" style="margin-top:1rem">
+      <button class="btn btn--primary" id="pd-play" type="button" data-replay={tr('pd.replay')}>
+        {tr('pd.play')}
+      </button>
+    </div>
+
+    <p class="demo__note" style="margin-top:.8rem">{tr('pd.animNote')}</p>
+  </div>
+</section>
+
+<script>
+  const root = document.getElementById('pd-demo');
+  if (root) {
+    const OUTPUT_TOKENS = 24;
+
+    // Two separate concerns, deliberately decoupled:
+    //  - the numbers below are realistic rates for a mid-sized model on one GPU
+    //  - the animation runs at its own, much slower pace so it stays watchable
+    const PREFILL_TOKENS_PER_SEC = 3500; // parallel, compute-bound
+    const DECODE_TOKENS_PER_SEC = 45; // sequential, bandwidth-bound
+    const CELLS_PER_STEP = 500; // one grid cell stands for this many tokens
+    const ANIM_PREFILL_MS = 600;
+    const ANIM_PER_TOKEN_MS = 90;
+
+    const lenInput = document.getElementById('pd-len') as HTMLInputElement;
+    const lenOut = document.getElementById('pd-len-out')!;
+    const promptGrid = document.getElementById('pd-prompt')!;
+    const outputGrid = document.getElementById('pd-output')!;
+    const play = document.getElementById('pd-play') as HTMLButtonElement;
+    const ttft = document.getElementById('pd-ttft')!;
+    const speed = document.getElementById('pd-speed')!;
+    const labelPrefill = document.getElementById('pd-label-prefill')!;
+    const labelDecode = document.getElementById('pd-label-decode')!;
+
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    let timers: number[] = [];
+
+    function clearTimers() {
+      timers.forEach((id) => window.clearTimeout(id));
+      timers = [];
+    }
+
+    function build() {
+      const promptTokens = Number(lenInput.value) * CELLS_PER_STEP;
+      const cells = Number(lenInput.value);
+      lenOut.textContent =
+        promptTokens >= 1000 ? `${(promptTokens / 1000).toFixed(0)}k` : String(promptTokens);
+
+      promptGrid.textContent = '';
+      for (let i = 0; i < cells; i++) {
+        const cell = document.createElement('i');
+        cell.className = 'pd__cell';
+        promptGrid.appendChild(cell);
+      }
+      outputGrid.textContent = '';
+      for (let i = 0; i < OUTPUT_TOKENS; i++) {
+        const cell = document.createElement('i');
+        cell.className = 'pd__cell pd__cell--out';
+        outputGrid.appendChild(cell);
+      }
+
+      // Time to first token is essentially the prefill pass: it grows with the
+      // prompt. Decode speed does not — it is the same per token regardless of
+      // how long the prompt was.
+      const ttftMs = (promptTokens / PREFILL_TOKENS_PER_SEC) * 1000;
+      ttft.textContent = ttftMs >= 1000 ? `${(ttftMs / 1000).toFixed(1)} s` : `${Math.round(ttftMs)} ms`;
+      speed.textContent = `${DECODE_TOKENS_PER_SEC} tok/s`;
+      return { cells };
+    }
+
+    function run() {
+      clearTimers();
+      const { cells: n } = build();
+      play.disabled = true;
+      labelPrefill.dataset.active = 'true';
+      labelDecode.dataset.active = 'false';
+
+      const promptCells = [...promptGrid.children] as HTMLElement[];
+      const outCells = [...outputGrid.children] as HTMLElement[];
+
+      if (reduceMotion) {
+        promptCells.forEach((c) => (c.dataset.on = 'true'));
+        outCells.forEach((c) => (c.dataset.on = 'true'));
+        labelPrefill.dataset.active = 'false';
+        play.disabled = false;
+        return;
+      }
+
+      // Prefill: the whole prompt lights up in one sweep — a single parallel pass.
+      const sweep = ANIM_PREFILL_MS * 0.45;
+      const prefillStep = sweep / Math.max(n, 1);
+      promptCells.forEach((cell, i) => {
+        timers.push(
+          window.setTimeout(() => {
+            cell.dataset.on = 'true';
+          }, i * prefillStep),
+        );
+      });
+
+      const prefillDone = ANIM_PREFILL_MS;
+      timers.push(
+        window.setTimeout(() => {
+          labelPrefill.dataset.active = 'false';
+          labelDecode.dataset.active = 'true';
+        }, prefillDone),
+      );
+
+      // Decode: strictly one after another.
+      outCells.forEach((cell, i) => {
+        timers.push(
+          window.setTimeout(
+            () => {
+              cell.dataset.on = 'true';
+              if (i === outCells.length - 1) {
+                labelDecode.dataset.active = 'false';
+                play.disabled = false;
+                play.textContent = play.dataset.replay ?? play.textContent;
+              }
+            },
+            prefillDone + (i + 1) * ANIM_PER_TOKEN_MS,
+          ),
+        );
+      });
+    }
+
+    lenInput.addEventListener('input', () => {
+      clearTimers();
+      build();
+    });
+    play.addEventListener('click', run);
+
+    build();
+  }
+</script>
+
+<style>
+  .pd__phase {
+    display: flex;
+    align-items: baseline;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+    margin-top: 1rem;
+    margin-bottom: 0.45rem;
+  }
+
+  .pd__phase:first-of-type {
+    margin-top: 0.4rem;
+  }
+
+  .pd__phaseLabel {
+    font-family: var(--font-mono);
+    font-size: 0.73rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 0.12rem 0.45rem;
+    border-radius: 4px;
+    border: 1px solid transparent;
+    color: var(--text-faint);
+    background: var(--surface);
+    transition: color 0.2s, background 0.2s, border-color 0.2s;
+  }
+
+  .pd__phaseLabel[data-phase='prefill'][data-active='true'] {
+    color: var(--warn);
+    background: var(--warn-wash);
+    border-color: color-mix(in srgb, var(--warn) 40%, transparent);
+  }
+
+  .pd__phaseLabel[data-phase='decode'][data-active='true'] {
+    color: var(--accent);
+    background: var(--accent-wash);
+    border-color: color-mix(in srgb, var(--accent) 40%, transparent);
+  }
+
+  .pd__phaseNote {
+    font-size: 0.78rem;
+    color: var(--text-faint);
+    line-height: 1.5;
+  }
+
+  .pd__grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 3px;
+    padding: 0.6rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+    min-height: 2.6rem;
+    align-content: flex-start;
+  }
+
+  .pd__cell {
+    width: 0.72rem;
+    height: 0.72rem;
+    border-radius: 2px;
+    background: var(--surface-hi);
+    transition: background 0.18s ease, transform 0.18s ease;
+  }
+
+  .pd__cell[data-on='true'] {
+    background: var(--warn);
+    transform: scale(1.06);
+  }
+
+  .pd__cell--out[data-on='true'] {
+    background: var(--accent);
+  }
+</style>

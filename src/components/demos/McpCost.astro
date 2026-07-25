@@ -1,0 +1,168 @@
+---
+import { t, type Locale } from '../../i18n/ui';
+
+interface Props {
+  locale: Locale;
+}
+const { locale } = Astro.props;
+const tr = t(locale);
+
+// Representative servers: tool counts and definition sizes in the range you
+// actually see in the wild.
+const SERVERS = [
+  { id: 'github', name: 'GitHub', tools: 34, tokens: 6800, on: true },
+  { id: 'filesystem', name: 'Filesystem', tools: 11, tokens: 1900, on: true },
+  { id: 'slack', name: 'Slack', tools: 9, tokens: 1700, on: false },
+  { id: 'jira', name: 'Jira', tools: 22, tokens: 4600, on: true },
+  { id: 'postgres', name: 'Postgres', tools: 6, tokens: 1300, on: false },
+  { id: 'browser', name: 'Browser', tools: 14, tokens: 3100, on: false },
+  { id: 'sentry', name: 'Sentry', tools: 12, tokens: 2400, on: false },
+];
+---
+
+<section
+  class="demo mcp"
+  id="mcp-demo"
+  data-share={tr('mcp.share')}
+  data-perrequest={tr('mcp.perRequest')}
+>
+  <div class="demo__head">
+    <span class="demo__badge">{tr('demo.title')}</span>
+    <span class="demo__title">{tr('mcp.title')}</span>
+  </div>
+  <div class="demo__body">
+    <div class="mcp__servers">
+      {
+        SERVERS.map((s) => (
+          <label class="mcp__server">
+            <input type="checkbox" data-server={s.id} data-tokens={s.tokens} data-tools={s.tools} checked={s.on} />
+            <span class="mcp__name">{s.name}</span>
+            <span class="mcp__meta u-mono">
+              {s.tools} {tr('mcp.tools')} · {s.tokens.toLocaleString(locale)}
+            </span>
+          </label>
+        ))
+      }
+    </div>
+
+    <div class="btnrow" style="margin-top:.8rem">
+      <button class="btn" id="mcp-all" type="button">{tr('mcp.allOn')}</button>
+      <button class="btn" id="mcp-none" type="button">{tr('mcp.allOff')}</button>
+    </div>
+
+    <div class="stats">
+      <div class="stat stat--warn">
+        <div class="stat__label">{tr('mcp.tokens')}</div>
+        <div class="stat__value" id="mcp-tokens">–</div>
+      </div>
+      <div class="stat">
+        <div class="stat__label">{tr('mcp.tools')}</div>
+        <div class="stat__value" id="mcp-tools">–</div>
+      </div>
+      <div class="stat stat--accent">
+        <div class="stat__label">{tr('mcp.skillsCompare')}</div>
+        <div class="stat__value" id="mcp-skills">–</div>
+      </div>
+    </div>
+
+    <p class="statusline statusline--warn" id="mcp-status"></p>
+  </div>
+</section>
+
+<script>
+  const root = document.getElementById('mcp-demo');
+  if (root) {
+    // A skill keeps only its name and one-line description resident; the body
+    // is read on demand. That header is roughly 30 tokens per capability.
+    const SKILL_HEADER_TOKENS = 30;
+    const WINDOW = 200000;
+
+    const boxes = [...root.querySelectorAll<HTMLInputElement>('[data-server]')];
+    const lang = document.documentElement.lang || 'de';
+    const fmt = new Intl.NumberFormat(lang);
+
+    function update() {
+      let tokens = 0;
+      let tools = 0;
+      for (const box of boxes) {
+        if (!box.checked) continue;
+        tokens += Number(box.dataset.tokens);
+        tools += Number(box.dataset.tools);
+      }
+      const skills = tools * SKILL_HEADER_TOKENS;
+
+      document.getElementById('mcp-tokens')!.textContent = fmt.format(tokens);
+      document.getElementById('mcp-tools')!.textContent = fmt.format(tools);
+      document.getElementById('mcp-skills')!.textContent = fmt.format(skills);
+
+      const share = (tokens / WINDOW) * 100;
+      const status = document.getElementById('mcp-status')!;
+      status.textContent =
+        `${fmt.format(tokens)} ${root.dataset.perrequest} — ${share.toFixed(1)} % ${root.dataset.share} (200k).`;
+      status.className =
+        share > 8
+          ? 'statusline statusline--bad'
+          : share > 3
+            ? 'statusline statusline--warn'
+            : 'statusline statusline--ok';
+    }
+
+    boxes.forEach((b) => b.addEventListener('change', update));
+    document.getElementById('mcp-all')!.addEventListener('click', () => {
+      boxes.forEach((b) => (b.checked = true));
+      update();
+    });
+    document.getElementById('mcp-none')!.addEventListener('click', () => {
+      boxes.forEach((b) => (b.checked = false));
+      update();
+    });
+
+    update();
+  }
+</script>
+
+<style>
+  .mcp__servers {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(13.5rem, 1fr));
+    gap: 0.4rem;
+  }
+
+  .mcp__server {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    gap: 0.3rem 0.55rem;
+    padding: 0.5rem 0.65rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+    cursor: pointer;
+  }
+
+  .mcp__server:hover {
+    border-color: var(--border-hi);
+  }
+
+  .mcp__server:has(input:checked) {
+    border-color: color-mix(in srgb, var(--warn) 45%, transparent);
+    background: var(--warn-wash);
+  }
+
+  .mcp__server input {
+    accent-color: var(--warn);
+    cursor: pointer;
+    margin: 0;
+  }
+
+  .mcp__name {
+    font-size: 0.87rem;
+    font-weight: 600;
+  }
+
+  .mcp__meta {
+    grid-column: 2;
+    font-size: 0.72rem;
+    color: var(--text-faint);
+  }
+</style>
