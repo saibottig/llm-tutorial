@@ -10,11 +10,17 @@
     "dev": "astro dev",
     "build": "node scripts/check-translations.mjs && astro build",
     "preview": "astro preview",
-    "check": "node scripts/check-translations.mjs"
+    "check": "node scripts/check-translations.mjs",
+    "test": "playwright test",
+    "test:ui": "playwright test --ui"
   },
   "dependencies": {
     "@astrojs/mdx": "^7.0.3",
     "astro": "^7.1.3",
     "gpt-tokenizer": "^3.0.1"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.62.0",
+    "@types/node": "^26.1.1"
   }
 }

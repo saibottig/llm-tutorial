@@ -5,6 +5,8 @@ part: 3
 order: 3
 ---
 
+import Terminal from '../../../components/demos/Terminal.astro';
+
 A model can only produce text on its own — it cannot read a file or start `./gradlew test`. That Claude Code does anyway is **tool use**: the mechanism under [MCP](../mcp/), [skills](../skills/) and everything agentic.
 
 ## The flow
@@ -28,6 +30,8 @@ An "agent" is nothing more: this loop plus a stopping condition. Read class, wri
 <Callout type="merke">
 **The model executes nothing.** It formulates requests; whether they are granted is decided by the harness according to your permissions. That is the arrangement's most important security property: every tool call is a checkpoint → [Prompt Injection](../prompt-injection/).
 </Callout>
+
+<Terminal locale="en" variant="inline" scenarios={['unit-test']} title="The tool loop, step by step" />
 
 ## Describing your own tools
 

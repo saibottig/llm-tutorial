@@ -1,0 +1,1062 @@
+---
+/**
+ * The terminal playground. Unlike the other five demos this one appears more
+ * than once per page, so nothing here may rely on a fixed element id: the root
+ * carries `data-terminal`, its configuration rides in a JSON script tag, and
+ * the module script initialises every instance it finds.
+ *
+ * `variant="inline"` is the trimmed version for chapters — one scenario, no
+ * server panel, no free input, and a link to the full page.
+ */
+import { t, type Locale } from '../../i18n/ui';
+import { url } from '../../lib/chapters';
+import { MCP_SERVERS, SESSION } from '../../lib/terminal/world';
+import transcript from '../../lib/terminal/transcript.json';
+
+interface Props {
+  locale: Locale;
+  variant?: 'full' | 'inline';
+  /** Scenario ids to offer, in order. Defaults to all of them. */
+  scenarios?: string[];
+  /** Show the MCP server panel. */
+  servers?: boolean;
+  /** Allow free-text input. */
+  input?: boolean;
+  /** Servers enabled at start; falls back to the presets in world.ts. */
+  mcp?: Record<string, boolean>;
+  /** Show the “open the full playground” link (inline instances). */
+  more?: boolean;
+  title?: string;
+}
+
+const {
+  locale,
+  variant = 'full',
+  scenarios,
+  servers = variant === 'full',
+  input = variant === 'full',
+  mcp,
+  more = variant === 'inline',
+  title,
+} = Astro.props;
+
+const tr = t(locale);
+
+const chosen = scenarios
+  ? scenarios
+      .map((id) => transcript.scenarios.find((s) => s.id === id))
+      .filter((s): s is (typeof transcript.scenarios)[number] => Boolean(s))
+  : transcript.scenarios;
+
+const config = { locale, variant, servers, input, mcp: mcp ?? null };
+
+const startOn = (id: string) => mcp?.[id] ?? MCP_SERVERS.find((s) => s.id === id)!.on;
+---
+
+<section class="demo term" data-terminal data-variant={variant}>
+  <div class="demo__head">
+    <span class="demo__badge">{tr('demo.title')}</span>
+    <span class="demo__title">{title ?? tr('term.title')}</span>
+  </div>
+
+  <div class="demo__body term__body">
+    {
+      chosen.length > 0 && (
+        <div class="term__scenarios">
+          <span class="term__panelLabel">{tr('term.scenarios')}</span>
+          <div class="term__chips">
+            {chosen.map((s) => (
+              <button
+                class="term__chip"
+                type="button"
+                data-scenario={s.id}
+                title={s.hint[locale]}
+              >
+                {s.label[locale]}
+              </button>
+            ))}
+          </div>
+        </div>
+      )
+    }
+
+    <div class="term__grid" data-panel={servers ? 'true' : 'false'}>
+      {
+        servers && (
+          <aside class="term__servers">
+            <span class="term__panelLabel">{tr('term.servers')}</span>
+            {MCP_SERVERS.map((s) => (
+              <label class="term__server">
+                <input type="checkbox" data-server={s.id} checked={startOn(s.id)} />
+                <span class="term__serverName">{s.name}</span>
+                <span class="term__serverMeta u-mono">{(s.tokens / 1000).toFixed(1)}k</span>
+              </label>
+            ))}
+          </aside>
+        )
+      }
+
+      <div class="term__screen">
+        <div class="term__out" data-out role="log" aria-live="polite"></div>
+
+        {
+          input ? (
+            <form class="term__prompt" data-form>
+              <span class="term__caret" aria-hidden="true">
+                &gt;
+              </span>
+              <input
+                class="term__input"
+                data-input
+                type="text"
+                autocomplete="off"
+                spellcheck="false"
+                placeholder={tr('term.placeholder')}
+                aria-label={tr('term.placeholder')}
+              />
+              <button class="btn btn--primary term__send" type="submit">
+                {tr('term.run')}
+              </button>
+            </form>
+          ) : (
+            <div class="term__prompt term__prompt--static">
+              <span class="term__caret" aria-hidden="true">
+                &gt;
+              </span>
+              <span class="term__hint">{tr('term.skip')}</span>
+            </div>
+          )
+        }
+
+        <div class="term__status">
+          <span class="term__statusModel u-mono">{SESSION.model}</span>
+          <div class="term__meter" data-meter aria-hidden="true"></div>
+          <span class="term__statusText u-mono" data-status></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="term__foot">
+      <button class="term__linkbtn" type="button" data-reset>{tr('term.reset')}</button>
+      {
+        input && (
+          <button class="term__linkbtn" type="button" data-exact>
+            {tr('term.exact')}
+          </button>
+        )
+      }
+      {
+        more && (
+          <a class="term__linkbtn term__linkbtn--go" href={url(locale, 'playground')}>
+            {tr('term.openFull')}
+          </a>
+        )
+      }
+    </div>
+
+    <p class="demo__note term__note" data-note>{tr('term.note')}</p>
+  </div>
+
+  {/* Configuration travels as data, not as define:vars — a define:vars script
+      is implicitly inline, which would leave the tokenizer's dynamic import as
+      a bare specifier the browser cannot resolve. */}
+  <script type="application/json" data-terminal-config is:inline set:html={JSON.stringify(config)} />
+
+  <script
+    type="application/json"
+    data-terminal-strings
+    is:inline
+    set:html={JSON.stringify({
+      permission: tr('term.permission'),
+      allow: tr('term.allow'),
+      deny: tr('term.deny'),
+      context: tr('term.context'),
+      tool: tr('term.tool'),
+      tools: tr('term.tools'),
+      turn: tr('term.turn'),
+      turns: tr('term.turns'),
+      allowed: tr('term.allowed'),
+      deniedShort: tr('term.denied'),
+      exact: tr('term.exact'),
+      exactLoading: tr('term.exactLoading'),
+      exactDone: tr('term.exactDone'),
+      exactError: tr('term.exactError'),
+    })}
+  />
+</section>
+
+<script>
+  import { createSession, resolve, type Locale, type Step, type Text } from '../../lib/terminal/engine';
+  import { BLOCK_COLOR, MCP_SERVERS } from '../../lib/terminal/world';
+  import raw from '../../lib/terminal/transcript.json';
+
+  const transcript = raw as unknown as import('../../lib/terminal/engine').Transcript;
+
+  type Config = {
+    locale: Locale;
+    variant: 'full' | 'inline';
+    servers: boolean;
+    input: boolean;
+    mcp: Record<string, boolean> | null;
+  };
+
+  type Strings = Record<string, string>;
+
+  const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+  function initTerminal(root: HTMLElement) {
+    const config = JSON.parse(
+      root.querySelector('[data-terminal-config]')!.textContent!,
+    ) as Config;
+    const strings = JSON.parse(
+      root.querySelector('[data-terminal-strings]')!.textContent!,
+    ) as Strings;
+
+    const locale = config.locale;
+    const fmt = new Intl.NumberFormat(locale);
+    const session = createSession({
+      locale,
+      transcript,
+      mcp: config.mcp ?? undefined,
+    });
+
+    const out = root.querySelector<HTMLElement>('[data-out]')!;
+    const form = root.querySelector<HTMLFormElement>('[data-form]');
+    const inputEl = root.querySelector<HTMLInputElement>('[data-input]');
+    const statusEl = root.querySelector<HTMLElement>('[data-status]')!;
+    const meterEl = root.querySelector<HTMLElement>('[data-meter]')!;
+    const noteEl = root.querySelector<HTMLElement>('[data-note]')!;
+    const boxes = [...root.querySelectorAll<HTMLInputElement>('[data-server]')];
+
+    const text = (t: Text | undefined) => resolve(t, locale);
+
+    /** Set while an Esc press should collapse the current animation. */
+    let skip = false;
+    let busy = false;
+    /** Flips once the real tokenizer replaced the character estimate. */
+    let exactCounting = false;
+    /** While a permission prompt is open, Esc means “deny”, not “skip”. */
+    let awaitingPermission = false;
+    const history: string[] = [];
+    let historyIndex = -1;
+
+    /* ── Output primitives ───────────────────────────────────────────── */
+
+    function line(cls: string, content?: string): HTMLElement {
+      const el = document.createElement('div');
+      el.className = 'term__line ' + cls;
+      if (content !== undefined) el.textContent = content;
+      out.appendChild(el);
+      out.scrollTop = out.scrollHeight;
+      return el;
+    }
+
+    async function type(el: HTMLElement, content: string) {
+      if (skip) {
+        el.textContent = content;
+        return;
+      }
+      // Fast enough to feel alive, slow enough to read the first words —
+      // and long answers speed up so nobody waits on a paragraph.
+      const step = content.length > 220 ? 3 : 1;
+      const delay = content.length > 220 ? 6 : 12;
+      for (let i = 0; i < content.length; i += step) {
+        if (skip) break;
+        el.textContent = content.slice(0, i + step);
+        out.scrollTop = out.scrollHeight;
+        await sleep(delay);
+      }
+      el.textContent = content;
+      out.scrollTop = out.scrollHeight;
+    }
+
+    function toolLine(step: Extract<Step, { type: 'tool' }>) {
+      const el = line('term__line--tool');
+      const name = document.createElement('b');
+      name.textContent = step.name;
+      el.appendChild(name);
+      if (step.arg) {
+        const arg = document.createElement('span');
+        arg.className = 'term__arg';
+        arg.textContent = step.arg;
+        el.appendChild(arg);
+      }
+      if (step.tokens) {
+        const cost = document.createElement('span');
+        cost.className = 'term__cost';
+        cost.textContent = '+' + fmt.format(step.tokens);
+        el.appendChild(cost);
+      }
+      for (const item of step.out ?? []) line('term__line--out', '  ' + text(item));
+    }
+
+    function meterBar(): HTMLElement {
+      const wrap = document.createElement('div');
+      wrap.className = 'term__breakdown';
+
+      const stack = document.createElement('div');
+      stack.className = 'stack';
+      const legend = document.createElement('div');
+      legend.className = 'legend';
+
+      const total = session.used();
+      const cap = session.windowSize;
+      for (const block of session.breakdown()) {
+        if (!block.tokens) continue;
+        const seg = document.createElement('div');
+        seg.className = 'stack__seg';
+        seg.style.flex = `1 1 ${(block.tokens / Math.max(total, cap)) * 100}%`;
+        seg.style.background = BLOCK_COLOR[block.kind];
+        stack.appendChild(seg);
+
+        const item = document.createElement('div');
+        item.className = 'legend__item';
+        const swatch = document.createElement('span');
+        swatch.className = 'legend__swatch';
+        swatch.style.background = BLOCK_COLOR[block.kind];
+        item.appendChild(swatch);
+        item.append(block.label + ' ');
+        const num = document.createElement('b');
+        num.className = 'legend__num';
+        num.textContent = fmt.format(block.tokens);
+        item.appendChild(num);
+        legend.appendChild(item);
+      }
+
+      if (total < cap) {
+        const free = document.createElement('div');
+        free.className = 'stack__seg';
+        free.style.flex = `1 1 ${((cap - total) / cap) * 100}%`;
+        free.style.background = 'transparent';
+        stack.appendChild(free);
+      }
+
+      wrap.appendChild(stack);
+      wrap.appendChild(legend);
+      out.appendChild(wrap);
+      out.scrollTop = out.scrollHeight;
+      return wrap;
+    }
+
+    function askPermission(step: Extract<Step, { type: 'permission' }>): Promise<boolean> {
+      awaitingPermission = true;
+      return new Promise((done) => {
+        const box = document.createElement('div');
+        box.className = 'term__permission';
+
+        const head = document.createElement('div');
+        head.className = 'term__permHead';
+        head.textContent = strings.permission;
+        box.appendChild(head);
+
+        const what = document.createElement('div');
+        what.className = 'term__permWhat u-mono';
+        what.textContent = step.name + (step.arg ? ' · ' + step.arg : '');
+        box.appendChild(what);
+
+        if (step.detail) {
+          const detail = document.createElement('p');
+          detail.className = 'term__permDetail';
+          detail.textContent = text(step.detail);
+          box.appendChild(detail);
+        }
+
+        const row = document.createElement('div');
+        row.className = 'btnrow';
+        const yes = document.createElement('button');
+        yes.type = 'button';
+        yes.className = 'btn btn--primary';
+        yes.textContent = strings.allow;
+        const no = document.createElement('button');
+        no.type = 'button';
+        no.className = 'btn';
+        no.textContent = strings.deny;
+        row.append(yes, no);
+        box.appendChild(row);
+
+        out.appendChild(box);
+        out.scrollTop = out.scrollHeight;
+        yes.focus({ preventScroll: true });
+
+        const finish = (ok: boolean) => {
+          awaitingPermission = false;
+          root.removeEventListener('keydown', onKey);
+          box.dataset.answered = ok ? 'yes' : 'no';
+          row.remove();
+          const verdict = document.createElement('div');
+          verdict.className = 'term__permVerdict';
+          verdict.textContent = ok ? '✓ ' + strings.allowed : '✗ ' + strings.deniedShort;
+          box.appendChild(verdict);
+          done(ok);
+        };
+        const onKey = (e: KeyboardEvent) => {
+          const key = e.key.toLowerCase();
+          if (key === 'y' || key === 'j' || key === 'enter') {
+            e.preventDefault();
+            finish(true);
+          } else if (key === 'n' || key === 'escape') {
+            e.preventDefault();
+            finish(false);
+          }
+        };
+        yes.addEventListener('click', () => finish(true));
+        no.addEventListener('click', () => finish(false));
+        // Scoped to this instance: two terminals on one page must not answer
+        // each other's prompts.
+        root.addEventListener('keydown', onKey);
+      });
+    }
+
+    /* ── Status line ─────────────────────────────────────────────────── */
+
+    /** An empty screen reads as broken; the opening line says what this is. */
+    function greet() {
+      line(
+        'term__line--greeting',
+        text(config.input ? transcript.greeting : transcript.greetingInline),
+      );
+    }
+
+    function syncBoxes() {
+      for (const box of boxes) box.checked = Boolean(session.mcpOn.get(box.dataset.server!));
+    }
+
+    function updateStatus() {
+      const used = session.used();
+      const share = (used / session.windowSize) * 100;
+      const approx = session.state.turns > 0 && !exactCounting ? '≈' : '';
+      const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
+      statusEl.textContent =
+        `${strings.context} ${approx}${(used / 1000).toFixed(1)}k / ${session.windowSize / 1000}k (${share.toFixed(0)} %)` +
+        ` · ${plural(session.state.toolCalls, strings.tool, strings.tools)}` +
+        ` · ${plural(session.state.turns, strings.turn, strings.turns)}`;
+
+      meterEl.textContent = '';
+      for (const block of session.breakdown()) {
+        if (!block.tokens) continue;
+        const seg = document.createElement('span');
+        seg.style.flex = `1 1 ${(block.tokens / session.windowSize) * 100}%`;
+        seg.style.background = BLOCK_COLOR[block.kind];
+        meterEl.appendChild(seg);
+      }
+      root.dataset.overflow = session.isOverflowing() ? 'true' : 'false';
+    }
+
+    /* ── Running steps ───────────────────────────────────────────────── */
+
+    async function runSteps(steps: Step[]) {
+      for (const step of steps) {
+        switch (step.type) {
+          case 'assistant': {
+            session.applyStep(step);
+            const el = line('term__line--assistant');
+            await type(el, text(step.text));
+            break;
+          }
+          case 'tool': {
+            session.applyStep(step);
+            toolLine(step);
+            if (!skip) await sleep(260);
+            break;
+          }
+          case 'permission': {
+            const ok = await askPermission(step);
+            if (!ok) {
+              line('term__line--note', text(transcript.denied));
+              return;
+            }
+            break;
+          }
+          case 'note':
+            line('term__line--note', text(step.text));
+            break;
+          case 'out': {
+            const tone = step.tone ? ' term__line--' + step.tone : '';
+            for (const item of step.lines) line('term__line--out' + tone, text(item));
+            break;
+          }
+          case 'meter':
+            meterBar();
+            if (session.isOverflowing()) line('term__line--bad', text(transcript.overflow));
+            break;
+          case 'compact': {
+            const result = session.compact();
+            line(
+              'term__line--note',
+              text(transcript.compacted)
+                .replace('{before}', fmt.format(result.before))
+                .replace('{after}', fmt.format(result.after))
+                .replace('{kept}', fmt.format(result.kept)),
+            );
+            break;
+          }
+          case 'clear':
+            session.applyStep(step);
+            out.textContent = '';
+            greet();
+            break;
+          case 'mcp': {
+            session.applyStep(step);
+            syncBoxes();
+            const server = MCP_SERVERS.find((s) => s.id === step.id)!;
+            line(
+              'term__line--out',
+              `${step.on ? '●' : '○'} ${server.name} ${step.on ? '+' : '−'}${fmt.format(server.tokens)}`,
+            );
+            break;
+          }
+        }
+        updateStatus();
+        if (!skip) await sleep(120);
+      }
+    }
+
+    async function submit(raw: string) {
+      const value = raw.trim();
+      if (!value || busy) return;
+      busy = true;
+      skip = false;
+      root.dataset.busy = 'true';
+
+      history.push(value);
+      historyIndex = history.length;
+      line('term__line--user', '> ' + value);
+      if (!value.startsWith('/')) session.bookInput(value);
+      updateStatus();
+
+      try {
+        await runSteps(session.plan(value));
+      } finally {
+        busy = false;
+        skip = false;
+        root.dataset.busy = 'false';
+        updateStatus();
+      }
+    }
+
+    async function runScenario(id: string) {
+      const scenario = transcript.scenarios.find((s) => s.id === id);
+      if (!scenario || busy) return;
+
+      if (scenario.reset) {
+        session.reset();
+        out.textContent = '';
+        greet();
+      }
+      if (scenario.mcp) {
+        for (const [server, on] of Object.entries(scenario.mcp)) session.toggleMcp(server, on);
+        syncBoxes();
+      }
+      updateStatus();
+
+      for (const command of scenario.commands as Text[]) {
+        await submit(text(command));
+        if (!skip) await sleep(340);
+      }
+      inputEl?.focus({ preventScroll: true });
+    }
+
+    /* ── Wiring ──────────────────────────────────────────────────────── */
+
+    form?.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const value = inputEl!.value;
+      inputEl!.value = '';
+      submit(value);
+    });
+
+    const COMMANDS = ['/context', '/compact', '/clear', '/mcp', '/model', '/help'];
+
+    inputEl?.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowUp' && history.length) {
+        e.preventDefault();
+        historyIndex = Math.max(0, historyIndex - 1);
+        inputEl.value = history[historyIndex] ?? '';
+      } else if (e.key === 'ArrowDown' && history.length) {
+        e.preventDefault();
+        historyIndex = Math.min(history.length, historyIndex + 1);
+        inputEl.value = history[historyIndex] ?? '';
+      } else if (e.key === 'Tab' && inputEl.value.startsWith('/')) {
+        const hit = COMMANDS.find((c) => c.startsWith(inputEl.value.trim()));
+        if (hit) {
+          e.preventDefault();
+          inputEl.value = hit + ' ';
+        }
+      }
+    });
+
+    root.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && busy && !awaitingPermission) skip = true;
+    });
+
+    for (const chip of root.querySelectorAll<HTMLElement>('[data-scenario]')) {
+      chip.addEventListener('click', () => runScenario(chip.dataset.scenario!));
+    }
+
+    for (const box of boxes) {
+      box.addEventListener('change', () => {
+        session.toggleMcp(box.dataset.server!, box.checked);
+        updateStatus();
+      });
+    }
+
+    root.querySelector('[data-reset]')?.addEventListener('click', () => {
+      session.reset();
+      out.textContent = '';
+      greet();
+      syncBoxes();
+      updateStatus();
+      inputEl?.focus({ preventScroll: true });
+    });
+
+    /* The 1 MB BPE table stays behind an explicit click, exactly as in the
+       tokenizer demo — the scripted figures are fixed either way, this only
+       sharpens the count for what you type yourself. */
+    const exactBtn = root.querySelector<HTMLButtonElement>('[data-exact]');
+    exactBtn?.addEventListener('click', async () => {
+      exactBtn.disabled = true;
+      const original = exactBtn.textContent;
+      exactBtn.textContent = strings.exactLoading;
+      try {
+        const codec = await import('gpt-tokenizer/encoding/o200k_base');
+        session.setCounter((value: string) => codec.encode(value).length);
+        exactCounting = true;
+        exactBtn.remove();
+        noteEl.textContent = strings.exactDone + ' ' + noteEl.textContent;
+        updateStatus();
+      } catch {
+        exactBtn.textContent = strings.exactError;
+        exactBtn.disabled = false;
+        setTimeout(() => (exactBtn.textContent = original), 4000);
+      }
+    });
+
+    greet();
+    updateStatus();
+  }
+
+  for (const node of document.querySelectorAll<HTMLElement>('[data-terminal]')) {
+    initTerminal(node);
+  }
+</script>
+
+<style>
+  .term__body {
+    display: grid;
+    gap: 0.9rem;
+  }
+
+  .term__panelLabel {
+    display: block;
+    font-size: 0.68rem;
+    font-weight: 650;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--text-faint);
+    margin-bottom: 0.45rem;
+  }
+
+  .term__chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+  }
+
+  .term__chip {
+    font: inherit;
+    font-size: 0.8rem;
+    font-weight: 600;
+    padding: 0.35rem 0.7rem;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text-dim);
+    cursor: pointer;
+  }
+
+  .term__chip:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: var(--accent-wash);
+  }
+
+  .term__grid {
+    display: grid;
+    gap: 0.9rem;
+  }
+
+  .term__grid[data-panel='true'] {
+    grid-template-columns: 11rem minmax(0, 1fr);
+  }
+
+  @media (max-width: 46rem) {
+    .term__grid[data-panel='true'] {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+
+  .term__servers {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    min-width: 0;
+  }
+
+  .term__server {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.28rem 0.45rem;
+    border: 1px solid transparent;
+    border-radius: var(--radius-sm);
+    font-size: 0.79rem;
+    cursor: pointer;
+  }
+
+  .term__server:hover {
+    background: var(--surface);
+  }
+
+  .term__server:has(input:checked) {
+    border-color: color-mix(in srgb, var(--warn) 40%, transparent);
+    background: var(--warn-wash);
+  }
+
+  .term__server input {
+    accent-color: var(--warn);
+    margin: 0;
+    cursor: pointer;
+  }
+
+  .term__serverName {
+    font-weight: 600;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .term__serverMeta {
+    font-size: 0.68rem;
+    color: var(--text-faint);
+  }
+
+  /* Screen ------------------------------------------------------------- */
+
+  .term__screen {
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--bg);
+    overflow: hidden;
+    min-width: 0;
+  }
+
+  .term__out {
+    padding: 0.75rem 0.85rem;
+    height: 22rem;
+    overflow-y: auto;
+    overflow-x: hidden;
+    font-family: var(--font-mono);
+    font-size: 0.79rem;
+    line-height: 1.6;
+    scroll-behavior: smooth;
+  }
+
+  [data-variant='inline'] .term__out {
+    height: 15rem;
+  }
+
+  /* Prompt + status ---------------------------------------------------- */
+
+  .term__prompt {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0.6rem;
+    border-top: 1px solid var(--border);
+    background: var(--surface);
+  }
+
+  .term__caret {
+    font-family: var(--font-mono);
+    font-weight: 700;
+    color: var(--accent);
+    flex: none;
+  }
+
+  .demo .term__input {
+    flex: 1;
+    min-width: 0;
+    width: auto;
+    border: none;
+    background: transparent;
+    padding: 0.2rem 0;
+    font-family: var(--font-mono);
+    font-size: 0.82rem;
+    color: var(--text);
+  }
+
+  .term__input:focus {
+    outline: none;
+  }
+
+  .term__screen:focus-within .term__prompt {
+    background: var(--surface-hi);
+  }
+
+  .term__send {
+    flex: none;
+    padding: 0.3rem 0.7rem;
+    font-size: 0.78rem;
+  }
+
+  .term__hint {
+    font-size: 0.75rem;
+    color: var(--text-faint);
+  }
+
+  .term__status {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.4rem 0.6rem;
+    border-top: 1px solid var(--border);
+    background: var(--bg-elev);
+    font-size: 0.71rem;
+    color: var(--text-dim);
+    flex-wrap: wrap;
+  }
+
+  .term__statusModel {
+    font-weight: 700;
+    color: var(--accent);
+  }
+
+  .term__meter {
+    display: flex;
+    flex: 1;
+    min-width: 5rem;
+    height: 0.4rem;
+    border-radius: 999px;
+    overflow: hidden;
+    background: var(--surface-hi);
+  }
+
+  .term__statusText {
+    font-variant-numeric: tabular-nums;
+  }
+
+  [data-overflow='true'] .term__statusText {
+    color: var(--danger);
+    font-weight: 700;
+  }
+
+  [data-busy='true'] .term__caret {
+    animation: term-blink 1s steps(2, start) infinite;
+  }
+
+  @keyframes term-blink {
+    to {
+      opacity: 0.2;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    [data-busy='true'] .term__caret {
+      animation: none;
+    }
+    .term__out {
+      scroll-behavior: auto;
+    }
+  }
+
+  /* Footer ------------------------------------------------------------- */
+
+  .term__foot {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem 1rem;
+    align-items: center;
+  }
+
+  .term__linkbtn {
+    font: inherit;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--text-dim);
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    text-decoration-color: var(--border-hi);
+  }
+
+  .term__linkbtn:hover {
+    color: var(--accent);
+  }
+
+  .term__linkbtn--go {
+    margin-left: auto;
+    color: var(--accent);
+  }
+
+  .term__note {
+    font-size: 0.75rem;
+  }
+</style>
+
+<!--
+  Everything below styles nodes the renderer creates at runtime. Astro's scoped
+  styles only reach elements it rendered itself — a `document.createElement` node
+  never gets the scope attribute, so scoping these would silently drop them.
+  The `term__` prefix keeps the global block from leaking anywhere else.
+-->
+<style is:global>
+  .term__line {
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    padding: 0.06rem 0;
+  }
+
+  .term__line--user {
+    color: var(--accent);
+    font-weight: 600;
+    margin-top: 0.5rem;
+  }
+
+  .term__line--assistant {
+    color: var(--text);
+    font-family: var(--font-sans);
+    font-size: 0.86rem;
+    line-height: 1.6;
+    margin: 0.25rem 0;
+    min-height: 1.35em;
+  }
+
+  .term__line--tool {
+    color: var(--info);
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.15rem 0.55rem;
+    margin-top: 0.3rem;
+  }
+
+  .term__line--tool b {
+    font-weight: 700;
+    flex: none;
+  }
+
+  .term__line--tool b::before {
+    content: '⏺ ';
+    color: var(--info);
+  }
+
+  .term__arg {
+    color: var(--text-dim);
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .term__cost {
+    margin-left: auto;
+    color: var(--warn);
+    font-variant-numeric: tabular-nums;
+    font-size: 0.73rem;
+    flex: none;
+  }
+
+  .term__line--out {
+    color: var(--text-faint);
+  }
+
+  .term__line--greeting {
+    font-family: var(--font-sans);
+    font-size: 0.8rem;
+    color: var(--text-faint);
+    line-height: 1.55;
+    padding-bottom: 0.3rem;
+    border-bottom: 1px dashed var(--border);
+    margin-bottom: 0.3rem;
+  }
+
+  .term__line--note {
+    font-family: var(--font-sans);
+    font-size: 0.8rem;
+    color: var(--text-dim);
+    border-left: 2px solid var(--accent);
+    padding: 0.2rem 0 0.2rem 0.6rem;
+    margin: 0.5rem 0;
+    line-height: 1.55;
+  }
+
+  .term__line--warn {
+    color: var(--warn);
+  }
+
+  .term__line--bad {
+    color: var(--danger);
+    font-family: var(--font-sans);
+    font-size: 0.82rem;
+    font-weight: 600;
+    margin: 0.4rem 0;
+  }
+
+  .term__breakdown {
+    margin: 0.6rem 0 0.8rem;
+  }
+
+  .term__breakdown .stack {
+    height: 1.5rem;
+  }
+
+  .term__breakdown .legend {
+    font-size: 0.72rem;
+    gap: 0.35rem 0.9rem;
+  }
+
+  .term__permission {
+    margin: 0.6rem 0;
+    padding: 0.65rem 0.8rem;
+    border: 1px solid color-mix(in srgb, var(--warn) 45%, transparent);
+    border-radius: var(--radius-sm);
+    background: var(--warn-wash);
+  }
+
+  .term__permission[data-answered='no'] {
+    border-color: color-mix(in srgb, var(--danger) 45%, transparent);
+    background: var(--danger-wash);
+  }
+
+  .term__permHead {
+    font-family: var(--font-sans);
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--warn);
+  }
+
+  .term__permWhat {
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    margin: 0.25rem 0;
+    overflow-wrap: anywhere;
+  }
+
+  .term__permDetail {
+    font-family: var(--font-sans);
+    font-size: 0.8rem;
+    color: var(--text-dim);
+    line-height: 1.5;
+    margin: 0 0 0.55rem;
+  }
+
+  .term__permVerdict {
+    font-family: var(--font-sans);
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--text-dim);
+  }
+</style>

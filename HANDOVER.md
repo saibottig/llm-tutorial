@@ -13,7 +13,8 @@ Entscheidungen bewusst so getroffen wurden — und wo die offenen Enden liegen.
 Ein Claude-Code-Tutorial für Entwicklungsteams in einem
 Container-Terminal-Softwareunternehmen (Java/Spring Boot, Angular,
 Jira/Confluence/Bitbucket): 20 Kapitel in fünf Teilen, vollständig auf Deutsch
-und Englisch, fünf interaktive Demos, statischer Astro-Build auf GitHub Pages.
+und Englisch, sechs interaktive Demos plus eine Playground-Seite, statischer
+Astro-Build auf GitHub Pages.
 
 Das Tutorial war ursprünglich ein allgemeines LLM-Grundlagen-Tutorial und
 wurde im Juli 2026 um Claude Code als roten Faden herum umgebaut: Die
@@ -45,6 +46,11 @@ Demo; `harness`, dessen Inhalt im Kapitel `claude-code` aufging).
 | 5.4 | `hallucinations` | Halluzinationen | Hallucinations | — |
 | 5.5 | `evals` | Evals | Evals | — |
 
+Dazu kommt der **Playground** unter `/<lang>/playground/` — eine simulierte
+Claude-Code-Sitzung, außerhalb der Kapitelnummerierung, verlinkt oben in der
+Sidebar und von der Startseite. Verkleinerte Instanzen derselben Komponente
+stecken in `claude-code` (3.1), `tool-use` (3.3) und `agentic-workflows` (4.2).
+
 Teil-Titel und alle UI-Strings stehen in `src/i18n/ui.ts`, nicht im Markup.
 
 ---
@@ -57,7 +63,15 @@ npm run dev          # http://localhost:4321/llm-tutorial
 npm run build        # Prüfskript + statischer Build nach dist/
 npm run check        # nur das Prüfskript, ohne Build
 npm run preview      # gebautes Ergebnis servieren
+npm test             # Playwright gegen den Produktions-Build
+npm run test:ui      # dasselbe interaktiv, zum Debuggen einzelner Fälle
 ```
+
+`npm test` baut und serviert die Seite selbst (`webServer` in
+`playwright.config.ts`) — es muss vorher kein Server laufen. Einmalig nötig:
+`npx playwright install chromium`. Umgebungen, die einen Browser mitbringen,
+statt ihn herunterladen zu lassen, zeigen mit
+`PLAYWRIGHT_CHROMIUM_PATH=/pfad/zu/chrome` darauf.
 
 ---
 
@@ -134,8 +148,44 @@ import CacheSimulator from '../../../components/demos/CacheSimulator.astro';
 Gemeinsame Optik (`.demo`, `.stat`, `.field`, `.statusline`, `.stack`) liegt in
 `src/styles/demos.css`. Demo-spezifisches CSS bleibt in der Komponente.
 
+### Der Terminal-Playground
+
+Die sechste Demo ist anders gebaut als die fünf davor, weil sie mehrfach pro
+Seite vorkommt und deutlich mehr Text mitbringt. Vier Dateien:
+
+| Datei | Inhalt |
+|---|---|
+| `src/lib/terminal/world.ts` | Beispiel-Repo (Dateien mit Token-Gewichten) und die MCP-Server-Presets |
+| `src/lib/terminal/engine.ts` | Zustandsmaschine: Context-Buchhaltung, Slash-Commands, Intent-Matching — **kein DOM** |
+| `src/lib/terminal/transcript.json` | Alle sprachabhängigen Texte: Intents, Szenarien, Slash-Ausgaben |
+| `src/components/demos/Terminal.astro` | Markup, Renderer, Styles |
+
+Drei Entscheidungen, die man kennen sollte:
+
+**Die MCP-Presets liegen in `world.ts`, nicht in der Komponente.**
+`McpCost.astro` importiert sie von dort. Zwei Demos, die dieselben Server
+unterschiedlich beziffern, wären der schlechtestmögliche Zustand.
+
+**Das Transcript ist JSON, nicht TypeScript.** Absicht: So kann
+`scripts/check-translations.mjs` — bewusst abhängigkeitsfrei, ohne TS-Loader —
+die Übersetzungsparität erzwingen statt sie zu erhoffen. Jedes Objekt mit
+`de`-Schlüssel braucht ein nicht-leeres `en` daneben. Reine Strings bleiben
+unübersetzt: Shell-Befehle, Pfade, Code, Build-Ausgaben.
+
+**Die Engine trennt `plan()` von `applyStep()`.** `plan()` macht aus einer
+Eingabezeile eine Liste von Schritten, `applyStep()` bucht deren Tokens. Erst
+diese Trennung erlaubt es, bei einer abgelehnten Permission die restlichen
+Schritte fallen zu lassen, **bevor** sie etwas kosten — sonst würde ein „nein"
+im Context genauso teuer wie ein „ja".
+
+Instanz-Scoping: Root trägt `data-terminal`, die Konfiguration reist in einem
+`<script type="application/json">` mit, das Modul-Script initialisiert per
+`querySelectorAll` jede Instanz einzeln. **Keine festen Element-IDs** — sobald
+zwei Terminals auf einer Seite stehen, bricht das Muster der anderen Demos.
+
 Die Server-Presets der McpCost-Demo (Jira, Confluence, Bitbucket, …) sind
-Daten in der Komponente selbst, keine ui.ts-Strings.
+Daten in `world.ts`, keine ui.ts-Strings. Dasselbe gilt für die Prosa im
+Transcript: `ui.ts` bekommt nur Chrome (Buttons, Labels, Statusline-Wörter).
 
 ---
 
@@ -150,11 +200,42 @@ bricht ab, wenn:
 - ein Querverweis `../slug/` auf einen nicht existierenden Slug zeigt
 - ein Kapitel auf sich selbst verlinkt
 - ein Pflichtfeld im Frontmatter fehlt
+- im Playground-Transcript ein `de`-Eintrag ohne `en` steht (oder umgekehrt)
+- ein Playground-Szenario einen unbekannten Slash-Command aufruft oder einen
+  Prompt abspielt, den kein Intent trifft — er liefe sonst still in den Fallback
 
 Das läuft auch in CI. Eine fehlende Übersetzung oder ein toter Link kann die
 veröffentlichte Seite also nicht erreichen. Wer die Regeln erweitert: das
 Skript ist bewusst abhängigkeitsfrei und liest Frontmatter per Regex — kein
 Astro-Import nötig, damit es auch ohne Build läuft.
+
+### Und das Verhaltens-Gate
+
+Das Prüfskript sieht Inhalte, kein Verhalten. Seit der Playground echte Logik
+mitbringt — Context-Buchhaltung, Compaction, Permission-Gate — liegt die in
+`tests/` als Playwright-Suite (34 Fälle, ~45 s):
+
+| Datei | Deckt ab |
+|---|---|
+| `tests/playground.spec.ts` | Slash-Commands, Freigabe erlauben *und* ablehnen, Überlauf, Szenarien, Verlauf, Tab-Completion, beide Sprachen, Einbettungen |
+| `tests/site.spec.ts` | alle 40 Kapitelseiten, Prev/Next-Kette, Sprachumschalter, 375 px, beide Themes, Konsolenfehler, Quell-Guards |
+| `tests/helpers.ts` | `Terminal`-Wrapper (`run`, `settle`, `contextK`) und die Kapitelliste |
+
+Die Suite läuft **gegen den Produktions-Build**, nicht gegen `astro dev` —
+gebündelte Module und aufgelöste Scoped Styles sind das, was Besucher bekommen,
+und beide haben sich hier schon unterschieden. Im Deploy-Workflow hängt
+`deploy` an `build` *und* `test`; eine rote Suite erreicht Pages nicht.
+
+Zwei Fälle sind Quelltext-Prüfungen statt Laufzeit-Tests, weil sie genau die
+Regression fangen, die realistisch passiert: dass `Terminal.astro` kein
+`getElementById` benutzt (sonst teilen sich zwei Instanzen ihren Zustand) und
+dass `McpCost.astro` seine Server-Zahlen importiert statt sie zu duplizieren.
+
+**Die Suite ist auf Mutationen geprüft.** Lässt man `compact()` fälschlich auch
+die MCP-Definitionen freigeben, oder bucht man die Schritte hinter einer
+Freigabe *vor* der Entscheidung, schlägt jeweils genau ein Test fehl. Wer sie
+erweitert, sollte denselben Nachweis führen — ein Test, der nicht rot werden
+kann, ist Dekoration.
 
 ---
 
@@ -241,6 +322,15 @@ Browser fehl. Lösung im Tokenizer: Strings über `data-`-Attribute
 durchreichen, Script normal lassen. **Wer eine Demo mit Lazy-Import baut, muss
 das beachten.**
 
+**Astros Scoped Styles erreichen keine JS-erzeugten Knoten.** Astro hängt sein
+Scope-Attribut nur an Elemente, die es selbst gerendert hat. Ein
+`document.createElement`-Knoten bekommt es nicht — die passende Regel im
+`<style>`-Block greift dann einfach nicht, ohne Fehlermeldung. Im Terminal
+äußerte sich das als unformatierte Ausgabe: richtige Klassen, keine Wirkung.
+Lösung dort: ein zweiter `<style is:global>`-Block für genau die dynamischen
+Klassen, alle mit `term__`-Präfix gegen Leaks. **Wer eine Demo baut, die ihre
+Ausgabe im Browser zusammensetzt, muss das von Anfang an einplanen.**
+
 **Node-Version in CI.** `withastro/action@v3` läuft per Default auf Node 20,
 Astro 7 verlangt ≥ 22.12 und bricht ab statt zu warnen. Im Workflow ist
 `node-version: 22` gesetzt, in `package.json` steht `engines`. Beide zusammen
@@ -267,12 +357,13 @@ Variante das Unternehmen tatsächlich freigeschaltet hat, und ggf. eine
 konkrete Einrichtungsanleitung in Confluence ergänzt (nicht ins Tutorial —
 siehe Konvention „Oberfläche sparsam zitieren").
 
-**Keine Tests für die Demos.** Verifiziert wurde einmalig per
-Playwright-Skript (alle Seiten, Querverweise, Prev/Next-Kette,
-Sprachumschalter, Demo-Initialisierung, 375 px). Das Skript ist nicht
-eingecheckt. Wer die Demos umbaut, sollte es neu aufsetzen — oder als
-Playwright-Test dauerhaft einchecken. Das wäre die sinnvollste nächste
-Investition.
+**Zwei Instanzen auf einer Seite sind nur strukturell abgesichert.** Dass zwei
+Terminals nebeneinander sich nicht ins Gehege kommen, wurde einmal von Hand
+verifiziert (temporär zweite Instanz auf der Playground-Seite). Dauerhaft prüft
+der Test nur, dass `Terminal.astro` kein `getElementById` benutzt — das ist die
+Regression, die realistisch passiert, wenn jemand das Muster aus den älteren
+Demos kopiert. Wer eine Seite baut, die tatsächlich zwei Terminals zeigt,
+sollte den Laufzeit-Test nachziehen.
 
 **Kein Suchfeld.** Bei 20 Kapiteln verschmerzbar, ab ~25 nicht mehr. Pagefind
 lässt sich in einen Astro-Build ohne Server einhängen.
@@ -293,6 +384,7 @@ Reihenfolge des Nutzens:
 | Structured Output / JSON | 3.6 | Praktisch relevant für Pipeline-Workflows, technisch nah an Tool Use |
 | Context Engineering als Kapitel | 4.5 | Klammert Compaction, Sub-Agents, Skills zusammen — aktuell verteilt |
 | Onboarding-Checkliste | Anhang | „Erste Woche mit Claude Code" als druckbare Seite |
+| Weitere Playground-Szenarien | `transcript.json` | Prompt Injection über ein präpariertes Jira-Ticket, Sub-Agenten, Cache-Treffer — die Mechanik trägt, es fehlt nur Skript |
 
 Nicht-inhaltliche Ideen: Volltextsuche (Pagefind), Glossar mit Tooltips über
 `ui.ts`, Druck-Stylesheet, RSS für neue Kapitel, `og:image` je Kapitel.

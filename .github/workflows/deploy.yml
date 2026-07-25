@@ -30,8 +30,31 @@ jobs:
         # The build script also runs scripts/check-translations.mjs, so a
         # missing translation or a broken cross-link fails the deploy.
 
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      # Only Chromium: the suite asserts behaviour, not rendering engines.
+      - run: npx playwright install --with-deps chromium
+      # playwright.config.ts builds and serves the site itself, so this runs
+      # against exactly what would be published.
+      - run: npm test
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7
+
   deploy:
-    needs: build
+    # A red suite must not reach Pages — the build gate checks content, these
+    # check that the thing still works.
+    needs: [build, test]
     runs-on: ubuntu-latest
     environment:
       name: github-pages

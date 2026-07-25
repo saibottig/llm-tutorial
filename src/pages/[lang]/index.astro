@@ -1,7 +1,7 @@
 ---
 import type { GetStaticPaths } from 'astro';
 import BaseLayout from '../../layouts/BaseLayout.astro';
-import { getParts, getChapters, slugOf, chapterUrl } from '../../lib/chapters';
+import { getParts, getChapters, slugOf, chapterUrl, url } from '../../lib/chapters';
 import { locales, t, type Locale, type UIKey } from '../../i18n/ui';
 
 export const getStaticPaths = (() =>
@@ -26,13 +26,19 @@ const numbered = parts.map((p) => ({
   <section class="hero">
     <h1>{tr('site.tagline')}</h1>
     <p>{tr('site.description')}</p>
-    {
-      first && (
-        <a class="hero__cta" href={chapterUrl(locale, slugOf(first))}>
-          {tr('nav.start')} →
-        </a>
-      )
-    }
+    <div class="hero__actions">
+      {
+        first && (
+          <a class="hero__cta" href={chapterUrl(locale, slugOf(first))}>
+            {tr('nav.start')} →
+          </a>
+        )
+      }
+      <a class="hero__cta hero__cta--ghost" href={url(locale, 'playground')}>
+        {tr('playground.title')} →
+      </a>
+    </div>
+    <p class="hero__note">{tr('playground.description')}</p>
   </section>
 
   {

@@ -1,0 +1,95 @@
+---
+import type { GetStaticPaths } from 'astro';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Terminal from '../../components/demos/Terminal.astro';
+import { getChapters, slugOf, chapterUrl } from '../../lib/chapters';
+import { locales, t, type Locale } from '../../i18n/ui';
+
+export const getStaticPaths = (() =>
+  locales.map((lang) => ({ params: { lang } }))) satisfies GetStaticPaths;
+
+const { lang } = Astro.params;
+const locale = lang as Locale;
+const tr = t(locale);
+
+// The playground restates in motion what these chapters explain in prose —
+// linking back keeps the explanation in one place, as everywhere else.
+const RELATED = ['context-window', 'prompt-caching', 'claude-code', 'tool-use', 'mcp', 'setup'];
+const chapters = await getChapters(locale);
+const related = RELATED.map((slug) => chapters.find((c) => slugOf(c) === slug)).filter(
+  (c): c is (typeof chapters)[number] => Boolean(c),
+);
+---
+
+<BaseLayout
+  locale={locale}
+  title={tr('playground.title')}
+  description={tr('playground.description')}
+  currentSlug="playground"
+>
+  <article>
+    <header class="chapterhead">
+      <p class="chapterhead__eyebrow">
+        <span>{tr('playground.title')}</span>
+      </p>
+      <h1>{tr('playground.tagline')}</h1>
+      <p class="chapterhead__desc">{tr('playground.intro')}</p>
+    </header>
+
+    <Terminal locale={locale} variant="full" />
+
+    <p class="pg__hints">
+      <b>{tr('playground.hintsTitle')}</b>
+      <span>{tr('playground.hints')}</span>
+    </p>
+
+    <section class="pg__related">
+      <h2>{tr('playground.chapters')}</h2>
+      <div class="cardgrid">
+        {
+          related.map((chapter) => (
+            <a class="card" href={chapterUrl(locale, slugOf(chapter))}>
+              <h3>{chapter.data.title}</h3>
+              <p>{chapter.data.description}</p>
+            </a>
+          ))
+        }
+      </div>
+    </section>
+  </article>
+
+  <footer class="sitefoot">
+    <span>{tr('footer.builtWith')}</span>
+    <a href="https://github.com/saibottig/llm-tutorial">{tr('footer.source')}</a>
+  </footer>
+</BaseLayout>
+
+<style>
+  .pg__hints {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.3rem 0.8rem;
+    align-items: baseline;
+    margin: 1.4rem 0 0;
+    font-size: 0.8rem;
+    color: var(--text-faint);
+  }
+
+  .pg__hints b {
+    font-size: 0.68rem;
+    font-weight: 650;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--text-faint);
+  }
+
+  .pg__related {
+    margin-top: 3.5rem;
+  }
+
+  .pg__related h2 {
+    font-size: 1.05rem;
+    letter-spacing: -0.01em;
+    margin-bottom: 1rem;
+  }
+</style>
