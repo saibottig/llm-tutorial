@@ -1,23 +1,14 @@
 ---
 import { t, type Locale } from '../../i18n/ui';
+// Shared with the terminal playground so the two demos cannot quote different
+// numbers for the same servers.
+import { MCP_SERVERS as SERVERS } from '../../lib/terminal/world';
 
 interface Props {
   locale: Locale;
 }
 const { locale } = Astro.props;
 const tr = t(locale);
-
-// Representative servers: tool counts and definition sizes in the range you
-// actually see in the wild.
-const SERVERS = [
-  { id: 'jira', name: 'Jira', tools: 22, tokens: 4600, on: true },
-  { id: 'confluence', name: 'Confluence', tools: 14, tokens: 3000, on: true },
-  { id: 'bitbucket', name: 'Bitbucket', tools: 18, tokens: 3800, on: true },
-  { id: 'filesystem', name: 'Filesystem', tools: 11, tokens: 1900, on: false },
-  { id: 'postgres', name: 'Postgres', tools: 6, tokens: 1300, on: false },
-  { id: 'browser', name: 'Browser', tools: 14, tokens: 3100, on: false },
-  { id: 'sentry', name: 'Sentry', tools: 12, tokens: 2400, on: false },
-];
 ---
 
 <section
@@ -70,12 +61,11 @@ const SERVERS = [
 </section>
 
 <script>
+  import { SKILL_HEADER_TOKENS, SESSION } from '../../lib/terminal/world';
+
   const root = document.getElementById('mcp-demo');
   if (root) {
-    // A skill keeps only its name and one-line description resident; the body
-    // is read on demand. That header is roughly 30 tokens per capability.
-    const SKILL_HEADER_TOKENS = 30;
-    const WINDOW = 200000;
+    const WINDOW = SESSION.windowSize;
 
     const boxes = [...root.querySelectorAll<HTMLInputElement>('[data-server]')];
     const lang = document.documentElement.lang || 'de';

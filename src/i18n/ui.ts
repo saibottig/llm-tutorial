@@ -29,6 +29,7 @@ export const ui = {
     'nav.language': 'Sprache',
     'nav.chapterCount': 'Kapitel',
     'nav.start': 'Beim ersten Kapitel anfangen',
+    'nav.playground': 'Playground',
 
     'part.1': 'Grundlagen',
     'part.2': 'Was eine Anfrage kostet',
@@ -113,6 +114,42 @@ export const ui = {
     'mcp.allOn': 'Alle an',
     'mcp.allOff': 'Alle aus',
 
+    'term.title': 'Simulierte Claude-Code-Sitzung',
+    'term.placeholder': 'Prompt eingeben oder /help …',
+    'term.run': 'Ausführen',
+    'term.reset': 'Sitzung zurücksetzen',
+    'term.scenarios': 'Szenarien',
+    'term.servers': 'MCP-Server',
+    'term.context': 'Context',
+    'term.tool': 'Tool-Aufruf',
+    'term.tools': 'Tool-Aufrufe',
+    'term.turn': 'Runde',
+    'term.turns': 'Runden',
+    'term.permission': 'Freigabe nötig',
+    'term.allow': 'Erlauben (y)',
+    'term.deny': 'Ablehnen (n)',
+    'term.allowed': 'Erlaubt',
+    'term.denied': 'Abgelehnt',
+    'term.skip': 'Esc überspringt die Animation',
+    'term.exact': 'Eingaben exakt tokenisieren',
+    'term.exactLoading': 'Lade Tokenizer …',
+    'term.exactDone': 'Eingaben werden exakt tokenisiert (o200k_base).',
+    'term.exactError': 'Tokenizer konnte nicht geladen werden — Schätzung bleibt aktiv.',
+    'term.openFull': 'Im vollen Playground weiterspielen →',
+    'term.note':
+      'Simulation: Die Tool-Ausgaben sind hinterlegt, kein Modell und kein Server werden angefragt. Die Token-Zahlen sind realistische Größenordnungen aus dem Tutorial, keine Live-Messung; eigene Eingaben werden geschätzt (≈), bis der echte Tokenizer geladen ist.',
+
+    'playground.title': 'Playground',
+    'playground.tagline': 'Eine Claude-Code-Sitzung zum Anfassen — ohne Installation, ohne Kosten',
+    'playground.description':
+      'Simulierte Claude-Code-Sitzung im Browser: Prompts eingeben, Tool-Aufrufe und Freigaben beobachten, MCP-Server zuschalten und live sehen, wie sich das Context Window füllt.',
+    'playground.intro':
+      'Tippe Prompts, wie du sie im Terminal eingeben würdest, oder Slash-Commands wie /context und /compact. Der Agent antwortet aus einem hinterlegten Skript — er ruft kein Modell auf. Interessant ist die Statusline unten: Sie zeigt bei jedem Schritt, was der Context gerade kostet.',
+    'playground.hintsTitle': 'Tastatur',
+    'playground.hints':
+      '↑ ↓ Verlauf · Tab vervollständigt Slash-Commands · Esc bricht die laufende Ausgabe ab',
+    'playground.chapters': 'Passt zu diesen Kapiteln',
+
     'footer.builtWith': 'Gebaut mit Astro.',
     'footer.source': 'Quellcode',
   },
@@ -133,6 +170,7 @@ export const ui = {
     'nav.language': 'Language',
     'nav.chapterCount': 'chapters',
     'nav.start': 'Start with the first chapter',
+    'nav.playground': 'Playground',
 
     'part.1': 'Fundamentals',
     'part.2': 'What a Request Costs',
@@ -216,6 +254,42 @@ export const ui = {
     'mcp.savings': 'Saved',
     'mcp.allOn': 'All on',
     'mcp.allOff': 'All off',
+
+    'term.title': 'Simulated Claude Code session',
+    'term.placeholder': 'Type a prompt or /help …',
+    'term.run': 'Run',
+    'term.reset': 'Reset session',
+    'term.scenarios': 'Scenarios',
+    'term.servers': 'MCP servers',
+    'term.context': 'Context',
+    'term.tool': 'tool call',
+    'term.tools': 'tool calls',
+    'term.turn': 'turn',
+    'term.turns': 'turns',
+    'term.permission': 'Approval needed',
+    'term.allow': 'Allow (y)',
+    'term.deny': 'Deny (n)',
+    'term.allowed': 'Allowed',
+    'term.denied': 'Denied',
+    'term.skip': 'Esc skips the animation',
+    'term.exact': 'Tokenize input exactly',
+    'term.exactLoading': 'Loading tokenizer …',
+    'term.exactDone': 'Input is tokenized exactly (o200k_base).',
+    'term.exactError': 'Could not load the tokenizer — the estimate stays active.',
+    'term.openFull': 'Keep playing in the full playground →',
+    'term.note':
+      'Simulated: tool output is scripted, no model and no server is called. The token figures are realistic orders of magnitude taken from the tutorial, not a live measurement; your own input is estimated (≈) until the real tokenizer is loaded.',
+
+    'playground.title': 'Playground',
+    'playground.tagline': 'A hands-on Claude Code session — no install, no cost',
+    'playground.description':
+      'A simulated Claude Code session in the browser: type prompts, watch tool calls and approvals, switch MCP servers on and see the context window fill up live.',
+    'playground.intro':
+      'Type prompts the way you would in the terminal, or slash commands like /context and /compact. The agent answers from a script — it never calls a model. The interesting part is the status line at the bottom: it shows what the context costs at every step.',
+    'playground.hintsTitle': 'Keyboard',
+    'playground.hints':
+      '↑ ↓ history · Tab completes slash commands · Esc aborts the running output',
+    'playground.chapters': 'Goes with these chapters',
 
     'footer.builtWith': 'Built with Astro.',
     'footer.source': 'Source',

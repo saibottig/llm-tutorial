@@ -275,6 +275,16 @@ a:hover {
   margin-top: 1.4rem;
 }
 
+/* Sits outside the numbered parts, so it carries the part padding itself. */
+.sidebar__link--playground {
+  margin: 1.1rem 0.75rem 0;
+  font-weight: 600;
+}
+
+.sidebar__link--playground .sidebar__num {
+  color: var(--accent);
+}
+
 .sidebar__partLabel {
   display: flex;
   align-items: baseline;
@@ -681,6 +691,42 @@ a:hover {
 
 .hero__cta:hover {
   background: var(--accent-dim);
+}
+
+.hero__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.7rem;
+  align-items: center;
+}
+
+.hero__cta--ghost,
+:root[data-theme='light'] .hero__cta--ghost {
+  background: transparent;
+  border: 1px solid var(--border-hi);
+  color: var(--accent);
+}
+
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme='dark']) .hero__cta--ghost {
+    color: var(--accent);
+  }
+}
+
+.hero__cta--ghost:hover {
+  background: var(--accent-wash);
+  border-color: var(--accent);
+}
+
+.hero__note {
+  max-width: 42rem;
+  margin-top: 1rem;
+  font-size: 0.88rem;
+  color: var(--text-faint);
+}
+
+.hero p.hero__note {
+  font-size: 0.88rem;
 }
 
 .partsection {

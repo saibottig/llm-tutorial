@@ -26,6 +26,15 @@ const numbered = parts.map((p) => ({
     <span>{tr('site.tagline')}</span>
   </a>
 
+  <a
+    class="sidebar__link sidebar__link--playground"
+    href={url(locale, 'playground')}
+    aria-current={currentSlug === 'playground' ? 'page' : undefined}
+  >
+    <span class="sidebar__num" aria-hidden="true">▸</span>
+    <span>{tr('nav.playground')}</span>
+  </a>
+
   {
     numbered.map((part) => (
       <div class="sidebar__part">

@@ -5,6 +5,8 @@ part: 3
 order: 1
 ---
 
+import Terminal from '../../../components/demos/Terminal.astro';
+
 A model on its own is a function: text in, text out. Everything that turns it into a tool is called a **harness** — and Claude Code is exactly that: a harness in the terminal, via plugin also in IntelliJ and VS Code. Two colleagues with the same model get different results because their setup differs — not their model.
 
 ## What Claude Code handles per request
@@ -35,6 +37,8 @@ Claude Code starts in the project directory and works with its files and command
 <Callout type="praxis">
 When Claude Code behaves strangely, the first question is not "which model?" but "what was in the context?" — `/context` shows it. The answer is almost always: something outdated, something missing, or too much that is irrelevant.
 </Callout>
+
+<Terminal locale="en" variant="inline" scenarios={['mcp-cost']} input title="What the harness sends along" />
 
 <KeyTakeaway>
 - Claude Code is a harness: context, tool loop, compaction, permissions, caching — per request.

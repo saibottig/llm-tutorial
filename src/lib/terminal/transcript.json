@@ -1,0 +1,513 @@
+{
+  "_comment": "Every language-dependent string in the playground. Entries carry de and en side by side so a missing translation is visible while reading — and scripts/check-translations.mjs refuses to build without it. Plain strings are language-neutral on purpose: shell commands, paths, code and build output are not translated.",
+
+  "blocks": {
+    "system": { "de": "System-Prompt + CLAUDE.md", "en": "System prompt + CLAUDE.md" },
+    "tools": { "de": "Eingebaute Tools", "en": "Built-in tools" },
+    "mcp": { "de": "MCP-Server", "en": "MCP servers" },
+    "files": { "de": "Gelesene Dateien", "en": "Files read" },
+    "history": { "de": "Verlauf", "en": "Conversation history" },
+    "output": { "de": "Antworten", "en": "Model output" }
+  },
+
+  "help": [
+    { "de": "Slash-Commands:", "en": "Slash commands:" },
+    "  /context          → Aufschlüsselung · breakdown",
+    "  /compact          → Verlauf zusammenfassen · summarise history",
+    "  /clear            → Sitzung zurücksetzen · reset the session",
+    "  /mcp [on|off] <id> → MCP-Server schalten · toggle a server",
+    "  /model            → Modell und Fenstergröße · model and window size",
+    "  /help             → diese Liste · this list",
+    {
+      "de": "Alles ohne / ist ein Prompt an das Modell. Versuch es mit „Schreib einen Unit-Test für BerthAllocationService“ oder „Was macht die Berth-Allocation?“.",
+      "en": "Anything without a / is a prompt to the model. Try “Write a unit test for BerthAllocationService” or “What does the berth allocation do?”."
+    }
+  ],
+
+  "greeting": {
+    "de": "Simulierte Sitzung in ~/projekte/terminal-suite — Spring Boot 3, Gradle, 7 Java-Dateien. Tippe /help, oder klick oben ein Szenario an.",
+    "en": "Simulated session in ~/projects/terminal-suite — Spring Boot 3, Gradle, 7 Java files. Type /help, or pick a scenario above."
+  },
+  "greetingInline": {
+    "de": "Klick oben auf das Szenario — die Sitzung läuft dann Schritt für Schritt ab.",
+    "en": "Click the scenario above — the session then plays out step by step."
+  },
+  "modelLine": {
+    "de": "Opus 5 · Context-Fenster 200.000 Token · Simulation, keine echte Sitzung",
+    "en": "Opus 5 · context window 200,000 tokens · simulated, not a live session"
+  },
+  "mcpUsage": {
+    "de": "Nutzung: /mcp on jira · /mcp off confluence — die Server-IDs stehen links.",
+    "en": "Usage: /mcp on jira · /mcp off confluence — the server ids are listed on the left."
+  },
+  "unknownCommand": {
+    "de": "Unbekannter Befehl. /help zeigt, was hier hinterlegt ist.",
+    "en": "Unknown command. /help lists what is available here."
+  },
+  "cleared": {
+    "de": "Sitzung zurückgesetzt. System-Prompt, CLAUDE.md und Tool-Definitionen sind sofort wieder da — sie gehören nicht zum Verlauf, sondern zu jeder Anfrage.",
+    "en": "Session reset. System prompt, CLAUDE.md and tool definitions are back immediately — they are not part of the history, they are part of every request."
+  },
+  "compacted": {
+    "de": "Verlauf komprimiert: {before} → {after} Token. Zusammengefasst wurden nur Verlauf, Dateien und Antworten ({kept} Token bleiben als Zusammenfassung). System-Prompt, Tools und MCP-Definitionen bleiben unangetastet — die schickt der Harness bei jeder Anfrage neu.",
+    "en": "History compacted: {before} → {after} tokens. Only history, files and output were summarised ({kept} tokens remain as the summary). System prompt, tools and MCP definitions are untouched — the harness re-sends those on every request."
+  },
+  "overflow": {
+    "de": "Context Window übergelaufen. In einer echten Sitzung bricht die Anfrage hier ab oder Compaction springt automatisch an.",
+    "en": "Context window overflowed. In a real session the request fails here, or compaction kicks in automatically."
+  },
+  "requiresMissing": {
+    "de": "Dafür braucht der Agent Zugriff auf: {servers}. Der Server ist gerade aus — einschalten mit /mcp on <id>.",
+    "en": "The agent needs access to: {servers}. That server is currently off — switch it on with /mcp on <id>."
+  },
+  "denied": {
+    "de": "Abgelehnt. Der Tool-Aufruf wurde nicht ausgeführt, der Agent bricht den Schritt ab. Genau hier greift die Kontrolle: das Modell fordert an, ausgeführt wird erst nach Freigabe.",
+    "en": "Denied. The tool call was not executed and the agent stops there. This is exactly where control sits: the model requests, execution happens only after approval."
+  },
+
+  "fallback": [
+    {
+      "type": "assistant",
+      "text": {
+        "de": "Dazu ist in dieser Simulation nichts hinterlegt — ich sehe mich trotzdem kurz im Projekt um, damit du siehst, was ein Prompt an Context kostet.",
+        "en": "Nothing is scripted for that in this simulation — but I will still look around the project, so you can see what a prompt costs in context."
+      }
+    },
+    {
+      "type": "tool",
+      "name": "Glob",
+      "arg": "**/*.java",
+      "tokens": 260,
+      "out": [{ "de": "7 Dateien", "en": "7 files" }]
+    },
+    {
+      "type": "note",
+      "text": {
+        "de": "Hinterlegt sind: Code erklären · Unit-Test schreiben · Bug beheben · Jira-Ticket umsetzen · Build-Log, Git-Historie und Container-Logs anzeigen. Oder nimm eines der Szenarien oben.",
+        "en": "Scripted here: explain code · write a unit test · fix a bug · implement a Jira ticket · show build log, git history and container logs. Or pick one of the scenarios above."
+      }
+    }
+  ],
+
+  "intents": [
+    {
+      "id": "explain",
+      "match": ["erklär", "erklar", "was macht", "explain", "what does", "verstehe", "understand", "überblick", "uberblick", "overview", "berth-allocation", "berth allocation"],
+      "steps": [
+        {
+          "type": "assistant",
+          "text": {
+            "de": "Ich schaue mir erst an, was es überhaupt gibt, bevor ich eine Datei ganz lese.",
+            "en": "Let me see what is there before reading a whole file."
+          }
+        },
+        {
+          "type": "tool",
+          "name": "Glob",
+          "arg": "src/main/java/com/terminal/**/*.java",
+          "tokens": 240,
+          "out": ["7 files"]
+        },
+        {
+          "type": "tool",
+          "name": "Read",
+          "arg": "src/main/java/com/terminal/berth/BerthAllocationService.java",
+          "kind": "files",
+          "tokens": 4180,
+          "out": [{ "de": "384 Zeilen", "en": "384 lines" }]
+        },
+        {
+          "type": "assistant",
+          "text": {
+            "de": "BerthAllocationService weist ankommenden Schiffen Liegeplätze zu. Drei Regeln bestimmen das Ergebnis: Tiefgang gegen Liegeplatztiefe, Länge gegen Liegeplatzlänge, und ein Zeitfenster aus dem ETA/ETD des Schiffs. Kollidieren zwei Anläufe im selben Fenster, gewinnt der mit dem früheren bestätigten ETA; der andere wandert in die Warteliste.",
+            "en": "BerthAllocationService assigns berths to arriving vessels. Three rules decide the outcome: draft against berth depth, length against berth length, and a time window from the vessel's ETA/ETD. If two calls collide in the same window, the one with the earlier confirmed ETA wins; the other goes on the waiting list."
+          }
+        },
+        {
+          "type": "note",
+          "text": {
+            "de": "Die 4.180 Token für diese eine Datei stehen jetzt bis zum Sitzungsende im Context — jede weitere Anfrage schickt sie mit.",
+            "en": "The 4,180 tokens for that one file now sit in the context until the session ends — every further request re-sends them."
+          }
+        }
+      ]
+    },
+
+    {
+      "id": "unit-test",
+      "match": ["unit-test", "unit test", "junit", "test schreib", "write a test", "write test", "tests für", "tests for", "teste "],
+      "steps": [
+        {
+          "type": "assistant",
+          "text": {
+            "de": "Bevor ich Tests schreibe, lese ich die Klasse und schaue, wie hier sonst getestet wird.",
+            "en": "Before writing tests I read the class and check how tests are written here."
+          }
+        },
+        {
+          "type": "tool",
+          "name": "Read",
+          "arg": "src/main/java/com/terminal/berth/BerthAllocationService.java",
+          "kind": "files",
+          "tokens": 4180,
+          "out": [{ "de": "384 Zeilen", "en": "384 lines" }]
+        },
+        {
+          "type": "tool",
+          "name": "Grep",
+          "arg": "assertThat -g '**/*Test.java'",
+          "tokens": 320,
+          "out": [{ "de": "41 Treffer in 6 Dateien — AssertJ, kein Hamcrest", "en": "41 matches in 6 files — AssertJ, not Hamcrest" }]
+        },
+        {
+          "type": "assistant",
+          "text": {
+            "de": "Drei Fälle sind es wert: Zuweisung bei freiem Liegeplatz, Ablehnung bei zu großem Tiefgang, und die Kollision zweier Anläufe im selben Zeitfenster. Den letzten deckt bisher nichts ab.",
+            "en": "Three cases are worth having: allocation to a free berth, rejection when the draft is too deep, and the collision of two calls in the same time window. Nothing covers the last one today."
+          }
+        },
+        {
+          "type": "permission",
+          "name": "Write",
+          "arg": "src/test/java/com/terminal/berth/BerthAllocationServiceTest.java",
+          "detail": {
+            "de": "Neue Datei, 96 Zeilen. Schreibzugriff braucht Freigabe — Lesen nicht.",
+            "en": "New file, 96 lines. Writing needs approval — reading does not."
+          }
+        },
+        {
+          "type": "tool",
+          "name": "Write",
+          "arg": "src/test/java/com/terminal/berth/BerthAllocationServiceTest.java",
+          "tokens": 980,
+          "out": [{ "de": "96 Zeilen geschrieben", "en": "96 lines written" }]
+        },
+        {
+          "type": "tool",
+          "name": "Bash",
+          "arg": "./gradlew test --tests '*BerthAllocationServiceTest'",
+          "tokens": 410,
+          "out": ["BUILD SUCCESSFUL in 11s", "3 tests completed, 0 failed"]
+        },
+        {
+          "type": "assistant",
+          "text": {
+            "de": "Drei Tests, alle grün. Der Kollisionstest schlägt fehl, wenn man die ETA-Regel aus dem Service entfernt — er misst also tatsächlich etwas.",
+            "en": "Three tests, all green. The collision test fails if you remove the ETA rule from the service — so it actually measures something."
+          }
+        },
+        {
+          "type": "note",
+          "text": {
+            "de": "Grün allein heißt nichts: ein Test, der die Implementierung nachbaut, ist auch grün. Die Gegenprobe — Regel entfernen, Test muss rot werden — ist der eigentliche Nachweis.",
+            "en": "Green alone means nothing: a test that mirrors the implementation is green too. The counter-check — remove the rule, the test must go red — is the actual evidence."
+          }
+        }
+      ]
+    },
+
+    {
+      "id": "bug",
+      "match": ["bug", "fehler", "nullpointer", "npe", "fix ", "behebe", "beheb", "crash", "exception", "kaputt", "broken"],
+      "steps": [
+        {
+          "type": "assistant",
+          "text": {
+            "de": "Ich suche erst die Stelle, statt die ganze Datei zu lesen.",
+            "en": "Let me find the spot first instead of reading the whole file."
+          }
+        },
+        {
+          "type": "tool",
+          "name": "Grep",
+          "arg": "getEta\\(\\)",
+          "tokens": 280,
+          "out": ["BerthAllocationService.java:212", "BerthAllocationService.java:248"]
+        },
+        {
+          "type": "tool",
+          "name": "Read",
+          "arg": "src/main/java/com/terminal/berth/BerthAllocationService.java",
+          "kind": "files",
+          "tokens": 4180,
+          "out": [{ "de": "384 Zeilen", "en": "384 lines" }]
+        },
+        {
+          "type": "assistant",
+          "text": {
+            "de": "Zeile 248 ruft vessel.getEta() ohne Prüfung auf. Für Anläufe, die noch keine bestätigte ETA haben, ist das Feld null — daher die NullPointerException beim Sortieren der Warteliste.",
+            "en": "Line 248 calls vessel.getEta() unchecked. For calls without a confirmed ETA that field is null — hence the NullPointerException when sorting the waiting list."
+          }
+        },
+        {
+          "type": "permission",
+          "name": "Edit",
+          "arg": "src/main/java/com/terminal/berth/BerthAllocationService.java",
+          "detail": {
+            "de": "Zeile 248: Comparator.nullsLast(...) statt direktem Vergleich.",
+            "en": "Line 248: Comparator.nullsLast(...) instead of the direct comparison."
+          }
+        },
+        {
+          "type": "tool",
+          "name": "Edit",
+          "arg": "src/main/java/com/terminal/berth/BerthAllocationService.java",
+          "tokens": 240,
+          "out": ["+2 −1"]
+        },
+        {
+          "type": "tool",
+          "name": "Bash",
+          "arg": "./gradlew test",
+          "tokens": 520,
+          "out": ["BUILD SUCCESSFUL in 34s", "128 tests completed, 0 failed"]
+        },
+        {
+          "type": "note",
+          "text": {
+            "de": "Der Grep vor dem Read ist der Unterschied zwischen 280 und 4.180 Token. Bei einem gezielten Fund lohnt sich das ganze Lesen oft gar nicht.",
+            "en": "The grep before the read is the difference between 280 and 4,180 tokens. With a precise hit, reading the whole file is often not worth it at all."
+          }
+        }
+      ]
+    },
+
+    {
+      "id": "ticket",
+      "match": ["term-4711", "term-", "ticket", "jira", "pull request", " pr ", "pr draus", "pr daraus"],
+      "requires": ["jira"],
+      "steps": [
+        {
+          "type": "tool",
+          "name": "jira__get_issue",
+          "arg": "TERM-4711",
+          "tokens": 640,
+          "out": [
+            "TERM-4711 · Bug · In Progress",
+            {
+              "de": "„Warteliste sortiert Anläufe ohne bestätigte ETA nicht — NPE im Yard-Dashboard.“",
+              "en": "“Waiting list does not sort calls without a confirmed ETA — NPE in the yard dashboard.”"
+            }
+          ]
+        },
+        {
+          "type": "assistant",
+          "text": {
+            "de": "Das Ticket beschreibt dieselbe Stelle, die auch der Stacktrace nennt. Ich sehe mir den Service an.",
+            "en": "The ticket describes the same spot the stack trace points at. Let me look at the service."
+          }
+        },
+        {
+          "type": "tool",
+          "name": "Read",
+          "arg": "src/main/java/com/terminal/berth/BerthAllocationService.java",
+          "kind": "files",
+          "tokens": 4180,
+          "out": [{ "de": "384 Zeilen", "en": "384 lines" }]
+        },
+        {
+          "type": "permission",
+          "name": "Edit",
+          "arg": "src/main/java/com/terminal/berth/BerthAllocationService.java",
+          "detail": {
+            "de": "Null-sichere Sortierung der Warteliste, plus Regressionstest.",
+            "en": "Null-safe sorting of the waiting list, plus a regression test."
+          }
+        },
+        {
+          "type": "tool",
+          "name": "Edit",
+          "arg": "src/main/java/com/terminal/berth/BerthAllocationService.java",
+          "tokens": 260,
+          "out": ["+2 −1"]
+        },
+        {
+          "type": "tool",
+          "name": "Bash",
+          "arg": "./gradlew test",
+          "tokens": 520,
+          "out": ["BUILD SUCCESSFUL in 36s", "129 tests completed, 0 failed"]
+        },
+        {
+          "type": "permission",
+          "name": "Bash",
+          "arg": "git push -u origin bugfix/TERM-4711",
+          "detail": {
+            "de": "Push ist nicht umkehrbar — deshalb wird gefragt, obwohl Tests und Commit vorher ohne Rückfrage liefen.",
+            "en": "A push is not reversible — which is why this asks, even though tests and commit ran without a prompt."
+          }
+        },
+        {
+          "type": "tool",
+          "name": "Bash",
+          "arg": "git push -u origin bugfix/TERM-4711",
+          "tokens": 180,
+          "out": ["branch 'bugfix/TERM-4711' set up to track 'origin/bugfix/TERM-4711'"]
+        },
+        {
+          "type": "tool",
+          "name": "bitbucket__create_pull_request",
+          "arg": "bugfix/TERM-4711 → develop",
+          "tokens": 380,
+          "out": ["PR #218 · TERM-4711 Null-safe waiting list ordering"]
+        },
+        {
+          "type": "note",
+          "text": {
+            "de": "Ticket, Code und PR haben den Agenten nichts an Rechten gekostet, was er nicht vorher hatte: gefragt wurde bei Schreibzugriff und beim Push — nicht bei Lesen und Testen.",
+            "en": "Ticket, code and PR cost the agent no permission it did not already have: it asked on write access and on push — not on reading and testing."
+          }
+        }
+      ]
+    },
+
+    {
+      "id": "build-log",
+      "match": ["build-log", "build log", "vollen build", "full build", "gradlew build", "--info"],
+      "steps": [
+        {
+          "type": "tool",
+          "name": "Bash",
+          "arg": "./gradlew build --info",
+          "tokens": 78000,
+          "out": ["BUILD SUCCESSFUL in 1m 48s", { "de": "4.130 Zeilen Log — vollständig im Context", "en": "4,130 log lines — all of it in context" }]
+        },
+        {
+          "type": "note",
+          "text": {
+            "de": "78.000 Token aus einem einzigen Befehl. Ausführliche Befehlsausgabe ist der schnellste Weg, ein Context Window zu füllen — deshalb lieber grep davor als --info dahinter.",
+            "en": "78,000 tokens from a single command. Verbose command output is the fastest way to fill a context window — which is why a grep in front beats an --info behind."
+          }
+        }
+      ]
+    },
+
+    {
+      "id": "git-history",
+      "match": ["git log", "historie", "history", "git-historie", "letzten commits", "recent commits"],
+      "steps": [
+        {
+          "type": "tool",
+          "name": "Bash",
+          "arg": "git log -p -30 -- src/main/java/com/terminal/berth",
+          "tokens": 62000,
+          "out": [{ "de": "30 Commits mit vollem Diff", "en": "30 commits with full diffs" }]
+        },
+        {
+          "type": "note",
+          "text": {
+            "de": "git log -p ohne Begrenzung ist derselbe Fehler wie --info: der Agent braucht selten die Diffs, meistens reichen die Betreffzeilen.",
+            "en": "An unbounded git log -p is the same mistake as --info: the agent rarely needs the diffs, the subject lines are usually enough."
+          }
+        }
+      ]
+    },
+
+    {
+      "id": "container-logs",
+      "match": ["container", "docker", "compose logs", "container-logs", "podman"],
+      "steps": [
+        {
+          "type": "tool",
+          "name": "Bash",
+          "arg": "docker compose logs --tail=5000 berth-service",
+          "tokens": 41000,
+          "out": [{ "de": "5.000 Zeilen, davon 4.900 Health-Checks", "en": "5,000 lines, 4,900 of them health checks" }]
+        },
+        {
+          "type": "note",
+          "text": {
+            "de": "--tail=5000 klingt vorsichtig und ist es nicht. grep -v health davor hätte 40.000 Token gespart.",
+            "en": "--tail=5000 sounds careful and is not. A grep -v health in front would have saved 40,000 tokens."
+          }
+        }
+      ]
+    },
+
+    {
+      "id": "refactor",
+      "match": ["refactor", "aufräum", "aufraum", "umbau", "clean up", "cleanup", "zerleg", "split"],
+      "steps": [
+        {
+          "type": "tool",
+          "name": "Read",
+          "arg": "src/main/java/com/terminal/berth/BerthAllocationService.java",
+          "kind": "files",
+          "tokens": 4180,
+          "out": [{ "de": "384 Zeilen", "en": "384 lines" }]
+        },
+        {
+          "type": "assistant",
+          "text": {
+            "de": "Die Klasse macht drei Dinge: Regelprüfung, Zeitfenster-Kollisionen und Warteliste. Ich würde die Regelprüfung als BerthConstraints herausziehen — das ist der Teil, der eigene Tests verdient.",
+            "en": "The class does three things: rule checks, time-window collisions and the waiting list. I would pull the rule checks out as BerthConstraints — that is the part that deserves its own tests."
+          }
+        },
+        {
+          "type": "note",
+          "text": {
+            "de": "Ein Refactoring ohne grüne Tests davor ist geraten, nicht geprüft. Erst Tests, dann umbauen — in der Reihenfolge ist der Agent gut, andersherum nicht.",
+            "en": "A refactor without green tests in front of it is guesswork, not verification. Tests first, then restructure — in that order the agent is good, the other way round it is not."
+          }
+        }
+      ]
+    }
+  ],
+
+  "scenarios": [
+    {
+      "id": "mcp-cost",
+      "label": { "de": "Was MCP kostet, bevor du tippst", "en": "What MCP costs before you type" },
+      "hint": {
+        "de": "Alle Server an, dann /context — bei einer völlig leeren Sitzung.",
+        "en": "All servers on, then /context — on a completely empty session."
+      },
+      "reset": true,
+      "mcp": { "jira": true, "confluence": true, "bitbucket": true, "filesystem": true, "postgres": true, "browser": true, "sentry": true },
+      "commands": ["/context"]
+    },
+    {
+      "id": "unit-test",
+      "label": { "de": "Unit-Test für BerthAllocationService", "en": "Unit test for BerthAllocationService" },
+      "hint": {
+        "de": "Lesen, Testfälle wählen, schreiben — mit Freigabe beim Schreibzugriff.",
+        "en": "Read, pick cases, write — with an approval prompt on write access."
+      },
+      "reset": true,
+      "commands": [
+        { "de": "Schreib einen Unit-Test für BerthAllocationService", "en": "Write a unit test for BerthAllocationService" },
+        "/context"
+      ]
+    },
+    {
+      "id": "ticket-to-pr",
+      "label": { "de": "Vom Ticket zum Pull Request", "en": "From ticket to pull request" },
+      "hint": {
+        "de": "Jira lesen, Fehler beheben, Tests, Push, PR — zwei Freigaben unterwegs.",
+        "en": "Read Jira, fix the bug, tests, push, PR — two approvals along the way."
+      },
+      "reset": true,
+      "mcp": { "jira": true, "bitbucket": true },
+      "commands": [
+        { "de": "Setz TERM-4711 um und mach einen Pull Request draus", "en": "Implement TERM-4711 and turn it into a pull request" }
+      ]
+    },
+    {
+      "id": "overflow",
+      "label": { "de": "Ein Context Window zerstören", "en": "Destroy a context window" },
+      "hint": {
+        "de": "Drei geschwätzige Befehle reichen für 200.000 Token. Danach /compact.",
+        "en": "Three chatty commands are enough for 200,000 tokens. Then /compact."
+      },
+      "reset": true,
+      "mcp": { "jira": true, "confluence": true, "bitbucket": true, "filesystem": true, "postgres": true, "browser": true, "sentry": true },
+      "commands": [
+        { "de": "Zeig mir den vollen Build-Log", "en": "Show me the full build log" },
+        { "de": "Zeig mir die Git-Historie der Berth-Klassen", "en": "Show me the git history of the berth classes" },
+        { "de": "Zeig mir die Container-Logs", "en": "Show me the container logs" },
+        "/context",
+        "/compact"
+      ]
+    }
+  ]
+}

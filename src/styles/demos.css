@@ -12,7 +12,9 @@
 .demo__head {
   display: flex;
   align-items: center;
-  gap: 0.6rem;
+  /* Wraps rather than squeezing the title into a column on narrow screens. */
+  flex-wrap: wrap;
+  gap: 0.4rem 0.6rem;
   padding: 0.7rem 1.1rem;
   border-bottom: 1px solid var(--border);
   background: var(--surface);

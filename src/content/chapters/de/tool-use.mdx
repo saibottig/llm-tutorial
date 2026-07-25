@@ -5,6 +5,8 @@ part: 3
 order: 3
 ---
 
+import Terminal from '../../../components/demos/Terminal.astro';
+
 Ein Modell kann von sich aus nur Text erzeugen — keine Datei lesen, kein `./gradlew test` starten. Dass Claude Code es doch tut, ist **Tool Use**: der Mechanismus unter [MCP](../mcp/), [Skills](../skills/) und allem Agentischen.
 
 ## Der Ablauf
@@ -28,6 +30,8 @@ Mehr ist ein „Agent" nicht: diese Schleife plus Abbruchbedingung. Klasse lesen
 <Callout type="merke">
 **Das Modell führt nichts aus.** Es formuliert Wünsche; ob sie erfüllt werden, entscheidet das Harness nach deinen Permissions. Das ist die wichtigste Sicherheitseigenschaft des Aufbaus: Jeder Tool-Aufruf ist ein Prüfpunkt → [Prompt Injection](../prompt-injection/).
 </Callout>
+
+<Terminal locale="de" variant="inline" scenarios={['unit-test']} title="Die Tool-Schleife, Schritt für Schritt" />
 
 ## Eigene Tools beschreiben
 

@@ -5,6 +5,8 @@ part: 4
 order: 2
 ---
 
+import Terminal from '../../../components/demos/Terminal.astro';
+
 Wiederkehrende Aufgaben — „Tests für diesen Diff", „Ticket für diese Aufgabe" — will niemand jedes Mal neu formulieren. Bevor man sie automatisiert, entscheidet eine Unterscheidung über Kosten und Zuverlässigkeit:
 
 | | Workflow | Agent |
@@ -34,6 +36,14 @@ Entscheidend ist nicht, was moderner ist, sondern ob die Schritte im Voraus beka
 4. Fängt etwas Fehler ab — Tests, Review, Rollback?
 
 Ein „nein" → einfacher bauen.
+
+<Terminal
+  locale="de"
+  variant="inline"
+  scenarios={['ticket-to-pr']}
+  mcp={{ jira: true, confluence: false, bitbucket: true }}
+  title="Eine Schleife, sieben Schritte, zwei Freigaben"
+/>
 
 ## Regeln für gute Workflows
 

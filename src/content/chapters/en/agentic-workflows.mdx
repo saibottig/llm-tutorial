@@ -5,6 +5,8 @@ part: 4
 order: 2
 ---
 
+import Terminal from '../../../components/demos/Terminal.astro';
+
 Recurring tasks — "tests for this diff", "a ticket for this task" — nobody wants to phrase fresh every time. Before automating them, one distinction decides cost and reliability:
 
 | | Workflow | Agent |
@@ -34,6 +36,14 @@ What matters is not which is more modern but whether the steps are known in adva
 4. Does anything catch failures — tests, review, rollback?
 
 One "no" → build simpler.
+
+<Terminal
+  locale="en"
+  variant="inline"
+  scenarios={['ticket-to-pr']}
+  mcp={{ jira: true, confluence: false, bitbucket: true }}
+  title="One loop, seven steps, two approvals"
+/>
 
 ## Rules for good workflows
 

@@ -94,6 +94,84 @@ for (const locale of LOCALES) {
   }
 }
 
+/* ── Playground transcript ───────────────────────────────────────────────
+   The terminal playground carries as much prose as a short chapter, and it
+   sits outside the collection, so the checks above cannot see it. It is JSON
+   rather than TypeScript precisely so this dependency-free script can read it:
+   every object with a `de` key must carry a non-empty `en` next to it. */
+
+const TRANSCRIPT = new URL('../src/lib/terminal/transcript.json', import.meta.url).pathname;
+let transcript;
+try {
+  transcript = JSON.parse(await readFile(TRANSCRIPT, 'utf8'));
+} catch (error) {
+  problems.push(`transcript.json could not be read: ${error.message}`);
+}
+
+function walkTranslations(node, path) {
+  if (Array.isArray(node)) {
+    node.forEach((item, i) => walkTranslations(item, `${path}[${i}]`));
+    return;
+  }
+  if (!node || typeof node !== 'object') return;
+
+  const localised = LOCALES.some((l) => l in node);
+  if (localised) {
+    for (const locale of LOCALES) {
+      const value = node[locale];
+      if (typeof value !== 'string' || !value.trim()) {
+        problems.push(`transcript.json ${path}: missing or empty "${locale}".`);
+      }
+    }
+    return;
+  }
+  for (const [key, value] of Object.entries(node)) walkTranslations(value, `${path}.${key}`);
+}
+
+if (transcript) {
+  walkTranslations(transcript, 'transcript');
+
+  // A scenario that replays a command nothing answers would look broken to a
+  // reader without failing anywhere.
+  const slashCommands = new Set(['context', 'compact', 'clear', 'model', 'mcp', 'help']);
+  for (const scenario of transcript.scenarios ?? []) {
+    for (const command of scenario.commands ?? []) {
+      // A neutral string is one command, not one per language.
+      const variants =
+        typeof command === 'string'
+          ? [['*', command]]
+          : LOCALES.map((l) => [l, command[l]]);
+      for (const [locale, line] of variants) {
+        if (typeof line !== 'string') continue;
+        if (line.startsWith('/')) {
+          const name = line.slice(1).trim().split(/\s+/)[0];
+          if (!slashCommands.has(name)) {
+            problems.push(`transcript.json scenario "${scenario.id}": unknown command /${name}.`);
+          }
+          continue;
+        }
+        const needle = line.toLowerCase();
+        const hit = (transcript.intents ?? []).some((intent) =>
+          (intent.match ?? []).some((m) => needle.includes(m)),
+        );
+        if (!hit) {
+          problems.push(
+            `transcript.json scenario "${scenario.id}" (${locale}): "${line}" matches no intent — it would fall through to the fallback.`,
+          );
+        }
+      }
+    }
+  }
+
+  // Every intent must be reachable in both languages, or one half of the
+  // audience simply cannot trigger it.
+  for (const intent of transcript.intents ?? []) {
+    if (!(intent.match ?? []).length) {
+      problems.push(`transcript.json intent "${intent.id}": no match keywords.`);
+    }
+  }
+}
+
 const count = byLocale[reference].size;
 if (problems.length) {
   console.error('\n✗ Chapter check failed:\n');
@@ -102,4 +180,9 @@ if (problems.length) {
   process.exit(1);
 }
 
-console.log(`✓ Chapter check passed — ${count} chapters × ${LOCALES.length} locales.`);
+const intents = transcript?.intents?.length ?? 0;
+const scenarios = transcript?.scenarios?.length ?? 0;
+console.log(
+  `✓ Chapter check passed — ${count} chapters × ${LOCALES.length} locales, ` +
+    `playground transcript with ${intents} intents and ${scenarios} scenarios.`,
+);
