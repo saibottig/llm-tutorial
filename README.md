@@ -6,7 +6,8 @@ Jira/Confluence/Bitbucket tool stack — from tokens, context windows and
 prompt caching through CLAUDE.md setup, the unit-test workflow and the
 Jira-to-PR pass, to cost-conscious daily habits and finding new use cases.
 
-20 chapters in five parts, with five interactive demos.
+20 chapters in five parts, six interactive demos, and a simulated Claude Code
+terminal you can type into at `/<lang>/playground/`.
 
 Continuing this project? Start with [HANDOVER.md](HANDOVER.md) — it covers
 the conventions, the deliberate deviations from common wisdom, and the open
@@ -19,7 +20,11 @@ npm install
 npm run dev      # http://localhost:4321/llm-tutorial
 npm run build    # static output in dist/
 npm run preview  # serve the built site
+npm test         # Playwright, against the production build
 ```
+
+`npm test` builds and serves the site itself, so nothing needs to be running
+first. Once per machine: `npx playwright install chromium`.
 
 ## How chapters work
 
@@ -51,9 +56,16 @@ build if:
 - two chapters share a part/order position
 - a chapter links to a slug that does not exist, or to itself
 - frontmatter is missing a required field
+- a playground transcript entry has one language but not the other
+- a playground scenario replays a command nothing answers
 
 This runs in CI too, so a missing translation or a dead cross-link cannot reach
 the published site.
+
+The gate checks content; `tests/` checks behaviour. The Playwright suite drives
+the playground the way a reader would — approvals granted and denied, `/compact`,
+an overflowing window — and walks every chapter page, the prev/next chain and
+the language switch. `deploy` depends on both, so a red suite does not publish.
 
 ## The demos
 
@@ -64,8 +76,11 @@ the published site.
 | Prefill / decode | Prefill and Decode | Animation pace and reported figures are deliberately decoupled. |
 | Cache simulator | Prompt Caching | Editing a block invalidates it and everything after it. |
 | MCP cost | MCP | Tool-definition tokens per request (Atlassian-stack presets) against a skills baseline. |
+| Terminal playground | own page, plus Claude Code / Tool Use / Agentic Workflows | A scripted Claude Code session: prompts, tool calls, approval prompts, MCP toggles, and the context window filling up as you go. |
 
-None of them make external requests; everything is computed in the page.
+None of them make external requests; everything is computed in the page. The
+playground never calls a model — its answers come from
+`src/lib/terminal/transcript.json`.
 
 ## Deployment
 

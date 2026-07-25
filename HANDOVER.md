@@ -63,7 +63,15 @@ npm run dev          # http://localhost:4321/llm-tutorial
 npm run build        # Prüfskript + statischer Build nach dist/
 npm run check        # nur das Prüfskript, ohne Build
 npm run preview      # gebautes Ergebnis servieren
+npm test             # Playwright gegen den Produktions-Build
+npm run test:ui      # dasselbe interaktiv, zum Debuggen einzelner Fälle
 ```
+
+`npm test` baut und serviert die Seite selbst (`webServer` in
+`playwright.config.ts`) — es muss vorher kein Server laufen. Einmalig nötig:
+`npx playwright install chromium`. Umgebungen, die einen Browser mitbringen,
+statt ihn herunterladen zu lassen, zeigen mit
+`PLAYWRIGHT_CHROMIUM_PATH=/pfad/zu/chrome` darauf.
 
 ---
 
@@ -201,6 +209,34 @@ veröffentlichte Seite also nicht erreichen. Wer die Regeln erweitert: das
 Skript ist bewusst abhängigkeitsfrei und liest Frontmatter per Regex — kein
 Astro-Import nötig, damit es auch ohne Build läuft.
 
+### Und das Verhaltens-Gate
+
+Das Prüfskript sieht Inhalte, kein Verhalten. Seit der Playground echte Logik
+mitbringt — Context-Buchhaltung, Compaction, Permission-Gate — liegt die in
+`tests/` als Playwright-Suite (34 Fälle, ~45 s):
+
+| Datei | Deckt ab |
+|---|---|
+| `tests/playground.spec.ts` | Slash-Commands, Freigabe erlauben *und* ablehnen, Überlauf, Szenarien, Verlauf, Tab-Completion, beide Sprachen, Einbettungen |
+| `tests/site.spec.ts` | alle 40 Kapitelseiten, Prev/Next-Kette, Sprachumschalter, 375 px, beide Themes, Konsolenfehler, Quell-Guards |
+| `tests/helpers.ts` | `Terminal`-Wrapper (`run`, `settle`, `contextK`) und die Kapitelliste |
+
+Die Suite läuft **gegen den Produktions-Build**, nicht gegen `astro dev` —
+gebündelte Module und aufgelöste Scoped Styles sind das, was Besucher bekommen,
+und beide haben sich hier schon unterschieden. Im Deploy-Workflow hängt
+`deploy` an `build` *und* `test`; eine rote Suite erreicht Pages nicht.
+
+Zwei Fälle sind Quelltext-Prüfungen statt Laufzeit-Tests, weil sie genau die
+Regression fangen, die realistisch passiert: dass `Terminal.astro` kein
+`getElementById` benutzt (sonst teilen sich zwei Instanzen ihren Zustand) und
+dass `McpCost.astro` seine Server-Zahlen importiert statt sie zu duplizieren.
+
+**Die Suite ist auf Mutationen geprüft.** Lässt man `compact()` fälschlich auch
+die MCP-Definitionen freigeben, oder bucht man die Schritte hinter einer
+Freigabe *vor* der Entscheidung, schlägt jeweils genau ein Test fehl. Wer sie
+erweitert, sollte denselben Nachweis führen — ein Test, der nicht rot werden
+kann, ist Dekoration.
+
 ---
 
 ## 5. Inhaltliche Konventionen
@@ -321,16 +357,13 @@ Variante das Unternehmen tatsächlich freigeschaltet hat, und ggf. eine
 konkrete Einrichtungsanleitung in Confluence ergänzt (nicht ins Tutorial —
 siehe Konvention „Oberfläche sparsam zitieren").
 
-**Keine Tests für die Demos — und der Playground macht das teurer.**
-Verifiziert wurde bisher zweimal per Playwright-Skript: einmal die Seiten
-(Querverweise, Prev/Next-Kette, Sprachumschalter, Demo-Initialisierung,
-375 px), einmal der Playground (Slash-Commands, Permission erlauben *und*
-ablehnen, Token-Buchhaltung bei Ablehnung, `/compact`, Überlauf, Verlauf,
-Tab-Completion, zwei Instanzen auf einer Seite, beide Sprachen, beide Themes).
-**Beide Skripte sind nicht eingecheckt.** Mit der Engine liegt jetzt echte
-Logik im Repo, die still falsch rechnen kann — ein eingecheckter Playwright-
-Test ist damit von „wäre gut" zu „fehlt spürbar" geworden. Das Build-Gate
-prüft Inhalte, kein Verhalten.
+**Zwei Instanzen auf einer Seite sind nur strukturell abgesichert.** Dass zwei
+Terminals nebeneinander sich nicht ins Gehege kommen, wurde einmal von Hand
+verifiziert (temporär zweite Instanz auf der Playground-Seite). Dauerhaft prüft
+der Test nur, dass `Terminal.astro` kein `getElementById` benutzt — das ist die
+Regression, die realistisch passiert, wenn jemand das Muster aus den älteren
+Demos kopiert. Wer eine Seite baut, die tatsächlich zwei Terminals zeigt,
+sollte den Laufzeit-Test nachziehen.
 
 **Kein Suchfeld.** Bei 20 Kapiteln verschmerzbar, ab ~25 nicht mehr. Pagefind
 lässt sich in einen Astro-Build ohne Server einhängen.
