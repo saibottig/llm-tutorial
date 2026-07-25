@@ -1,0 +1,55 @@
+---
+title: Prefill and Decode
+description: Why the first token takes so long and every one after it arrives at a steady pace — two phases with entirely different bottlenecks.
+part: 2
+order: 2
+---
+
+import PrefillDecode from '../../../components/demos/PrefillDecode.astro';
+
+Anyone who has used a model knows the pattern: after hitting send, nothing happens for a while, then the answer streams through at an even pace. That is not an implementation quirk but follows directly from how generation works. It splits into two phases that behave completely differently.
+
+## Phase 1: prefill
+
+During **prefill** the model processes the entire prompt and fills the [KV cache](../kv-cache/) with it. The key point: this happens **in parallel**. All prompt tokens can go through the network at once, because they are all already known.
+
+That makes the phase **compute-bound**. It saturates the GPU's arithmetic units. The duration of this phase is essentially the **time to first token** (TTFT).
+
+## Phase 2: decode
+
+During **decode** the actual answer is produced — token by token. And here no parallelism is possible: to produce token 5, token 4 must be finished. The process is necessarily sequential.
+
+For every single token the model must read its complete weights once from memory. On a 40 GB model that means: 40 GB read, one token produced. Another 40 GB, next token.
+
+That makes this phase **memory-bandwidth-bound**. The limit is not arithmetic throughput but how fast data arrives from memory. The compute units are mostly idle.
+
+<Callout type="merke">
+The two phases have different bottlenecks. Prefill needs compute, decode needs memory bandwidth. That is why the same hardware upgrade helps the two phases very differently.
+</Callout>
+
+<PrefillDecode locale="en" />
+
+The demo shows the decisive relationship: a longer prompt pushes the time to first token up noticeably — but the output speed afterwards stays the same. It does not depend on how long the prompt was.
+
+## What this means in practice
+
+**The prompt only affects the wait at the front.** A prompt twice as long roughly doubles the time to first token. It changes nothing about how fast the answer then streams through.
+
+**This is why streaming works so well.** When the answer is delivered token by token, you only see the prefill wait. Without streaming you wait prefill *plus* the entire decode time. On a long answer that is the difference between two seconds and half a minute.
+
+**Short answers are disproportionately expensive.** For a ten-token answer, prefill dominates the total time completely. That is why it pays to batch several classifications into one request rather than sending them individually.
+
+**Batching only helps decode.** Because the compute units are idle during decode, several requests can be pushed through at once at almost no extra cost — the weights are being read anyway. This is exactly what providers rely on when serving large models.
+
+**Your own hardware is usually bandwidth-bound at decode.** Run a model locally and you notice quickly: a faster GPU does little for output speed if memory bandwidth stays the same. That is the subject of [VRAM and RAM](../vram-vs-ram/).
+
+<Callout type="praxis">
+When an application feels sluggish it is worth telling apart which phase is to blame. A long pause before the first character? The prompt is too long — or prompt caching is not taking effect. Answer streaming slowly? Then it comes down to model size and bandwidth, and a shorter prompt will not help.
+</Callout>
+
+<KeyTakeaway>
+- Prefill processes the prompt in parallel and is compute-bound; it determines time to first token.
+- Decode produces the answer sequentially and is bandwidth-bound; it determines tokens per second.
+- Prompt length affects the wait at the front, not the output speed.
+- Streaming hides decode time; batching uses the compute capacity idle during decode.
+</KeyTakeaway>

@@ -1,0 +1,63 @@
+---
+title: Halluzinationen
+description: Warum Modelle überzeugend Falsches erzeugen — und warum das kein Fehler im Sinne eines Defekts ist.
+part: 5
+order: 3
+---
+
+Eine **Halluzination** ist eine Ausgabe, die plausibel klingt und falsch ist. Erfundene Quellen, nicht existierende Funktionen, falsche Zahlen mit korrekt aussehender Nachkommastelle.
+
+## Warum das passiert
+
+Ein Sprachmodell erzeugt Text, indem es fortlaufend das wahrscheinlichste nächste Token wählt. Es fragt nicht „stimmt das?", sondern „was passt hier hin?".
+
+Meistens fällt das zusammen — wahre Aussagen sind in gut trainierten Modellen auch die wahrscheinlichen. Aber wenn das Modell etwas nicht weiß, entsteht kein Loch. Es entsteht die plausibelste Fortsetzung. Und die sieht genauso aus wie eine richtige Antwort, weil sie nach denselben Regeln erzeugt wurde.
+
+<Callout type="merke">
+Halluzinationen sind kein Defekt, der repariert werden könnte. Sie sind die Kehrseite derselben Fähigkeit, die Modelle nützlich macht: dass sie flüssig plausible Fortsetzungen erzeugen. Ein Modell, das nie halluziniert, wäre auch eines, das nie sinnvoll ergänzt.
+</Callout>
+
+Ein wichtiger Punkt kommt hinzu: **Sicherheit im Ton sagt nichts über Richtigkeit.** Ein Modell formuliert eine erfundene Quellenangabe genauso selbstbewusst wie eine korrekte. Die sprachliche Sicherheit ist Stilmerkmal, kein Signal.
+
+## Wo es besonders häufig auftritt
+
+- **Konkrete Zahlen und Daten** — Jahreszahlen, Versionsnummern, Preise, Statistiken.
+- **Quellen und Zitate** — der Klassiker, weil Titel- und Autorenformate leicht nachzubilden sind.
+- **Nischenwissen** — je dünner das Trainingsmaterial, desto eher wird ergänzt statt gewusst.
+- **APIs und Bibliotheken** — Methoden, die es geben *könnte*, aber nicht gibt.
+- **Alles nach dem Trainingsstand** — hier gibt es schlicht kein Wissen, nur Extrapolation.
+
+## Was wirklich hilft
+
+**Grounding.** Die mit Abstand wirksamste Maßnahme: dem Modell die Fakten mitgeben, statt sie abzufragen. Ein Modell, das aus einem beigefügten Dokument antwortet, halluziniert dramatisch seltener als eines, das aus dem Gedächtnis antwortet. Der Unterschied ist nicht graduell, sondern kategorial.
+
+**Belegpflicht.** Verlangen, dass jede Aussage an eine Stelle im mitgelieferten Material geknüpft wird. Ohne Beleg keine Aussage. Das macht Lücken sichtbar, statt sie zu füllen.
+
+**Nichtwissen erlauben.** Modelle antworten lieber, als nichts zu sagen. Ein ausdrücklicher Satz im Prompt — dass „steht nicht im Material" eine vollwertige Antwort ist — verändert das Verhalten spürbar.
+
+**Verifizierbar machen.** Wo es geht, so bauen, dass die Ausgabe prüfbar ist: Code, der ausgeführt wird. Zahlen, die nachgerechnet werden. IDs, die gegen eine Datenbank laufen. Automatische Prüfung schlägt jede Ermahnung.
+
+**Zweiter Blick.** Ein separater Durchgang, der eine Ausgabe gegen das Quellmaterial prüft, findet einen guten Teil der Fehler — besonders wirksam, wenn er mit frischem Context läuft und nicht als Selbstkritik im selben Verlauf.
+
+<Callout type="praxis">
+Bei Recherche mit Quellenangaben lohnt sich ein simpler mechanischer Schritt: Jede genannte URL tatsächlich abrufen. Erfundene Quellen fallen dabei sofort auf, und das ist billiger und zuverlässiger als jeder Versuch, sie durch Prompting zu verhindern.
+</Callout>
+
+## Was wenig hilft
+
+- **„Erfinde nichts" in den Prompt schreiben.** Ändert wenig, weil das Modell nicht weiß, dass es erfindet.
+- **Nach der Sicherheit fragen.** Selbsteingeschätzte Konfidenz ist schwach kalibriert. Ein Modell kann sich sehr sicher irren, und der Selbstbericht darüber ist selbst wieder erzeugter Text.
+- **Größere Modelle.** Sie halluzinieren seltener, aber nicht nie — und dafür überzeugender.
+
+## Die praktische Konsequenz
+
+Der Umgang damit ist eine Entwurfsfrage, keine Prompt-Frage. Für jede Stelle, an der eine Modellausgabe weiterverwendet wird, lohnt sich die Frage: **Was passiert, wenn das hier frei erfunden ist?**
+
+Ist die Antwort „nichts Schlimmes", reicht Grounding. Ist sie „das fällt niemandem auf und richtet Schaden an", braucht es eine Prüfstufe. Das ist derselbe Gedanke wie im Kapitel [Prompt Injection](../prompt-injection/): Kontrolle gehört außerhalb des Modells.
+
+<KeyTakeaway>
+- Halluzinationen entstehen, weil Modelle Wahrscheinlichkeit fortschreiben, nicht Wahrheit prüfen — sie sind kein behebbarer Defekt.
+- Sprachliche Sicherheit ist kein Indikator für Richtigkeit.
+- Grounding wirkt kategorial besser als jede Prompt-Formulierung; Belegpflicht und erlaubtes Nichtwissen verstärken es.
+- Automatisch prüfbare Ausgaben schlagen jede Ermahnung — und die Entwurfsfrage lautet, was passiert, wenn die Ausgabe erfunden ist.
+</KeyTakeaway>

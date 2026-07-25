@@ -1,0 +1,82 @@
+---
+title: Skills
+description: Anleitungen, die erst bei Bedarf geladen werden — und warum sie kein Ersatz für MCP sind, sondern etwas anderes.
+part: 3
+order: 3
+---
+
+Ein **Skill** ist ein Ordner mit einer Anleitung. Im Kern besteht er aus einer Datei namens `SKILL.md`, die vorne ein paar Metadaten trägt und darunter die eigentliche Anleitung enthält:
+
+```markdown
+---
+name: quartalsbericht
+description: Erstellt den Quartalsbericht nach Hausformat. Verwenden, wenn
+  nach einem Quartals- oder Monatsbericht gefragt wird.
+---
+
+# Quartalsbericht erstellen
+
+1. Zahlen aus dem Data Warehouse ziehen (Tabelle `fct_revenue`)
+2. Gegen die Vorquartalswerte prüfen — Abweichungen über 15 % markieren
+3. Vorlage aus `templates/quarterly.docx` verwenden
+...
+```
+
+Dazu können weitere Dateien liegen: Skripte, Vorlagen, Beispiele, Referenzdokumente.
+
+## Progressive Disclosure
+
+Das eigentlich Interessante ist, **was davon wann im Context landet**.
+
+Dauerhaft geladen ist nur der Kopf: Name und Beschreibung. Das sind ein paar Dutzend Token pro Skill. Der Rumpf — die eigentliche Anleitung, oft mehrere tausend Token — wird erst gelesen, wenn das Modell anhand der Beschreibung entscheidet, dass dieser Skill zur Aufgabe passt.
+
+Dieses Prinzip heißt **Progressive Disclosure**. Es erlaubt, fünfzig Skills verfügbar zu haben, ohne fünfzig Anleitungen mitzuschleppen. Im Context steht ein Inhaltsverzeichnis; die Kapitel werden bei Bedarf aufgeschlagen.
+
+<Callout type="merke">
+Damit das funktioniert, muss die **Beschreibung** gut sein. Sie ist die einzige Information, anhand derer entschieden wird, ob der Skill überhaupt in Betracht kommt. Sie sollte sagen, wann der Skill anzuwenden ist, nicht nur was er tut — dieselbe Regel wie bei [Tool-Beschreibungen](../tool-use/).
+</Callout>
+
+## Skills und MCP: nicht dasselbe in sauber
+
+Hier ist eine Gegenüberstellung nötig, weil sie oft schief dargestellt wird. Man liest gelegentlich, Skills seien „bereinigte MCPs" — MCPs ohne den Context-Nachteil.
+
+<Callout type="korrektur">
+Das trifft es nicht. Skills und MCP lösen **verschiedene Probleme** und sind unterschiedliche Mechanismen. Der Unterschied im Context-Verbrauch ist eine Folge davon, nicht der Zweck.
+
+- **MCP** ist ein *Protokoll für die Anbindung*. Es klärt Transport, Authentifizierung und Entdeckung, damit ein Modell ein externes System erreicht. Ein MCP-Server ist ein laufender Prozess mit Netzwerkverbindung, Zugangsdaten und Zustand.
+- **Ein Skill** ist *prozedurales Wissen*. Ein Ordner mit Text, der beschreibt, wie eine Aufgabe zu erledigen ist. Kein Prozess, keine Verbindung, kein Zustand.
+
+Ein Skill kann dir kein Jira-Ticket anlegen. Er kann beschreiben, wie ein gutes Ticket auszusehen hat — anlegen muss es ein Tool. Umgekehrt weiß ein MCP-Server, wie man die Jira-API aufruft, aber nichts über eure Konventionen für Ticketbeschreibungen.
+
+**Sie ergänzen sich, sie ersetzen sich nicht.** Der typische Fall ist beides zusammen: MCP liefert den Zugriff, der Skill das Vorgehen.
+</Callout>
+
+Zur Einordnung nebeneinander:
+
+| | MCP | Skill |
+| --- | --- | --- |
+| Wozu | Zugriff auf Systeme | Wissen über Vorgehen |
+| Form | laufender Server | Ordner mit Dateien |
+| Context dauerhaft | alle Tool-Schemas | nur Name + Beschreibung |
+| Braucht Netzwerk/Auth | ja | nein |
+| Kann Nebenwirkungen | ja | nein, nur beschreiben |
+
+## Was der Preis ist
+
+Progressive Disclosure ist nicht umsonst zu haben. Die Auswahl muss jemand treffen, und das ist das Modell auf Basis knapper Beschreibungen. Daraus folgen zwei typische Fehlerbilder:
+
+- **Der Skill wird nicht gefunden.** Die Beschreibung passt nicht zu der Formulierung, in der die Aufgabe gestellt wurde. Der Skill existiert, wird aber nie herangezogen.
+- **Der falsche Skill wird geladen.** Zwei Beschreibungen überlappen sich, und die Wahl fällt auf die unpassende.
+
+Beides ist ein Beschreibungsproblem, kein Inhaltsproblem. Wer merkt, dass ein Skill nicht greift, sollte zuerst an dessen Beschreibung arbeiten — nicht an der Anleitung darin.
+
+<Callout type="praxis">
+Skills eignen sich gut für alles, was ihr immer wieder gleich macht und wo es auf euer Hausverfahren ankommt: Berichtsformate, Code-Review-Kriterien, Freigabeprozesse, Namenskonventionen. Also genau das Wissen, das ein allgemeines Modell nicht haben kann, weil es nur bei euch gilt.
+</Callout>
+
+<KeyTakeaway>
+- Ein Skill ist ein Ordner mit einer Anleitung; dauerhaft im Context stehen nur Name und Beschreibung.
+- Progressive Disclosure lädt den Rumpf erst, wenn der Skill zur Aufgabe passt.
+- Skills sind keine „aufgeräumten MCPs": MCP löst Anbindung, Skills liefern Vorgehenswissen. Beides zusammen ist der Normalfall.
+- Die Qualität der Beschreibung entscheidet darüber, ob ein Skill überhaupt zum Einsatz kommt.
+</KeyTakeaway>

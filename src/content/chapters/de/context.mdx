@@ -5,16 +5,58 @@ part: 1
 order: 2
 ---
 
-Stub mit <Callout type="korrektur">Testinhalt.</Callout>
+**Context** ist die Gesamtheit dessen, was ein Modell für eine einzelne Aufgabe mitbekommt. Nicht mehr und nicht weniger. Alles, was das Modell für seine Antwort berücksichtigen soll, muss im Context stehen.
 
-import ContextWindow from '../../../components/demos/ContextWindow.astro';
-import PrefillDecode from '../../../components/demos/PrefillDecode.astro';
-import CacheSimulator from '../../../components/demos/CacheSimulator.astro';
-import McpCost from '../../../components/demos/McpCost.astro';
-import VramCalculator from '../../../components/demos/VramCalculator.astro';
+Das klingt banal, hat aber eine Konsequenz, die viele überrascht: **Ein Sprachmodell ist zustandslos.** Es erinnert sich an nichts. Zwischen zwei Aufrufen behält es keinerlei Information. Was wie ein Gedächtnis aussieht, ist keins — es ist nur die Tatsache, dass bei jedem Aufruf der gesamte bisherige Verlauf erneut mitgeschickt wird.
 
-<ContextWindow locale="de" />
-<PrefillDecode locale="de" />
-<CacheSimulator locale="de" />
-<McpCost locale="de" />
-<VramCalculator locale="de" />
+## Woraus sich der Context zusammensetzt
+
+Eine typische Anfrage besteht aus vier Teilen, die in dieser Reihenfolge zusammengesetzt werden:
+
+| Teil | Inhalt | Ändert sich |
+| --- | --- | --- |
+| Tool-Definitionen | Schemas aller Werkzeuge, die das Modell aufrufen darf | selten |
+| System-Prompt | Rolle, Regeln, Ausgabeformat | selten |
+| Verlauf | alle bisherigen Nachrichten beider Seiten | wächst stetig |
+| Aktuelle Nachricht | die eigentliche Frage | jedes Mal |
+
+Die Reihenfolge ist keine Konvention, sondern technisch relevant. Sie entscheidet darüber, welche Teile einer Anfrage zwischengespeichert werden können — dazu mehr im Kapitel [Prompt Caching](../prompt-caching/).
+
+<Callout type="merke">
+Der System-Prompt ist keine Sonderzone mit besonderer Autorität, sondern schlicht Text an einer bestimmten Stelle des Contexts. Er wirkt stark, weil er am Anfang steht und weil Modelle darauf trainiert sind, ihn ernst zu nehmen — nicht, weil er technisch unantastbar wäre. Genau daran hängt das Kapitel [Prompt Injection](../prompt-injection/).
+</Callout>
+
+## Die Illusion des Gedächtnisses
+
+Wenn eine Unterhaltung über zehn Runden läuft, sieht das Modell bei Runde zehn nicht „die zehnte Frage". Es sieht den kompletten Verlauf von Runde eins bis zehn, jedes Mal neu, als hätte es ihn nie zuvor gelesen — denn genau so ist es.
+
+Daraus folgt einiges Praktisches:
+
+- **Kosten wachsen quadratisch, nicht linear.** Jede neue Runde schickt auch alle vorherigen mit. Zwanzig Runden kosten nicht das Zwanzigfache einer Runde, sondern deutlich mehr.
+- **Nichts verschwindet von selbst.** Ein Missverständnis aus Runde drei steht in Runde fünfzehn immer noch da und beeinflusst weiterhin die Antworten.
+- **Ein neuer Chat ist ein echter Neustart.** Es gibt keine verborgene Verbindung zwischen zwei Unterhaltungen.
+
+<Callout type="praxis">
+Wenn ein Modell sich in einer langen Unterhaltung festfährt und immer wieder denselben Fehler macht, hilft Nachbohren oft weniger als ein Neustart mit einer sauber formulierten Aufgabe. Der alte Verlauf ist nicht neutral — er zieht die Antwort in die Richtung, die schon einmal falsch war.
+</Callout>
+
+## Context ist nicht nur Text
+
+Alles, was ein Modell verarbeiten soll, wird zu Context: hochgeladene Dokumente, Bilder, Ergebnisse von Tool-Aufrufen, Suchtreffer, Dateiinhalte. Ein Agent, der drei Dateien liest, hat danach den Inhalt dieser drei Dateien im Context — und trägt ihn für den Rest der Sitzung mit.
+
+Das ist der Grund, warum bei agentischen Abläufen der Context viel schneller wächst als beim Chatten. Ein einzelner Tool-Aufruf, der eine große Datei zurückgibt, kann mehr Context verbrauchen als zwanzig Gesprächsrunden.
+
+## Context Engineering
+
+Weil der Context das einzige ist, worauf das Modell zugreifen kann, ist seine Gestaltung die zentrale Stellschraube. Dafür hat sich der Begriff **Context Engineering** eingebürgert. Die Leitfrage lautet nicht „Wie formuliere ich meine Frage?", sondern:
+
+> Welche Informationen braucht das Modell für diese Aufgabe — und wie bekomme ich genau die hinein, ohne alles andere mitzuschleppen?
+
+Die meisten Techniken in diesem Tutorial sind Antworten auf diese Frage. [Skills](../skills/) laden Anleitungen erst bei Bedarf. [Sub-Agenten](../multi-agent/) halten Nebenrecherchen aus dem Hauptverlauf heraus. Compaction fasst alte Runden zusammen. Alles Werkzeuge, um den Context knapp und relevant zu halten.
+
+<KeyTakeaway>
+- Context ist alles, was ein Modell für eine Aufgabe sieht — es gibt keine Information außerhalb davon.
+- Modelle sind zustandslos. Das scheinbare Gedächtnis entsteht dadurch, dass der ganze Verlauf jedes Mal erneut mitgeschickt wird.
+- Deshalb wachsen Kosten überproportional, und alte Fehler bleiben wirksam.
+- Tool-Ergebnisse und Dateien füllen den Context oft schneller als das Gespräch selbst.
+</KeyTakeaway>

@@ -1,0 +1,65 @@
+---
+title: Harness
+description: The software around the model — and why it often decides the outcome more than the choice of model does.
+part: 3
+order: 4
+---
+
+A model on its own is a function: text in, text out. Everything that turns it into a usable tool belongs to the **harness** — the software infrastructure surrounding the model.
+
+Examples are Claude Code, OpenCode, Aider, Cline and OpenHands. They differ in what happens between your input and the model call.
+
+## What a harness actually does
+
+It is easy to underestimate how much that is:
+
+- **Assembling context.** Which files get sent? Which part of the history? Which tools are active? This selection largely determines answer quality.
+- **Running the tool loop.** Accepting calls, executing, feeding results back, handling errors — the loop from [Tool Use](../tool-use/).
+- **Managing context.** Noticing when things get tight and compacting in good time rather than hitting the wall.
+- **Enforcing permissions.** Which commands run unattended, which need confirmation, which are forbidden.
+- **Optimising caching.** Arranging the request so the [cache](../prompt-caching/) takes effect.
+- **Holding state.** Sessions, file states, undo.
+
+## Why this matters so much
+
+Two harnesses with the same model can feel like two different products. The reasons are almost always the same:
+
+**Context selection.** A harness that sends the relevant files for a question about a function gets better answers than one appending half the directory. Back to [Context Window](../context-window/): relevance beats volume.
+
+**Handling the limit.** Does the session die with an error, or is it summarised in time and carried on? That decides whether long tasks complete at all.
+
+**Cache discipline.** A harness writing a timestamp into the system prompt on every request burns the entire caching saving — while behaving identically from the outside.
+
+**Tool hygiene.** Whether thirty tools are permanently loaded or fetched on demand makes a measurable difference to hit rate.
+
+<Callout type="merke">
+The rule of thumb holds: the better the harness, the better a model can be put to use. On demanding tasks the gap between two harnesses is often larger than the gap between two adjacent model generations.
+</Callout>
+
+## How to recognise a good one
+
+When choosing or building one, these are the questions worth asking:
+
+1. **How is it decided what goes into the context?** Is there selection, or is everything attached wholesale?
+2. **What happens in a long session?** Automatic compaction, or failure?
+3. **Can I enable and disable tools deliberately?** And does that happen automatically when needed?
+4. **What does permission handling look like?** Graduated approvals, or all-or-nothing?
+5. **Is the cache prefix stable?** Does the front of the request stay identical between calls?
+6. **Can I see what was actually sent?** Without visibility into the real context, debugging is guesswork.
+
+Point six gets overlooked often and is the most valuable one when debugging.
+
+<Callout type="praxis">
+When an agent behaves oddly, the first question is almost never "which model?" but "what was actually in the context?". Very often the answer is: something stale, something missing, or far too much that was irrelevant. All three are harness matters, not model matters.
+</Callout>
+
+## The link to the rest
+
+The harness is the layer where the preceding chapters come together. It decides context assembly, makes caching work, manages tools and skills, and runs the agent loop. The next two chapters — [Agentic Workflows](../agentic-workflows/) and [Multi-Agent Orchestration](../multi-agent/) — describe what can be built on that layer.
+
+<KeyTakeaway>
+- The harness is the software around the model: context assembly, tool loop, compaction, permissions, caching.
+- On demanding tasks the difference between two harnesses often outweighs the difference between two model generations.
+- The decisive quality markers are context selection, handling of the window limit and cache stability.
+- Visibility into the context actually sent is the single most useful debugging tool.
+</KeyTakeaway>

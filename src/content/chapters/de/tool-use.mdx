@@ -1,0 +1,76 @@
+---
+title: Tool Use
+description: Der Mechanismus, auf dem MCP, Skills und alles Agentische aufsetzen — und der schlichter ist, als man erwartet.
+part: 3
+order: 1
+---
+
+Ein Sprachmodell kann von sich aus nur eines: Text erzeugen. Es kann keine Datei lesen, keine API aufrufen, nichts im Internet nachschlagen. **Tool Use** — auch Function Calling genannt — ist der Mechanismus, der diese Lücke schließt. Er ist die Grundlage, auf der [MCP](../mcp/), [Skills](../skills/) und sämtliche Agenten aufbauen. Deshalb steht er hier vor allen dreien.
+
+## Wie es funktioniert
+
+Der Ablauf ist überraschend schlicht:
+
+1. **Du beschreibst die Werkzeuge.** Zu jedem Tool schickst du einen Namen, eine Beschreibung und ein Schema seiner Parameter mit.
+2. **Das Modell fordert einen Aufruf an.** Statt Text zu antworten, gibt es strukturiert aus: „Rufe `get_weather` mit `{"ort": "Berlin"}` auf."
+3. **Du führst aus.** Dein Code — nicht das Modell — ruft die Funktion tatsächlich auf.
+4. **Du schickst das Ergebnis zurück.** Es wird als neue Nachricht an den Verlauf angehängt.
+5. **Das Modell macht weiter.** Mit dem Ergebnis im Context antwortet es oder fordert das nächste Tool an.
+
+<Callout type="merke">
+Der Punkt, der am häufigsten missverstanden wird: **Das Modell führt nichts aus.** Es formuliert nur einen Wunsch. Ob dieser Wunsch erfüllt wird, entscheidet ausschließlich dein Code.
+
+Das ist keine Einschränkung, sondern die wichtigste Sicherheitseigenschaft des ganzen Aufbaus. Jeder Tool-Aufruf ist ein Punkt, an dem geprüft, gefiltert, protokolliert oder eine Rückfrage gestellt werden kann. Siehe [Prompt Injection](../prompt-injection/).
+</Callout>
+
+## Die Schleife
+
+Die Schritte 2 bis 5 wiederholen sich, bis das Modell keinen Aufruf mehr anfordert, sondern antwortet. Diese Schleife ist der gesamte Kern dessen, was einen Agenten ausmacht:
+
+```
+Anfrage → Modell → Tool-Aufruf? ─ja→ ausführen → Ergebnis anhängen ─┐
+                        │                                           │
+                        └─nein→ Antwort                              └──┘
+```
+
+Mehr ist es nicht. Ein „Agent" ist im Wesentlichen diese Schleife plus eine Abbruchbedingung. Der Rest — Kontextverwaltung, Rechteprüfung, Fehlerbehandlung — ist Aufgabe des [Harness](../harness/).
+
+## Was gute Tool-Beschreibungen ausmacht
+
+Das Modell entscheidet allein anhand von Name, Beschreibung und Schema, ob und wie es ein Tool benutzt. Es sieht den Code nicht. Deshalb ist die Beschreibung nicht Dokumentation, sondern die eigentliche Steuerung.
+
+Der häufigste Fehler ist, nur zu beschreiben, *was* ein Tool tut. Mindestens genauso wichtig ist, *wann* es benutzt werden soll:
+
+```json
+{
+  "name": "suche_kundendaten",
+  "description": "Sucht einen Kunden nach Name oder Kundennummer. Verwende dies, sobald nach konkreten Kundeninformationen gefragt wird — antworte nie aus dem Gedächtnis, die Daten ändern sich täglich.",
+  "input_schema": {
+    "type": "object",
+    "properties": {
+      "suchbegriff": { "type": "string", "description": "Name oder Kundennummer" }
+    },
+    "required": ["suchbegriff"]
+  }
+}
+```
+
+Weitere Punkte aus der Praxis:
+
+- **Wenige, klar getrennte Tools** schlagen viele überlappende. Bei zu großer Auswahl greift das Modell messbar häufiger daneben.
+- **Sprechende Namen.** `hole_aktuelles_wetter` ist besser als `wetter`.
+- **Fehler gehören zurückgemeldet**, nicht verschluckt. Eine verständliche Fehlermeldung als Tool-Ergebnis versetzt das Modell in die Lage, einen anderen Weg zu versuchen.
+- **Mehrere Aufrufe gleichzeitig** sind möglich und sinnvoll, wenn die Aufrufe voneinander unabhängig sind.
+
+## Der Preis: Context
+
+Jede Tool-Definition steht im Context — bei **jeder einzelnen Anfrage**, unabhängig davon, ob das Tool gebraucht wird. Zehn Tools mit ausführlichen Schemas kosten schnell mehrere tausend Token pro Aufruf.
+
+Das ist der Ausgangspunkt für das nächste Kapitel: [MCP](../mcp/) macht es einfach, sehr viele Tools anzubinden — und macht damit genau dieses Problem sichtbar.
+
+<KeyTakeaway>
+- Tool Use ist der Mechanismus, mit dem ein Modell die Außenwelt erreicht — die Grundlage unter MCP, Skills und allen Agenten.
+- Das Modell fordert Aufrufe nur an; ausgeführt werden sie von deinem Code. Darin liegt die zentrale Kontrollmöglichkeit.
+- Die Tool-Beschreibung ist Steuerung, nicht Dokumentation: Sie muss sagen, wann das Tool zu benutzen ist.
+- Jede Definition kostet Context bei jeder Anfrage — auch ungenutzt.
+</KeyTakeaway>

@@ -1,0 +1,65 @@
+---
+title: Cost
+description: How the price of a request is put together — and which four levers actually move it.
+part: 5
+order: 1
+---
+
+Billing is per token, with **input and output charged separately**. Output is consistently more expensive than input, usually by a factor of five.
+
+For scale, prices per million tokens:
+
+| Model class | Input | Output |
+| --- | --- | --- |
+| large, for hard tasks | approx. $5 | approx. $25 |
+| mid, for the bulk of the load | approx. $3 | approx. $15 |
+| small, for simple tasks | approx. $1 | approx. $5 |
+
+These numbers change; the ratios hold. Output costs a multiple of input, and there is roughly a factor of five between the classes.
+
+## Where the money actually goes
+
+Intuition regularly misleads here. In most applications — and in anything agentic — the dominant cost is not output but **input**. Despite the higher output price.
+
+The reason is in [Context](../context/): every turn resends the entire history so far. A session with thirty turns sends the beginning thirty times. The answers, by contrast, are each short.
+
+<Callout type="merke">
+In agentic workloads, 80 to 95 percent of the cost typically falls on input. Saving therefore means working on the input side — trimming output achieves comparatively little.
+</Callout>
+
+## The four levers that move things
+
+**1. Prompt caching.** By far the largest lever. A cache read costs about a tenth of the normal input price. On a stable prefix that means up to 90 percent off the dominant cost block. Details and pitfalls in [Prompt Caching](../prompt-caching/).
+
+**2. Model choice per task.** Not every task needs the largest model. Classification, extraction, reformatting, routing — the small class handles these at a fifth of the cost. A mixed setup that picks the right model per step is usually far cheaper than a uniform one.
+
+**3. Keep context lean.** Every token not sent costs nothing. Remove old tool results, attach only relevant files, switch off unneeded MCP servers. This saves twice over, because per [Context Window](../context-window/) it also improves quality.
+
+**4. Batch processing.** When results are not needed immediately, providers offer asynchronous processing at half price. For nightly analyses, migrations or bulk classification that is a discount with no downside.
+
+## What achieves little
+
+- **Trimming the prompt.** Saving two hundred tokens in the system prompt while the history carries twenty thousand is symbolic.
+- **Keeping output short.** Only helps where output really is long. With agents it rarely is.
+- **Dropping to a cheaper model the task cannot support.** If it then takes three attempts, nothing was saved.
+
+## Before going to production
+
+Three things worth knowing beforehand:
+
+**Measure cost per operation, not per request.** An agent session is easily fifty calls. The price per call on its own tells you nothing.
+
+**Look at the worst case, not the average.** Cost is heavily right-skewed: most operations are cheap, a few explode. If the top percentile blows the budget, the mean does not help.
+
+**Put hard ceilings in.** A limit per operation, not just per call — the same argument as the safeguards in [Multi-Agent](../multi-agent/). Without a ceiling, a loop is not just a bug but an invoice.
+
+<Callout type="praxis">
+A useful reflex: before optimising prompts, check whether the cache is taking effect at all. The billing fields in the response will tell you. A cache that is not working generally costs more than any prompt optimisation can save.
+</Callout>
+
+<KeyTakeaway>
+- Input and output are priced separately; output is around five times more expensive per token.
+- Even so, input dominates agentic workloads at 80 to 95 percent, because the history goes along every time.
+- The effective levers: caching, per-step model choice, lean context, batch processing.
+- Measure per operation rather than per request, plan for the worst case and set hard ceilings.
+</KeyTakeaway>

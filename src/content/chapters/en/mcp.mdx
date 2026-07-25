@@ -1,0 +1,71 @@
+---
+title: MCP
+description: A protocol that standardises connections to existing software — at a price paid on every request.
+part: 3
+order: 2
+---
+
+import McpCost from '../../../components/demos/McpCost.astro';
+
+The **Model Context Protocol** (MCP) is an open standard for connecting models to existing software. It solves an integration problem, not a model problem.
+
+## What it is good for
+
+Before MCP, every combination of application and data source had to be wired up individually. Three applications and four systems meant twelve integrations, each with its own authentication and format.
+
+MCP turns that into a plug. A provider ships an MCP server — for GitHub, Jira, a database, a filesystem — and any MCP-capable application can use it without adaptation. Twelve integrations become seven building blocks.
+
+A server can offer three kinds of thing:
+
+| Kind | What it is |
+| --- | --- |
+| **Tools** | Functions the model can call — the main case |
+| **Resources** | Data provided as context |
+| **Prompts** | Ready-made templates for recurring tasks |
+
+Technically all of this sits on ordinary [tool use](../tool-use/). MCP standardises what surrounds it: how tools are discovered, how you authenticate, how things are transported. The model itself knows nothing about MCP — in the end it just sees tool definitions.
+
+## The price
+
+And so to the catch, which belongs in this tutorial for good reason: **tool definitions sit in the context on every request.**
+
+An MCP server rarely brings a single tool. The GitHub server has over thirty, each with a description and parameter schema. All of it is present on every call — even if all you want is to rename a file.
+
+<McpCost locale="en" />
+
+Switch every server on in the demo. Consumption reaches five figures before a single word of the actual task is in context. And that applies to every single request in the session.
+
+The consequences are layered:
+
+- **Cost.** A fixed base charge per request that you always pay.
+- **Less room.** Whatever tool definitions occupy is unavailable for content.
+- **Worse selection.** The more similar tools there are to choose from, the more often the model reaches for the wrong one. This is the effect that gets underestimated most.
+
+<Callout type="achtung">
+"Context window pollution" is therefore not primarily a cost problem but a quality problem. A model with sixty available tools makes worse decisions than one with eight fitting ones — even when the window is large enough for all sixty.
+</Callout>
+
+## What helps now
+
+The point that "MCPs are always carried in the context" holds as base mechanics, but it is no longer the last word. There are two effective countermeasures:
+
+**Tool search / deferred loading.** Rather than loading every definition up front, they are marked as loadable on demand. Initially only a search tool sits in the context; the model finds the tools it needs and loads only their schemas. A constant high baseline becomes a small base plus whatever is actually used. For large tool collections this is the most effective lever — and it preserves the [cache](../prompt-caching/) too, because definitions are appended rather than swapped.
+
+**Choose.** The unglamorous but highly effective measure: only enable the servers needed for the work at hand. Someone working on a frontend does not need the database server.
+
+<Callout type="praxis">
+When an agent picks wrong noticeably often, it is worth looking at the number of active tools before optimising any prompt. Switching half of them off frequently helps more than any rewording of the system prompt.
+</Callout>
+
+## What MCP is not
+
+MCP is a **connection protocol**. It settles how a model reaches an external system — transport, authentication, capability discovery.
+
+It is explicitly not a mechanism for supplying instructions or domain knowledge. That is what [skills](../skills/) are for, and it is why the comparison in the next chapter matters more than it first appears.
+
+<KeyTakeaway>
+- MCP standardises connections to external systems and replaces point-to-point integrations.
+- Tool definitions are in the context on every request by default — costing money, room and above all hit rate.
+- Tool search loads definitions on demand and defuses the problem considerably.
+- The simplest measure remains enabling only the servers you actually need.
+</KeyTakeaway>

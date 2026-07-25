@@ -1,0 +1,82 @@
+---
+title: Skills
+description: Instructions loaded only when needed — and why they are not a replacement for MCP but a different thing.
+part: 3
+order: 3
+---
+
+A **skill** is a folder containing an instruction. At its core it is a file called `SKILL.md`, carrying a little metadata at the top and the actual instruction below:
+
+```markdown
+---
+name: quarterly-report
+description: Produces the quarterly report in house format. Use when a
+  quarterly or monthly report is requested.
+---
+
+# Producing the quarterly report
+
+1. Pull figures from the data warehouse (table `fct_revenue`)
+2. Check against prior-quarter values — flag deviations above 15 %
+3. Use the template at `templates/quarterly.docx`
+...
+```
+
+Additional files can sit alongside it: scripts, templates, examples, reference documents.
+
+## Progressive disclosure
+
+The genuinely interesting part is **what of this lands in context, and when**.
+
+Only the header is permanently loaded: name and description. That is a few dozen tokens per skill. The body — the actual instruction, often several thousand tokens — is read only once the model decides, based on the description, that this skill fits the task.
+
+This principle is called **progressive disclosure**. It lets you have fifty skills available without carrying fifty instructions around. The context holds a table of contents; chapters are opened on demand.
+
+<Callout type="merke">
+For this to work, the **description** has to be good. It is the only information on which the decision to consider the skill at all is based. It should say when the skill applies, not just what it does — the same rule as for [tool descriptions](../tool-use/).
+</Callout>
+
+## Skills and MCP: not the same thing tidied up
+
+A comparison is needed here, because it is often presented crookedly. You occasionally read that skills are "cleaned-up MCPs" — MCPs without the context drawback.
+
+<Callout type="korrektur">
+That misses it. Skills and MCP solve **different problems** and are different mechanisms. The difference in context consumption is a consequence of that, not the purpose.
+
+- **MCP** is a *protocol for connection*. It settles transport, authentication and discovery so a model can reach an external system. An MCP server is a running process with a network connection, credentials and state.
+- **A skill** is *procedural knowledge*. A folder of text describing how a task is done. No process, no connection, no state.
+
+A skill cannot file a Jira ticket for you. It can describe what a good ticket looks like — filing it requires a tool. Conversely an MCP server knows how to call the Jira API but nothing about your conventions for ticket descriptions.
+
+**They complement each other; they do not replace each other.** The typical case is both together: MCP supplies access, the skill supplies the procedure.
+</Callout>
+
+Side by side:
+
+| | MCP | Skill |
+| --- | --- | --- |
+| Purpose | access to systems | knowledge of procedure |
+| Form | running server | folder of files |
+| Permanently in context | all tool schemas | name + description only |
+| Needs network/auth | yes | no |
+| Can have side effects | yes | no, only describe |
+
+## What it costs
+
+Progressive disclosure is not free. Somebody has to make the selection, and that somebody is the model, working from terse descriptions. Two typical failure modes follow:
+
+- **The skill is never found.** The description does not match the wording in which the task was posed. The skill exists but is never consulted.
+- **The wrong skill is loaded.** Two descriptions overlap and the choice falls on the unsuitable one.
+
+Both are description problems, not content problems. If a skill is not taking effect, work on its description first — not on the instruction inside it.
+
+<Callout type="praxis">
+Skills suit anything you do repeatedly the same way and where your in-house procedure matters: report formats, code review criteria, approval processes, naming conventions. Precisely the knowledge a general model cannot have, because it only applies at your organisation.
+</Callout>
+
+<KeyTakeaway>
+- A skill is a folder with an instruction; only name and description stay permanently in context.
+- Progressive disclosure loads the body only when the skill fits the task.
+- Skills are not "tidied-up MCPs": MCP solves connection, skills supply procedural knowledge. Both together is the normal case.
+- The quality of the description decides whether a skill is used at all.
+</KeyTakeaway>

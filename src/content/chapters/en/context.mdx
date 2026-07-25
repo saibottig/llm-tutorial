@@ -5,4 +5,58 @@ part: 1
 order: 2
 ---
 
-Stub with <Callout type="korrektur">test content.</Callout>
+**Context** is the sum of everything a model receives for a single task. No more and no less. Anything the model should take into account when answering has to be in the context.
+
+That sounds obvious, but it has a consequence that surprises many people: **a language model is stateless.** It remembers nothing. Between two calls it retains no information whatsoever. What looks like memory is not memory — it is simply the fact that the entire conversation so far is sent again with every call.
+
+## What context is made of
+
+A typical request has four parts, assembled in this order:
+
+| Part | Content | Changes |
+| --- | --- | --- |
+| Tool definitions | Schemas for every tool the model may call | rarely |
+| System prompt | Role, rules, output format | rarely |
+| History | Every previous message from both sides | grows steadily |
+| Current message | The actual question | every time |
+
+The order is not a convention but technically relevant. It determines which parts of a request can be cached — more on that in [Prompt Caching](../prompt-caching/).
+
+<Callout type="merke">
+The system prompt is not a privileged zone with special authority. It is simply text at a particular position in the context. It carries weight because it comes first and because models are trained to take it seriously — not because it is technically inviolable. That is exactly what [Prompt Injection](../prompt-injection/) hinges on.
+</Callout>
+
+## The illusion of memory
+
+When a conversation runs for ten turns, the model at turn ten does not see "the tenth question". It sees the complete history from turn one to ten, freshly, as though it had never read it before — because that is exactly the case.
+
+Several practical things follow:
+
+- **Cost grows quadratically, not linearly.** Every new turn also carries all the previous ones. Twenty turns do not cost twenty times one turn; they cost considerably more.
+- **Nothing goes away on its own.** A misunderstanding from turn three is still sitting there at turn fifteen, still shaping the answers.
+- **A new chat is a genuine restart.** There is no hidden link between two conversations.
+
+<Callout type="praxis">
+When a model gets stuck in a long conversation and keeps making the same mistake, pressing harder usually helps less than starting over with a cleanly stated task. The old history is not neutral — it pulls the answer back towards what was already wrong once.
+</Callout>
+
+## Context is not just text
+
+Anything a model is meant to process becomes context: uploaded documents, images, tool call results, search hits, file contents. An agent that reads three files carries the contents of those three files in its context for the rest of the session.
+
+This is why context grows far faster in agentic work than in chat. A single tool call returning a large file can consume more context than twenty conversational turns.
+
+## Context engineering
+
+Because context is the only thing a model can draw on, shaping it is the central lever. The term that has stuck for this is **context engineering**. The guiding question is not "how do I phrase my question?" but:
+
+> What information does the model need for this task — and how do I get exactly that in without dragging everything else along?
+
+Most techniques in this tutorial are answers to that question. [Skills](../skills/) load instructions only when needed. [Sub-agents](../multi-agent/) keep side research out of the main thread. Compaction summarises old turns. All of them are tools for keeping context lean and relevant.
+
+<KeyTakeaway>
+- Context is everything a model sees for a task — there is no information outside it.
+- Models are stateless. The apparent memory comes from resending the whole history every time.
+- That is why cost grows disproportionately and old mistakes stay in effect.
+- Tool results and files usually fill the context faster than the conversation itself.
+</KeyTakeaway>

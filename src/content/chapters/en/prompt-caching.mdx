@@ -1,0 +1,75 @@
+---
+title: Prompt Caching
+description: The biggest cost lever available — and the one rule it almost always fails on in practice.
+part: 2
+order: 3
+---
+
+import CacheSimulator from '../../../components/demos/CacheSimulator.astro';
+
+The [KV cache](../kv-cache/) normally lives only for the duration of one request. **Prompt caching** keeps it across requests: when two requests begin with the same text, that beginning only has to be processed once.
+
+This pays off because in most applications the overwhelming majority of each request is identical — system prompt, tool definitions, reference documents, the conversation so far. Only the new question at the end differs.
+
+## The one rule
+
+Everything about this topic follows from a single sentence:
+
+> **The cache matches on a prefix. Any change invalidates everything after it.**
+
+The cache key is derived from the exact bytes from the start of the request up to the point you mark for caching. One changed character at position 100 invalidates everything from position 100 onwards — including parts that did not themselves change at all.
+
+<CacheSimulator locale="en" />
+
+Click "Edit" on one of the upper blocks in the demo. That block goes invalid — and so does every block below it, even though none of them were touched. The saving collapses from around 90 percent to single digits.
+
+## Order is everything
+
+From this follows the most important design rule: **stable content first, volatile content last.**
+
+The pieces are assembled in a fixed order: tool definitions, then system prompt, then the messages. Knowing that order lets you arrange your own setup accordingly:
+
+| How often it changes | Where it belongs |
+| --- | --- |
+| never | right at the front, ahead of every cache point |
+| per session | after the fixed part |
+| per request | at the end, behind the last cache point |
+
+## What quietly destroys the cache
+
+The tricky part is that caching does not fail with an error message. It simply does not work, and the bill stays high. The usual causes:
+
+- **A timestamp in the system prompt.** "Today is 25/07/2026, 10:14" — the time changes on every request and invalidates everything after it. The classic.
+- **Random IDs at the front.** A request ID or UUID near the start has the same effect.
+- **Non-deterministic serialisation.** If tool schemas are generated from a dictionary with no fixed ordering, the prefix looks different every time.
+- **Changing tool sets.** Tools sit right at the front. Adding or removing one invalidates literally everything.
+- **Switching models.** Caches belong to exactly one model. A switch mid-session starts from zero.
+
+<Callout type="achtung">
+The only reliable test is the billing data. A provider's response contains fields reporting how many tokens were read from cache and how many were written. If the read figure stays at zero across several similar requests, one of these spoilers is at work. Guessing does not help here; looking does.
+</Callout>
+
+## What it costs and when it pays off
+
+Caching is not free. Writing to the cache costs more than normal processing, while reading costs much less:
+
+| Operation | Price relative to normal input |
+| --- | --- |
+| Cache write, short lifetime | approx. 1.25× |
+| Cache write, long lifetime | approx. 2× |
+| Cache read | approx. 0.1× |
+
+That gives the break-even point: with a short lifetime it pays off **from the second** request, with a long one **from the third**. Use a prefix exactly once and caching costs you money.
+
+Also worth knowing: there is a **minimum length**. Prefixes below a certain token count — a few hundred to a few thousand depending on the model — are simply not cached. Without any error message.
+
+<Callout type="praxis">
+The most effective intervention is almost never a fine adjustment but a reordering. Taking the timestamp out of the system prompt and moving it into the current message changes nothing about the result — and a great deal about the bill.
+</Callout>
+
+<KeyTakeaway>
+- Prompt caching keeps the KV cache across requests and saves up to 90 percent of input cost on a stable prefix.
+- The cache matches on a prefix: one change invalidates everything after it.
+- Hence the rule: stable content first, volatile content at the end.
+- Caching fails silently. Timestamps, random IDs and changing tool sets are the usual suspects — the billing fields will tell you.
+</KeyTakeaway>

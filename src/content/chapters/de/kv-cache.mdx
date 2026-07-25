@@ -1,0 +1,64 @@
+---
+title: KV-Cache
+description: Der Zwischenspeicher, der Textgenerierung überhaupt bezahlbar macht — und der Grund, warum langer Kontext so viel Speicher frisst.
+part: 2
+order: 1
+---
+
+Um zu verstehen, warum Modelle so viel Speicher brauchen und warum langer Kontext teuer ist, muss man einen Blick auf einen einzigen Mechanismus werfen: den **KV-Cache**.
+
+## Das Problem
+
+Ein Sprachmodell erzeugt Text Token für Token. Für jedes neue Token schaut es auf alle vorherigen zurück — das ist der Kern des Attention-Mechanismus. Dabei berechnet es für jedes Token in jeder Schicht des Netzes zwei Vektoren: einen **Key** und einen **Value**. Vereinfacht gesagt: Der Key ist die Adresse „hier steht etwas zu diesem Thema", der Value der Inhalt an dieser Adresse.
+
+Ohne Zwischenspeicher müsste das Modell diese Vektoren für den gesamten bisherigen Text bei jedem einzelnen neuen Token neu berechnen. Für Token 1.000 wären das tausend Berechnungen, für Token 1.001 wieder tausendeine. Der Aufwand wächst quadratisch mit der Textlänge. Das wäre schlicht nicht bezahlbar.
+
+## Die Lösung
+
+Die Beobachtung ist simpel: **Die Keys und Values bereits verarbeiteter Token ändern sich nicht mehr.** Ein Token, das einmal geschrieben ist, wird nachträglich nicht mehr umgedeutet.
+
+Also werden sie einmal berechnet und behalten. Für jedes neue Token muss das Modell dann nur noch dessen eigene Keys und Values berechnen und an den Cache anhängen. Aus quadratischem Aufwand wird linearer.
+
+<Callout type="merke">
+Der KV-Cache ist der Grund, warum Textgenerierung überhaupt praktikabel ist. Er ist keine Optimierung am Rand, sondern eine Voraussetzung.
+</Callout>
+
+## Der Preis: Speicher
+
+Was an Rechenzeit gespart wird, muss in Speicher bezahlt werden. Und diese Rechnung wird bei langem Kontext unangenehm.
+
+Die Größe des Caches wächst linear mit der Kontextlänge. Für jedes Token wird in jeder Schicht ein Key- und ein Value-Vektor gespeichert. Bei einem Modell der 70-Milliarden-Klasse sind das etwa **0,3 MB pro Token**. Das klingt harmlos, bis man hochrechnet:
+
+| Kontextlänge | KV-Cache (70B-Modell) |
+| --- | --- |
+| 8.000 Token | ca. 2,5 GB |
+| 32.000 Token | ca. 10 GB |
+| 128.000 Token | ca. 40 GB |
+| 1.000.000 Token | ca. 305 GB |
+
+Zum Vergleich: Die Gewichte desselben Modells belegen quantisiert rund 39 GB. Bei 128.000 Token Kontext ist der KV-Cache also **genauso groß wie das Modell selbst**. Bei einer Million Token übertrifft er es um das Achtfache.
+
+<Callout type="achtung">
+Das ist der eigentliche Grund, warum Anbieter die nutzbare Kontextlänge oft unter dem technischen Maximum ansetzen — und warum langer Kontext bei manchen Anbietern extra kostet. Nicht das Modell ist die Grenze, sondern der Speicher für seinen Cache. Das ist genau die Betriebsentscheidung, die im Kapitel [Token](../token/) angesprochen wurde.
+</Callout>
+
+## Was dagegen hilft
+
+Weil dieses Wachstum so problematisch ist, gibt es eine Reihe von Gegenmaßnahmen — gut zu wissen, wenn man Modellbeschreibungen liest:
+
+- **Grouped-Query Attention (GQA).** Mehrere Attention-Köpfe teilen sich einen Satz Keys und Values. Das schrumpft den Cache je nach Konfiguration um den Faktor vier bis acht. Praktisch alle aktuellen Modelle nutzen das; die Zahlen in der Tabelle oben setzen es bereits voraus.
+- **Quantisierter KV-Cache.** Keys und Values werden mit weniger Bits gespeichert, etwa 8 statt 16. Halbiert den Bedarf bei geringem Qualitätsverlust.
+- **PagedAttention.** Der Cache wird in Blöcken verwaltet statt als ein großer zusammenhängender Bereich — wie virtueller Speicher in einem Betriebssystem. Das reduziert Verschnitt erheblich und erlaubt es, gemeinsame Präfixe zwischen parallelen Anfragen zu teilen. Bekannt geworden durch vLLM.
+
+## Die Verbindung zum Prompt Caching
+
+Der KV-Cache lebt normalerweise nur für die Dauer einer Anfrage. Naheliegende Frage: Warum ihn nicht über Anfragen hinweg behalten, wenn der Anfang gleich bleibt?
+
+Genau das ist **Prompt Caching**, und es ist der größte verfügbare Kostenhebel. Es bekommt sein [eigenes Kapitel](../prompt-caching/), weil es in der Praxis so viel ausmacht.
+
+<KeyTakeaway>
+- Der KV-Cache speichert Keys und Values bereits verarbeiteter Token, damit sie nicht bei jedem neuen Token neu berechnet werden müssen.
+- Er macht aus quadratischem Rechenaufwand linearen — ohne ihn wäre Textgenerierung nicht praktikabel.
+- Bezahlt wird mit Speicher, der linear mit der Kontextlänge wächst: bei 128k Token so viel wie das Modell selbst.
+- Der Cache, nicht das Modell, ist meist der Grund für begrenzte nutzbare Kontextlängen.
+</KeyTakeaway>

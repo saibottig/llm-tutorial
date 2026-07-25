@@ -1,0 +1,75 @@
+---
+title: Prompt Caching
+description: Der größte verfügbare Kostenhebel — und die eine Regel, an der er in der Praxis fast immer scheitert.
+part: 2
+order: 3
+---
+
+import CacheSimulator from '../../../components/demos/CacheSimulator.astro';
+
+Der [KV-Cache](../kv-cache/) lebt normalerweise nur für die Dauer einer Anfrage. **Prompt Caching** behält ihn über Anfragen hinweg: Wenn zwei Anfragen mit demselben Text beginnen, muss dieser Anfang nur einmal verarbeitet werden.
+
+Das lohnt sich, weil bei den meisten Anwendungen der überwiegende Teil jeder Anfrage identisch ist — System-Prompt, Tool-Definitionen, Referenzdokumente, der bisherige Verlauf. Nur die neue Frage am Ende unterscheidet sich.
+
+## Die eine Regel
+
+Alles an diesem Thema folgt aus einem einzigen Satz:
+
+> **Der Cache greift über einen Präfix. Jede Änderung entwertet alles, was danach kommt.**
+
+Der Cache-Schlüssel ergibt sich aus den exakten Bytes vom Anfang der Anfrage bis zu der Stelle, die man zwischenspeichern lässt. Ein einziges geändertes Zeichen an Position 100 macht alles ab Position 100 ungültig — auch Teile, die selbst völlig unverändert geblieben sind.
+
+<CacheSimulator locale="de" />
+
+Klicke in der Demo auf „Ändern" bei einem der oberen Blöcke. Der Block selbst wird ungültig — und alle darunter gleich mit, obwohl sie nicht angefasst wurden. Die Ersparnis bricht von rund 90 Prozent auf einen einstelligen Wert ein.
+
+## Reihenfolge ist alles
+
+Daraus folgt direkt die wichtigste Gestaltungsregel: **Stabiles nach vorn, Wechselndes nach hinten.**
+
+Die Bausteine werden in fester Reihenfolge zusammengesetzt: erst Tool-Definitionen, dann System-Prompt, dann die Nachrichten. Wer diese Reihenfolge kennt, kann seinen Aufbau danach ausrichten:
+
+| Wie oft es sich ändert | Wohin es gehört |
+| --- | --- |
+| nie | ganz nach vorn, vor jeden Cache-Punkt |
+| pro Sitzung | nach dem festen Teil |
+| pro Anfrage | ans Ende, hinter den letzten Cache-Punkt |
+
+## Was den Cache heimlich zerstört
+
+Das Tückische ist, dass Caching nicht mit einer Fehlermeldung ausfällt. Es funktioniert einfach nicht, und die Rechnung bleibt hoch. Die häufigsten Ursachen:
+
+- **Ein Zeitstempel im System-Prompt.** „Heute ist der 25.07.2026, 10:14 Uhr" — die Uhrzeit ändert sich bei jeder Anfrage und entwertet damit alles Nachfolgende. Der Klassiker.
+- **Zufalls-IDs am Anfang.** Eine Request-ID oder UUID im vorderen Bereich hat denselben Effekt.
+- **Nicht-deterministische Serialisierung.** Wenn Tool-Schemas aus einem Dictionary erzeugt werden, dessen Reihenfolge nicht festgelegt ist, sieht der Präfix jedes Mal anders aus.
+- **Wechselnde Tool-Sets.** Tools stehen ganz vorn. Ein Tool hinzuzufügen oder zu entfernen entwertet buchstäblich alles.
+- **Modellwechsel.** Caches gehören zu genau einem Modell. Ein Wechsel mitten in der Sitzung fängt bei null an.
+
+<Callout type="achtung">
+Der einzige verlässliche Test ist die Abrechnung. Die Antwort eines Anbieters enthält Felder, die ausweisen, wie viele Token aus dem Cache gelesen und wie viele neu geschrieben wurden. Bleibt der Lesewert über mehrere gleichartige Anfragen bei null, ist irgendwo ein solcher Störer am Werk. Raten hilft hier nicht — nachsehen schon.
+</Callout>
+
+## Was es kostet und ab wann es sich lohnt
+
+Caching ist nicht umsonst. Das Schreiben in den Cache kostet mehr als eine normale Verarbeitung, das Lesen dafür sehr viel weniger:
+
+| Vorgang | Preis relativ zur normalen Eingabe |
+| --- | --- |
+| Cache schreiben, kurze Haltbarkeit | ca. 1,25× |
+| Cache schreiben, lange Haltbarkeit | ca. 2× |
+| Aus dem Cache lesen | ca. 0,1× |
+
+Daraus ergibt sich die Rentabilitätsschwelle: Bei kurzer Haltbarkeit lohnt es sich **ab der zweiten** Anfrage, bei langer **ab der dritten**. Wer einen Präfix nur ein einziges Mal verwendet, zahlt mit Caching drauf.
+
+Ebenfalls praktisch relevant: Es gibt eine **Mindestlänge**. Präfixe unterhalb einer bestimmten Tokenzahl — je nach Modell einige hundert bis wenige tausend — werden schlicht nicht zwischengespeichert. Ohne Fehlermeldung.
+
+<Callout type="praxis">
+Der wirksamste Eingriff ist fast nie eine Feineinstellung, sondern eine Umsortierung. Wer den Zeitstempel aus dem System-Prompt nimmt und ihn in die aktuelle Nachricht verschiebt, ändert am Ergebnis nichts — an der Rechnung sehr viel.
+</Callout>
+
+<KeyTakeaway>
+- Prompt Caching behält den KV-Cache über Anfragen hinweg und spart bei gleichbleibendem Anfang bis zu 90 Prozent der Eingabekosten.
+- Der Cache greift über einen Präfix: Eine Änderung entwertet alles, was danach kommt.
+- Deshalb gilt: Stabiles nach vorn, Wechselndes ans Ende.
+- Caching fällt still aus. Zeitstempel, Zufalls-IDs und wechselnde Tool-Sets sind die üblichen Verdächtigen — die Abrechnungsfelder verraten es.
+</KeyTakeaway>

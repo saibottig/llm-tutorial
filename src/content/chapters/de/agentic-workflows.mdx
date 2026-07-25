@@ -1,0 +1,75 @@
+---
+title: Agentische Workflows
+description: Der Unterschied zwischen einem festen Ablauf und einem Agenten — und warum der feste Ablauf meistens die bessere Wahl ist.
+part: 4
+order: 1
+---
+
+Wer dieselbe Aufgabe wiederholt erledigt, will sie nicht jedes Mal neu formulieren. „Erstelle mir ein Jira-Ticket für diese Aufgabe." „Schreib Unit-Tests für diesen Diff." „Fasse den Stand dieses Threads zusammen." Genau darum geht es hier.
+
+Bevor man so etwas baut, lohnt eine Unterscheidung, die in der Praxis viel Geld und Ärger spart.
+
+## Workflow oder Agent
+
+**Ein Workflow** ist ein festgelegter Ablauf. Die Schritte stehen im Code, das Modell erledigt einzelne davon:
+
+```
+Diff holen → Modell: Testfälle vorschlagen → Modell: Code schreiben
+  → Tests ausführen → bei Fehler: einmal nachbessern → Ergebnis
+```
+
+**Ein Agent** bekommt ein Ziel und entscheidet selbst über die Schritte:
+
+```
+Ziel: „Sorge für Testabdeckung dieses Diffs."
+  → Modell entscheidet in jeder Runde, welches Tool als nächstes dran ist
+  → bis es meint, fertig zu sein
+```
+
+<Callout type="merke">
+Die Frage ist nicht, was moderner ist, sondern ob die Schritte im Voraus bekannt sind.
+
+Sind sie es, nimm einen Workflow. Er ist billiger, schneller, vorhersagbar und lässt sich testen. Sind sie es nicht — weil die Aufgabe erkunden muss, was überhaupt zu tun ist — brauchst du einen Agenten.
+
+Der häufigste Fehler ist, einen Agenten für etwas zu bauen, das ein Workflow erledigen könnte.
+</Callout>
+
+## Wann ein Agent sich lohnt
+
+Vier Fragen, die vor dem Bau eines Agenten sinnvoll sind:
+
+1. **Ist die Aufgabe wirklich offen?** Lässt sie sich nicht vollständig im Voraus beschreiben?
+2. **Rechtfertigt das Ergebnis die Kosten?** Ein Agent braucht ein Vielfaches an Token und Zeit.
+3. **Kann das Modell das überhaupt?** Kein Ablauf rettet eine Aufgabe, an der das Modell scheitert.
+4. **Sind Fehler auffangbar?** Gibt es Tests, Review, Rollback — irgendetwas, das einen Fehlschlag abfängt?
+
+Wenn eine Antwort „nein" lautet, ist ein einfacherer Aufbau die bessere Wahl.
+
+## Was einen guten Workflow ausmacht
+
+**Ein Zweck pro Workflow.** „Erstelle ein Ticket" ist gut. „Verwalte Projekte" ist zu unbestimmt, um zuverlässig zu funktionieren.
+
+**Beispiele statt Vorschriften.** Zwei, drei echte Beispiele des gewünschten Ergebnisses wirken deutlich stärker als eine lange Liste von Regeln. Das gilt besonders für Formate.
+
+**Vorhandenen Kontext mitgeben.** Ein Ticket-Workflow sollte den Diff, den Branch-Namen und das betroffene Modul bekommen — nicht danach fragen müssen.
+
+**Ausgabeformat festlegen.** Wenn das Ergebnis weiterverarbeitet wird, sollte es strukturiert zurückkommen und nicht als Fließtext, der geparst werden muss.
+
+**Fehlerfall bedenken.** Was passiert, wenn das Ergebnis unbrauchbar ist? Ein Workflow ohne Antwort auf diese Frage ist im Betrieb unangenehm.
+
+<Callout type="praxis">
+Ein guter Einstieg ist, drei- bis viermal manuell zu machen, was automatisiert werden soll — und dabei mitzuschreiben, welche Informationen man jedes Mal gebraucht hat. Diese Liste ist die Spezifikation. Wer direkt mit dem Prompt anfängt, vergisst regelmäßig die Hälfte des Kontexts.
+</Callout>
+
+## Die Zwischenform
+
+In der Praxis liegt vieles dazwischen: ein Workflow mit festen Schritten, von denen einer agentisch ist. Der Test-Workflow oben legt die Schritte fest, gibt aber dem Modell innerhalb von „Code schreiben" die Freiheit, Dateien zu lesen und nachzuschauen.
+
+Das ist oft der beste Kompromiss — Vorhersagbarkeit im Groben, Flexibilität im Detail.
+
+<KeyTakeaway>
+- Workflow: Schritte stehen fest, das Modell erledigt einzelne. Agent: Ziel steht fest, das Modell wählt die Schritte.
+- Sind die Schritte im Voraus bekannt, ist der Workflow fast immer die bessere Wahl — billiger, schneller, testbar.
+- Vor einem Agenten: Ist die Aufgabe offen, lohnt der Aufwand, kann das Modell es, sind Fehler auffangbar?
+- Beispiele wirken stärker als Regeln, und fehlender Kontext ist der häufigste Grund für schlechte Ergebnisse.
+</KeyTakeaway>

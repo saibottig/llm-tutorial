@@ -1,0 +1,71 @@
+---
+title: MCP
+description: Ein Protokoll, das die Anbindung an bestehende Software standardisiert — mit einem Preis, der bei jeder Anfrage anfällt.
+part: 3
+order: 2
+---
+
+import McpCost from '../../../components/demos/McpCost.astro';
+
+Das **Model Context Protocol** (MCP) ist ein offener Standard dafür, wie Modelle an bestehende Software angebunden werden. Es löst ein Integrationsproblem, kein Modellproblem.
+
+## Wofür es gut ist
+
+Vor MCP musste jede Kombination aus Anwendung und Datenquelle einzeln verdrahtet werden. Drei Anwendungen und vier Systeme bedeuteten zwölf Integrationen, jede mit eigener Authentifizierung und eigenem Format.
+
+MCP macht daraus eine Steckverbindung. Ein Anbieter stellt einen MCP-Server bereit — für GitHub, Jira, eine Datenbank, ein Dateisystem — und jede MCP-fähige Anwendung kann ihn ohne Anpassung nutzen. Aus zwölf Integrationen werden sieben Bausteine.
+
+Ein Server kann drei Arten von Dingen anbieten:
+
+| Art | Was es ist |
+| --- | --- |
+| **Tools** | Funktionen, die das Modell aufrufen kann — der Hauptfall |
+| **Resources** | Daten, die als Context bereitgestellt werden |
+| **Prompts** | Vorgefertigte Vorlagen für wiederkehrende Aufgaben |
+
+Technisch setzt das alles auf gewöhnlichem [Tool Use](../tool-use/) auf. MCP standardisiert das Drumherum: Wie werden Tools entdeckt, wie authentifiziert man sich, wie wird transportiert. Das Modell selbst weiß von MCP nichts — es sieht am Ende nur Tool-Definitionen.
+
+## Der Preis
+
+Und damit zum Haken, der in der Ausgangsfrage dieses Tutorials völlig zu Recht steht: **Die Tool-Definitionen liegen bei jeder Anfrage im Context.**
+
+Ein MCP-Server bringt selten ein einzelnes Tool mit. Der GitHub-Server hat über dreißig, jedes mit Beschreibung und Parameterschema. Das ist bei jedem Aufruf da — auch wenn man nur eine Datei umbenennen will.
+
+<McpCost locale="de" />
+
+Schalte in der Demo alle Server an. Der Verbrauch geht in den fünfstelligen Bereich, bevor auch nur ein Wort der eigentlichen Aufgabe im Context steht. Und das gilt für jede einzelne Anfrage in der Sitzung.
+
+Die Folgen sind mehrschichtig:
+
+- **Kosten.** Ein fester Grundbetrag pro Anfrage, den man immer zahlt.
+- **Weniger Platz.** Was Tool-Definitionen belegen, steht für Inhalt nicht zur Verfügung.
+- **Schlechtere Auswahl.** Je mehr ähnliche Tools zur Auswahl stehen, desto häufiger greift das Modell zum falschen. Das ist der Effekt, der am meisten unterschätzt wird.
+
+<Callout type="achtung">
+„Context Window Pollution" ist deshalb nicht primär ein Kostenproblem, sondern ein Qualitätsproblem. Ein Modell mit sechzig verfügbaren Tools trifft schlechtere Entscheidungen als eines mit acht passenden — selbst wenn das Fenster groß genug für alle sechzig wäre.
+</Callout>
+
+## Was inzwischen dagegen hilft
+
+Der Punkt „MCPs werden immer im Context mitgenommen" stimmt als Grundmechanik, ist aber nicht mehr das letzte Wort. Es gibt zwei wirksame Gegenmaßnahmen:
+
+**Tool Search / Deferred Loading.** Statt alle Definitionen von vornherein zu laden, werden sie als „bei Bedarf nachladbar" markiert. Im Context steht zunächst nur ein Suchwerkzeug; das Modell sucht sich die passenden Tools und lädt nur deren Schemas nach. Aus konstant hohem Grundverbrauch wird ein kleiner Sockel plus das, was tatsächlich gebraucht wird. Für große Tool-Sammlungen ist das der wirksamste Hebel — und es erhält obendrein den [Cache](../prompt-caching/), weil Definitionen angehängt statt ausgetauscht werden.
+
+**Auswahl treffen.** Die unspektakuläre, aber sehr wirksame Maßnahme: nur die Server aktivieren, die für die anstehende Arbeit gebraucht werden. Wer an einem Frontend arbeitet, braucht den Datenbank-Server nicht.
+
+<Callout type="praxis">
+Wenn ein Agent auffällig oft danebengreift, lohnt vor jeder Prompt-Optimierung ein Blick auf die Zahl der aktiven Tools. Die Hälfte abzuschalten wirkt häufig stärker als jede Umformulierung des System-Prompts.
+</Callout>
+
+## Was MCP nicht ist
+
+MCP ist ein **Anbindungsprotokoll**. Es klärt, wie ein Modell an ein externes System herankommt — Transport, Authentifizierung, Entdeckung von Fähigkeiten.
+
+Es ist ausdrücklich kein Mechanismus, um Anleitungen oder Fachwissen bereitzustellen. Genau dafür gibt es [Skills](../skills/), und genau deshalb ist die Gegenüberstellung im nächsten Kapitel wichtiger, als sie auf den ersten Blick wirkt.
+
+<KeyTakeaway>
+- MCP standardisiert die Anbindung an externe Systeme und ersetzt Punkt-zu-Punkt-Integrationen.
+- Tool-Definitionen liegen grundsätzlich bei jeder Anfrage im Context — das kostet Geld, Platz und vor allem Trefferquote.
+- Tool Search lädt Definitionen erst bei Bedarf nach und entschärft das Problem erheblich.
+- Die einfachste Maßnahme bleibt, nur die tatsächlich benötigten Server zu aktivieren.
+</KeyTakeaway>

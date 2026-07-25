@@ -78,6 +78,22 @@ for (const locale of LOCALES) {
   }
 }
 
+// Cross-references between chapters are written as ../<slug>/ — a typo there
+// would only surface as a 404 for whoever clicks it.
+for (const locale of LOCALES) {
+  for (const slug of byLocale[locale].keys()) {
+    const raw = await readFile(join(ROOT, locale, `${slug}.mdx`), 'utf8');
+    for (const [, target] of raw.matchAll(/\]\(\.\.\/([a-z0-9-]+)\/\)/g)) {
+      if (!byLocale[locale].has(target)) {
+        problems.push(`${locale}/${slug}.mdx links to ../${target}/ which does not exist.`);
+      }
+      if (target === slug) {
+        problems.push(`${locale}/${slug}.mdx links to itself.`);
+      }
+    }
+  }
+}
+
 const count = byLocale[reference].size;
 if (problems.length) {
   console.error('\n✗ Chapter check failed:\n');

@@ -1,0 +1,70 @@
+---
+title: VRAM and RAM
+description: Why running a model locally comes down to memory bandwidth rather than compute.
+part: 2
+order: 4
+---
+
+import VramCalculator from '../../../components/demos/VramCalculator.astro';
+
+Anyone running a model themselves hits the question immediately: GPU memory or system memory? The common answer is that VRAM is "faster". True, but too short, and it does not explain why the difference is so dramatic.
+
+## It is about bandwidth, not speed
+
+From [Prefill and Decode](../prefill-decode/) we know: when generating the answer, the model must read **its complete weights from memory once for every single token**. Not part of them — all of them.
+
+The decisive quantity is therefore not compute but **memory bandwidth**: how many gigabytes per second actually get from memory to the arithmetic units. And there the gaps are enormous:
+
+| Memory type | Bandwidth | Relative |
+| --- | --- | --- |
+| HBM3 (datacentre GPU) | approx. 3,300 GB/s | reference |
+| GDDR6X (consumer GPU) | approx. 1,000 GB/s | ⅓ of it |
+| Unified memory (Apple Silicon) | approx. 400 GB/s | ⅛ of it |
+| DDR5 dual channel (system RAM) | approx. 80 GB/s | 1⁄40 of it |
+
+That yields a usable rule of thumb:
+
+> **Tokens per second ≈ memory bandwidth ÷ model size in memory**
+
+A 70-billion-parameter model takes about 39 GB when quantised. On a GPU with 1,000 GB/s that gives roughly 26 tokens per second in theory. On DDR5 at 80 GB/s it is 2. Same machine, same model, a factor of 13 — purely from how the memory is attached.
+
+<Callout type="merke">
+VRAM is not "faster" in the sense of more responsive. It is more widely attached. For text generation that is exactly the relevant property, because every token requires reading the whole model.
+</Callout>
+
+## The calculator
+
+<VramCalculator locale="en" />
+
+Two things are worth trying:
+
+**Push up the context length.** At 128,000 tokens the [KV cache](../kv-cache/) becomes as large as the model itself. Budget only for weights and you will be badly wrong at long context.
+
+**Switch to DDR5.** Throughput collapses even though capacity is generous. That is the core of it: capacity and bandwidth are two different properties, and speed depends on the second.
+
+## When it does not fit: offloading
+
+If VRAM is insufficient, parts of the model can be moved into system RAM. It works — but the offloaded layers are read at RAM speed, and because *every* layer is needed for every token, the slowest part sets the pace.
+
+<Callout type="achtung">
+Offloading is a stopgap, not a scaling strategy. Even a few offloaded layers cost most of the speed. A smaller or more heavily quantised model that fits entirely in VRAM is almost always the better choice than a large one that only fits 80 percent.
+</Callout>
+
+## Quantisation: the usual way out
+
+Quantisation stores the weights with fewer bits — say 5 or 4 per parameter instead of 16. That shrinks the model accordingly and speeds it up, because fewer bytes have to be read per token.
+
+Quality loss is generally small down to about 4–5 bits and imperceptible for many tasks. Below that it drops off noticeably. The practical rule:
+
+> Prefer a larger model more heavily quantised over a smaller one at full precision — as long as you stay above roughly 4 bits.
+
+## Unified memory as a middle ground
+
+Apple Silicon and similar architectures share one pool of memory between CPU and GPU. Bandwidth sits between system RAM and a dedicated GPU, while capacity is large and affordable. For running big models locally this is often the most pragmatic compromise: slower than a serious GPU, but without the hard capacity wall.
+
+<KeyTakeaway>
+- Output speed is governed by memory bandwidth, not compute.
+- Rule of thumb: tokens per second ≈ bandwidth ÷ model size in memory.
+- There is roughly a factor of 40 between GPU memory and system RAM — hence the drastic collapse when offloading.
+- The KV cache has to be budgeted for; at long context it grows as large as the model.
+</KeyTakeaway>

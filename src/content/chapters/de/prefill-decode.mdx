@@ -1,0 +1,55 @@
+---
+title: Prefill und Decode
+description: Warum das erste Token so lange dauert und alle folgenden gleichmäßig schnell kommen — zwei Phasen mit völlig verschiedenen Flaschenhälsen.
+part: 2
+order: 2
+---
+
+import PrefillDecode from '../../../components/demos/PrefillDecode.astro';
+
+Wer ein Modell benutzt, kennt das Muster: Nach dem Absenden passiert erst eine Weile nichts, dann läuft die Antwort gleichmäßig durch. Das ist kein Zufall der Implementierung, sondern folgt direkt daraus, wie Generierung funktioniert. Sie zerfällt in zwei Phasen mit völlig unterschiedlichem Verhalten.
+
+## Phase 1: Prefill
+
+Im **Prefill** verarbeitet das Modell den kompletten Prompt und füllt damit den [KV-Cache](../kv-cache/). Entscheidend ist: Das geht **parallel**. Alle Prompt-Token können gleichzeitig durch das Netz geschickt werden, weil sie alle schon bekannt sind.
+
+Die Phase ist damit **rechenlastig** (compute-bound). Sie lastet die Recheneinheiten der GPU voll aus. Die Dauer dieser Phase ist im Wesentlichen die **Zeit bis zum ersten Token** (Time To First Token, TTFT).
+
+## Phase 2: Decode
+
+Im **Decode** entsteht die eigentliche Antwort — Token für Token. Und hier ist keine Parallelisierung möglich: Um Token 5 zu erzeugen, muss Token 4 fertig sein. Der Ablauf ist zwingend sequentiell.
+
+Für jedes einzelne Token muss das Modell seine kompletten Gewichte einmal aus dem Speicher lesen. Bei einem 40-GB-Modell heißt das: 40 GB gelesen, ein Token erzeugt. Nochmal 40 GB, nächstes Token.
+
+Damit ist diese Phase **speicherbandbreitenlimitiert** (memory-bound). Nicht die Rechenleistung begrenzt, sondern wie schnell Daten aus dem Speicher kommen. Die Recheneinheiten langweilen sich dabei größtenteils.
+
+<Callout type="merke">
+Die beiden Phasen haben verschiedene Flaschenhälse. Prefill braucht Rechenleistung, Decode braucht Speicherbandbreite. Deshalb macht dieselbe Hardware-Aufrüstung für die beiden Phasen sehr unterschiedlich viel aus.
+</Callout>
+
+<PrefillDecode locale="de" />
+
+Die Demo zeigt den entscheidenden Zusammenhang: Ein längerer Prompt verschiebt die Zeit bis zum ersten Token deutlich — die Ausgabegeschwindigkeit danach bleibt aber gleich. Sie hängt nicht davon ab, wie lang der Prompt war.
+
+## Was das praktisch bedeutet
+
+**Der Prompt beeinflusst nur die Wartezeit vorn.** Ein doppelt so langer Prompt verdoppelt ungefähr die Zeit bis zum ersten Token. An der Geschwindigkeit, mit der die Antwort dann durchläuft, ändert er nichts.
+
+**Streaming ist deshalb so wirksam.** Wenn die Antwort tokenweise ausgeliefert wird, sieht man nur die Prefill-Wartezeit. Ohne Streaming wartet man Prefill *plus* die gesamte Decode-Zeit. Bei einer langen Antwort ist das der Unterschied zwischen zwei Sekunden und einer halben Minute.
+
+**Kurze Antworten sind unverhältnismäßig teuer.** Bei einer Antwort von zehn Token dominiert der Prefill die Gesamtzeit vollständig. Deshalb lohnt es sich, mehrere Klassifikationen in einer Anfrage zu bündeln statt einzeln zu schicken.
+
+**Batching hilft nur beim Decode.** Weil beim Decode die Recheneinheiten unbeschäftigt sind, kann man mehrere Anfragen gleichzeitig durchschieben, fast ohne Zusatzkosten — die Gewichte werden ohnehin gelesen. Genau davon leben Anbieter beim Betrieb großer Modelle.
+
+**Die eigene Hardware ist beim Decode meist bandbreitenlimitiert.** Wer lokal ein Modell betreibt, merkt schnell: Eine schnellere GPU bringt für die Ausgabegeschwindigkeit wenig, wenn die Speicherbandbreite gleich bleibt. Das ist Thema des Kapitels [VRAM und RAM](../vram-vs-ram/).
+
+<Callout type="praxis">
+Wenn eine Anwendung sich träge anfühlt, lohnt es sich zu unterscheiden, welche Phase schuld ist. Lange Pause vor dem ersten Zeichen? Der Prompt ist zu lang — oder das Prompt Caching greift nicht. Antwort läuft langsam durch? Dann liegt es an Modellgröße und Bandbreite, und ein kürzerer Prompt hilft nicht.
+</Callout>
+
+<KeyTakeaway>
+- Prefill verarbeitet den Prompt parallel und ist rechenlastig; er bestimmt die Zeit bis zum ersten Token.
+- Decode erzeugt die Antwort sequentiell und ist bandbreitenlimitiert; er bestimmt die Token pro Sekunde.
+- Die Promptlänge wirkt auf die Wartezeit vorn, nicht auf die Ausgabegeschwindigkeit.
+- Streaming versteckt die Decode-Zeit; Batching nutzt die beim Decode brachliegende Rechenleistung.
+</KeyTakeaway>

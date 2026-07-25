@@ -1,0 +1,60 @@
+---
+title: Context Window
+description: The ceiling on what fits at once — and why quality falls off long before you reach it.
+part: 1
+order: 3
+---
+
+import ContextWindow from '../../../components/demos/ContextWindow.astro';
+
+The **context window** is the capacity limit: the maximum number of tokens a model can process in a single request. It counts everything — tool definitions, system prompt, history, current message, and as a rule the response the model has yet to produce.
+
+The difference from the previous chapter matters and often gets blurred:
+
+- **Context** is the *content* — what you actually send.
+- **Context window** is the *capacity* — how much fits at most.
+
+Current models sit between 200,000 and 1,000,000 tokens. A million tokens is roughly 3,000 to 4,000 book pages.
+
+## When it fills up
+
+<ContextWindow locale="en" />
+
+Try the smaller window with a lot of turns: the bar overflows, and without a countermeasure the request fails right there. Also worth noting is the share taken by tool definitions — constantly present, on every single request, whether or not a tool is needed. That is what the [MCP](../mcp/) chapter is about.
+
+When the window overflows there are essentially three responses:
+
+1. **Error.** The request is rejected. Honest, but useless in long sessions.
+2. **Truncation.** The oldest messages are dropped. Cheap, but the model abruptly "forgets" the beginning.
+3. **Compaction.** Older turns are summarised and the summary replaces them. Considerably better, but lossy.
+
+Good harnesses do the third, and do it in good time rather than at the wall.
+
+## The more important point: quality before capacity
+
+This is where the most common misconception about large context windows lives.
+
+<Callout type="korrektur">
+A window of one million tokens does not mean you *should* use a million tokens. Capacity and usable quality are two different things.
+
+Models retrieve information most reliably from the beginning and the end of the context. Material sitting in the middle of a very long context is measurably less well accounted for — the phenomenon is known as *lost in the middle*. On top of that, the longer the context, the more irrelevant material competes for attention and dilutes it.
+
+</Callout>
+
+In practice: a carefully assembled context of 20,000 tokens regularly beats an unsorted one of 500,000. Throwing more in is rarely the fix — it is usually the problem.
+
+Then there is the second effect, which builds up over long agent sessions and is often called **context rot**: failed attempts, abandoned approaches, superseded file contents and stale intermediate results all stay in the history. They are not merely useless, they are actively misleading, because the model takes them for the current state.
+
+## What follows from this
+
+- **Relevance beats completeness.** Three well-chosen files beat half the repository.
+- **Cleaning up is a feature, not a detail.** Removing old tool results matters as much as adding new ones.
+- **Important things belong at the edges.** Whatever absolutely must be honoured belongs at the start or the end — not in the middle of a pile of material.
+- **Long sessions need cuts.** A deliberate restart with a clean summary often beats a session dragged on indefinitely.
+
+<KeyTakeaway>
+- The context window is the ceiling in tokens, including the response still to be generated.
+- On overflow the only options are truncation or compaction — both lose information.
+- Usable quality degrades well before the technical limit: the middle gets less attention, ballast dilutes.
+- A large window is a reserve, not an invitation to fill it.
+</KeyTakeaway>

@@ -1,0 +1,93 @@
+---
+title: Multi-Agent Orchestration
+description: Several agents on one task — what it really costs, and why the most-cited drawback is not quite right.
+part: 4
+order: 2
+---
+
+In **multi-agent orchestration** several agents work towards one result. The classic pattern: an orchestrator that decomposes the task, hands parts to specialised sub-agents, and merges their results afterwards.
+
+```
+                    ┌──────────────┐
+                    │ Orchestrator │
+                    └──────┬───────┘
+              ┌────────────┼────────────┐
+              ▼            ▼            ▼
+         ┌────────┐   ┌────────┐   ┌────────┐
+         │ Agent  │   │ Agent  │   │ Agent  │
+         │ search │   │ code   │   │ tests  │
+         └────────┘   └────────┘   └────────┘
+```
+
+The advantage is obvious: **parallelism.** Three independent sub-tasks run at the same time instead of one after another. For research across many sources or analysis across many files the time saving is substantial.
+
+## The second advantage, usually overlooked
+
+There is a second reason for sub-agents that matters more than parallelism — and it runs exactly counter to what you usually hear about it.
+
+<Callout type="korrektur">
+You often read that multi-agent systems suffer from "more context pollution, because every agent has to know about the context". That is not quite right.
+
+Sub-agents are in fact primarily a technique for **context isolation**. A sub-agent gets its own fresh context, works within it, and returns only a summary. The twenty files it read, the three dead ends it followed, the raw output of its tool calls — all of that stays in its context and never reaches the main thread.
+
+Instead of 50,000 tokens of raw material, the orchestrator sees an 800-token summary.
+
+So the trade-off is not "more tokens *and* more pollution" but:
+
+> **More tokens overall, but less pollution in the main thread.**
+
+And since the main thread is the one that determines overall quality, that is often a good trade.
+</Callout>
+
+## What it costs
+
+The price is real and substantial. Every sub-agent builds its own context, receives its own instructions, makes its own tool calls. Much of the work is done more than once.
+
+For scale: a single agent already consumes a multiple of a simple chat call, because the tool loop keeps inflating the history. A multi-agent system sits well above that again — depending on the design, somewhere between not quite double and tenfold or more relative to a single agent.
+
+<Callout type="achtung">
+The range is that wide because everything depends on the design: how many sub-agents, how much context each gets, how often results are queried again. Anyone needing a concrete figure for their own case has to measure it — borrowed numbers from someone else's setup are worth little here.
+
+What can be said reliably: it is an order of magnitude more expensive, not a few percent. That belongs in the decision.
+</Callout>
+
+## The hazard: loops
+
+The most common failure mode is agents keeping each other busy. The orchestrator asks again, the sub-agent returns something unsatisfying, the orchestrator asks again — and it runs until somebody intervenes or the budget is gone.
+
+This is reliably preventable with simple means:
+
+- **Iteration limit.** A hard ceiling on rounds per agent. The single most effective measure.
+- **Token budget.** A ceiling for the whole task, not just per call.
+- **Depth limit.** Sub-agents may not spawn sub-agents of their own. One level is almost always enough.
+- **Progress check.** If two consecutive rounds produce nothing new, stop.
+- **Time limit.** Wall-clock time as the last resort.
+
+<Callout type="praxis">
+These safeguards belong in from the start, not retrofitted. A system without an iteration limit usually works fine in development and makes itself known unpleasantly on the first unusual case.
+</Callout>
+
+## When it pays off — and when it does not
+
+**A good fit** when sub-tasks are genuinely independent: research across many sources, analysis of many files, the same check applied to many objects. Likewise when an intermediate step produces a lot of raw material that has no business in the main thread — the isolation benefit.
+
+**A poor fit** when steps depend on one another. If step two needs the result of step one there is nothing to parallelise, and you pay the surcharge for nothing. Likewise for tasks small enough for a single agent.
+
+## What to build it with
+
+There are established frameworks to start from:
+
+- **crewAI** — role-based, very approachable, good for the classic orchestrator-with-specialists shape.
+- **LangGraph** — the flow as a graph, more control over state and branching.
+- **OpenAI Agents SDK** — a leaner approach built around handoffs between agents.
+- **Sub-agents in the harness** — Claude Code and others ship this built in, with no extra framework.
+
+The last point deserves mention because it gets overlooked: if the [harness](../harness/) already offers sub-agents, an additional framework is often unnecessary machinery.
+
+<KeyTakeaway>
+- Multi-agent brings parallelism — and, often more importantly, context isolation: raw material stays with the sub-agent.
+- The trade-off is not "more pollution" but more tokens overall with less pollution in the main thread.
+- The extra cost is an order of magnitude, not a footnote — and highly design-dependent. Measure rather than borrow.
+- Loops are the typical failure and are well controlled by iteration limits, budgets and depth limits.
+- Worth it for independent sub-tasks, not for dependent steps.
+</KeyTakeaway>

@@ -1,0 +1,76 @@
+---
+title: Tool Use
+description: The mechanism MCP, skills and everything agentic sit on top of — and it is simpler than you might expect.
+part: 3
+order: 1
+---
+
+A language model can do exactly one thing on its own: produce text. It cannot read a file, call an API or look anything up. **Tool use** — also called function calling — is the mechanism that closes that gap. It is the foundation [MCP](../mcp/), [skills](../skills/) and every agent build on. That is why it comes before all three here.
+
+## How it works
+
+The flow is surprisingly plain:
+
+1. **You describe the tools.** For each one you send a name, a description and a schema of its parameters.
+2. **The model requests a call.** Instead of answering with text it emits structured output: "call `get_weather` with `{"city": "Berlin"}`."
+3. **You execute.** Your code — not the model — actually calls the function.
+4. **You send the result back.** It is appended to the conversation as a new message.
+5. **The model continues.** With the result in context it answers, or requests the next tool.
+
+<Callout type="merke">
+The point most often misunderstood: **the model executes nothing.** It only formulates a request. Whether that request is granted is decided entirely by your code.
+
+That is not a limitation but the single most important security property of the whole arrangement. Every tool call is a point at which you can check, filter, log or ask for confirmation. See [Prompt Injection](../prompt-injection/).
+</Callout>
+
+## The loop
+
+Steps 2 to 5 repeat until the model stops requesting calls and answers instead. That loop is the entire core of what makes an agent:
+
+```
+Request → Model → Tool call? ─yes→ execute → append result ─┐
+                      │                                     │
+                      └─no→ Answer                           └──┘
+```
+
+That is all there is to it. An "agent" is essentially this loop plus a stopping condition. The rest — context management, permission checks, error handling — is the job of the [harness](../harness/).
+
+## What makes a good tool description
+
+The model decides purely from name, description and schema whether and how to use a tool. It does not see the code. The description is therefore not documentation but the actual steering mechanism.
+
+The most common mistake is to describe only *what* a tool does. Describing *when* it should be used matters at least as much:
+
+```json
+{
+  "name": "lookup_customer",
+  "description": "Looks up a customer by name or customer number. Use this whenever specific customer information is requested — never answer from memory, the data changes daily.",
+  "input_schema": {
+    "type": "object",
+    "properties": {
+      "query": { "type": "string", "description": "Name or customer number" }
+    },
+    "required": ["query"]
+  }
+}
+```
+
+Further points from practice:
+
+- **Few, clearly separated tools** beat many overlapping ones. Given too much choice, the model measurably picks wrong more often.
+- **Descriptive names.** `get_current_weather` beats `weather`.
+- **Errors belong back in the loop**, not swallowed. A comprehensible error message as a tool result lets the model try another route.
+- **Several calls at once** are possible and sensible when the calls are independent of each other.
+
+## The price: context
+
+Every tool definition sits in the context — on **every single request**, whether or not the tool is used. Ten tools with detailed schemas quickly cost several thousand tokens per call.
+
+That is the starting point for the next chapter: [MCP](../mcp/) makes it easy to connect a great many tools — and thereby makes exactly this problem visible.
+
+<KeyTakeaway>
+- Tool use is how a model reaches the outside world — the foundation under MCP, skills and every agent.
+- The model only requests calls; your code executes them. That is where the central control point lies.
+- A tool description is steering, not documentation: it has to say when the tool should be used.
+- Every definition costs context on every request — even unused.
+</KeyTakeaway>

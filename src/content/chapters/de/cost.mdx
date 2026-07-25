@@ -1,0 +1,65 @@
+---
+title: Kosten
+description: Wie sich der Preis einer Anfrage zusammensetzt — und welche vier Hebel tatsächlich etwas bewegen.
+part: 5
+order: 1
+---
+
+Abgerechnet wird pro Token, und zwar **Eingabe und Ausgabe getrennt**. Ausgabe ist dabei durchweg deutlich teurer als Eingabe, meist um den Faktor fünf.
+
+Zur Größenordnung, Preise je eine Million Token:
+
+| Modellklasse | Eingabe | Ausgabe |
+| --- | --- | --- |
+| groß, für schwierige Aufgaben | ca. 5 $ | ca. 25 $ |
+| mittel, für den Großteil der Last | ca. 3 $ | ca. 15 $ |
+| klein, für einfache Aufgaben | ca. 1 $ | ca. 5 $ |
+
+Diese Zahlen ändern sich, das Verhältnis bleibt: Ausgabe kostet ein Vielfaches der Eingabe, und zwischen den Klassen liegt etwa Faktor fünf.
+
+## Wo das Geld tatsächlich hingeht
+
+Die Intuition trügt hier regelmäßig. Bei den meisten Anwendungen — und bei allem Agentischen — dominiert nicht die Ausgabe, sondern die **Eingabe**. Trotz des höheren Ausgabepreises.
+
+Der Grund steht im Kapitel [Context](../context/): Bei jeder Runde geht der gesamte bisherige Verlauf erneut mit. Eine Sitzung mit dreißig Runden schickt den Anfang dreißigmal. Die Antworten sind dagegen jeweils kurz.
+
+<Callout type="merke">
+In agentischen Abläufen entfallen typischerweise 80 bis 95 Prozent der Kosten auf die Eingabe. Wer sparen will, muss deshalb an der Eingabeseite ansetzen — Ausgabe zu kürzen bringt vergleichsweise wenig.
+</Callout>
+
+## Die vier Hebel, die etwas bewegen
+
+**1. Prompt Caching.** Mit Abstand der größte Hebel. Cache-Lesen kostet etwa ein Zehntel des normalen Eingabepreises. Bei einem stabilen Präfix bedeutet das bis zu 90 Prozent weniger auf dem dominierenden Kostenblock. Details und die Fallstricke im Kapitel [Prompt Caching](../prompt-caching/).
+
+**2. Modellwahl nach Aufgabe.** Nicht jede Aufgabe braucht das größte Modell. Klassifizieren, Extrahieren, Umformatieren, Routing — dafür reicht die kleine Klasse und kostet ein Fünftel. Ein gemischter Aufbau, der pro Schritt das passende Modell wählt, ist meist deutlich günstiger als ein einheitlicher.
+
+**3. Context knapp halten.** Jedes Token, das nicht mitgeschickt wird, kostet nichts. Alte Tool-Ergebnisse entfernen, nur relevante Dateien anhängen, nicht benötigte MCP-Server abschalten. Das spart doppelt, weil es laut Kapitel [Context Window](../context-window/) zugleich die Qualität hebt.
+
+**4. Stapelverarbeitung.** Wenn Ergebnisse nicht sofort gebraucht werden, bieten Anbieter asynchrone Verarbeitung zum halben Preis an. Für nächtliche Auswertungen, Migrationen oder Massenklassifikation ist das ein Rabatt ohne Nachteil.
+
+## Was wenig bringt
+
+- **Am Prompt kürzen.** Zweihundert Token im System-Prompt einzusparen, während der Verlauf zwanzigtausend hat, ist Symbolpolitik.
+- **Ausgabe knapp halten.** Hilft nur dort, wo die Ausgabe wirklich lang ist. Bei Agenten ist sie es selten.
+- **Auf ein billigeres Modell wechseln, wenn die Aufgabe es nicht hergibt.** Wenn dafür drei Anläufe nötig sind, war nichts gespart.
+
+## Vor dem Produktivbetrieb
+
+Drei Dinge, die man vorher wissen sollte:
+
+**Kosten pro Vorgang messen, nicht pro Anfrage.** Eine Agentensitzung sind schnell fünfzig Aufrufe. Der Preis pro Aufruf sagt für sich genommen nichts.
+
+**Auf den schlechtesten Fall schauen, nicht auf den Durchschnitt.** Kosten sind stark rechtsschief verteilt: Die meisten Vorgänge sind billig, einige wenige explodieren. Wenn das oberste Prozent das Budget sprengt, hilft der Mittelwert nicht.
+
+**Harte Obergrenzen einziehen.** Ein Limit pro Vorgang, nicht nur pro Aufruf — dasselbe Argument wie bei den Schutzmaßnahmen im Kapitel [Multi-Agent](../multi-agent/). Ohne Obergrenze ist eine Schleife nicht nur ein Fehler, sondern eine Rechnung.
+
+<Callout type="praxis">
+Ein nützlicher Reflex: Bevor man an Prompts optimiert, einmal nachsehen, ob der Cache überhaupt greift. Die Abrechnungsfelder in der Antwort verraten es. Ein nicht greifender Cache kostet in aller Regel mehr als jede Prompt-Optimierung einbringen kann.
+</Callout>
+
+<KeyTakeaway>
+- Eingabe und Ausgabe werden getrennt bepreist; Ausgabe ist etwa fünfmal teurer pro Token.
+- Trotzdem dominiert bei Agenten die Eingabe mit 80 bis 95 Prozent, weil der Verlauf jedes Mal mitgeht.
+- Die wirksamen Hebel: Caching, passende Modellwahl je Schritt, knapper Context, Stapelverarbeitung.
+- Pro Vorgang messen statt pro Anfrage, den schlechtesten Fall planen und harte Obergrenzen setzen.
+</KeyTakeaway>

@@ -1,0 +1,75 @@
+---
+title: Agentic Workflows
+description: The difference between a fixed pipeline and an agent — and why the fixed pipeline is usually the better choice.
+part: 4
+order: 1
+---
+
+If you do the same task repeatedly, you do not want to phrase it from scratch each time. "Create a Jira ticket for this task." "Write unit tests for this diff." "Summarise where this thread stands." That is what this chapter is about.
+
+Before building one, a distinction is worth making that saves a lot of money and trouble in practice.
+
+## Workflow or agent
+
+**A workflow** is a fixed sequence. The steps live in your code; the model handles individual ones:
+
+```
+fetch diff → model: propose test cases → model: write code
+  → run tests → on failure: one repair pass → result
+```
+
+**An agent** is given a goal and decides the steps itself:
+
+```
+Goal: "Ensure test coverage for this diff."
+  → model decides each round which tool comes next
+  → until it considers itself done
+```
+
+<Callout type="merke">
+The question is not which is more modern but whether the steps are known in advance.
+
+If they are, use a workflow. It is cheaper, faster, predictable and testable. If they are not — because the task has to explore what needs doing — you need an agent.
+
+The most common mistake is building an agent for something a workflow could handle.
+</Callout>
+
+## When an agent is worth it
+
+Four questions worth asking before building one:
+
+1. **Is the task genuinely open-ended?** Can it not be fully described up front?
+2. **Does the outcome justify the cost?** An agent needs a multiple of the tokens and time.
+3. **Can the model do this at all?** No amount of orchestration rescues a task the model fails at.
+4. **Are errors catchable?** Are there tests, review, rollback — anything that intercepts a failure?
+
+If any answer is "no", a simpler construction is the better choice.
+
+## What makes a good workflow
+
+**One purpose per workflow.** "Create a ticket" is good. "Manage projects" is too vague to work reliably.
+
+**Examples rather than rules.** Two or three real examples of the desired result work considerably better than a long list of rules. That goes double for formats.
+
+**Pass in the context you have.** A ticket workflow should receive the diff, the branch name and the affected module — not have to ask for them.
+
+**Fix the output format.** If the result is processed further, it should come back structured rather than as prose that has to be parsed.
+
+**Think about failure.** What happens when the result is unusable? A workflow without an answer to that is unpleasant in production.
+
+<Callout type="praxis">
+A good way in is to do the thing manually three or four times — and note which information you needed each time. That list is the specification. Starting with the prompt instead reliably means forgetting half the context.
+</Callout>
+
+## The middle ground
+
+In practice much of it sits in between: a workflow with fixed steps, one of which is agentic. The test workflow above fixes the steps but gives the model freedom within "write code" to read files and look things up.
+
+That is often the best compromise — predictability in the large, flexibility in the detail.
+
+<KeyTakeaway>
+- Workflow: the steps are fixed and the model handles individual ones. Agent: the goal is fixed and the model chooses the steps.
+- If the steps are known in advance, a workflow is almost always better — cheaper, faster, testable.
+- Before building an agent: is the task open, is the cost justified, can the model do it, are errors catchable?
+- Examples beat rules, and missing context is the most common cause of poor results.
+</KeyTakeaway>
