@@ -5,54 +5,50 @@ part: 4
 order: 1
 ---
 
-Für die meisten im Unternehmen ist es der erste Kontakt mit Claude Code: Tests für bestehenden Code schreiben lassen. Das ist kein Zufall und kein Verlegenheitseinsatz — es ist der beste Einstieg, den es gibt.
+Tests für bestehenden Code sind der beste Einstieg in Claude Code — nicht als Verlegenheitslösung, sondern weil das Ergebnis **maschinell prüfbar** ist: Ein Test kompiliert und läuft grün oder nicht. Begrenzter Scope, kein Produktionscode, kleiner Schaden im Fehlerfall. ([Anwendungsfälle finden](../use-cases/) verallgemeinert diese Kriterien.)
 
-Der Grund: Das Ergebnis ist **maschinell prüfbar**. Ein Test kompiliert und läuft grün, oder eben nicht. Der Scope ist begrenzt, es wird kein Produktionscode angefasst, und ein schlechter Test richtet weniger Schaden an als ein schlechtes Feature. Genau die Eigenschaften, die das Kapitel [Anwendungsfälle finden](../use-cases/) später als Bewertungsraster verallgemeinert.
+## Der Ablauf in drei Schritten
 
-## Der Ablauf, der funktioniert
+**1. Aufgabe mit Kontext stellen.** Klasse, Methoden, erwartetes Verhalten — und auf die Besonderheit zeigen:
 
-Am Beispiel eines Service aus der Vessel-Domäne:
+> Schreib Tests für `BerthAllocationService.allocate()`. Interessant ist der Fall eines Schiffs, das wegen Tiefgangsbeschränkung nur bei Hochwasser anlegen kann.
 
-**1. Die Aufgabe mit Kontext stellen.** Nicht „schreib Tests für den BerthAllocationService", sondern: welche Klasse, welche Methoden, was ist das erwartete Verhalten? Claude Code liest die Klasse und ihre Abhängigkeiten selbst — aber es hilft, auf Besonderheiten zu zeigen: „Die Kaikante hat Tiefgangsbeschränkungen, der interessante Fall ist ein Schiff, das nur bei Hochwasser anlegen kann."
+**2. Konventionen kommen aus der [CLAUDE.md](../setup/).** „JUnit 5, Mockito, AssertJ, Slices statt `@SpringBootTest`" steht einmal dort — nicht in jedem Prompt. Die Ergebnisse sehen aus wie vom Team geschrieben.
 
-**2. Konventionen kommen aus der [CLAUDE.md](../setup/).** Steht dort „JUnit 5, Mockito, AssertJ, Slices statt `@SpringBootTest`", muss das niemand mehr in jeden Prompt schreiben — und die Ergebnisse sehen aus wie vom Team.
-
-**3. Claude schreibt, führt aus, bessert nach.** Das ist der entscheidende Schritt: Claude Code soll die Tests **selbst ausführen** (`./gradlew test --tests "BerthAllocationServiceTest"`) und bei Fehlern iterieren, bis sie durchlaufen. Ein Test, der nie gelaufen ist, ist ein Textvorschlag, kein Test.
+**3. Claude führt aus und bessert nach.** `./gradlew test --tests "BerthAllocationServiceTest"` — von Claude selbst, iteriert bis grün.
 
 <Callout type="merke">
-Die Verifikationsschleife ist der wichtigste Einzeltipp im Umgang mit Claude Code: Gib dem Modell immer einen Weg, sein Ergebnis selbst zu prüfen. Bei Tests ist dieser Weg eingebaut — deshalb funktioniert der Anwendungsfall so gut. Bei allem anderen muss man ihn bewusst schaffen.
+Die Verifikationsschleife ist der wichtigste Einzeltipp überhaupt: Gib dem Modell immer einen Weg, sein Ergebnis selbst zu prüfen. Ein Test, der nie gelaufen ist, ist ein Textvorschlag, kein Test.
 </Callout>
 
-## Spring-Boot- und Angular-Spezifika
+## Framework-Spezifika
 
-**Test-Slices statt Volllast.** `@WebMvcTest` für Controller, `@DataJpaTest` für Repositories, reine Unit-Tests mit Mockito für Domänenlogik. Ein `@SpringBootTest`, der den ganzen Kontext hochfährt, macht die Verifikationsschleife träge — und Claude iteriert dann seltener, weil jeder Durchlauf Minuten kostet.
+- **Test-Slices statt Volllast:** `@WebMvcTest` für Controller, `@DataJpaTest` für Repositories, reines Mockito für Domänenlogik. Ein hochfahrender `@SpringBootTest` macht jede Iteration minutenlang — und Claude iteriert dann seltener.
+- **Mocking gezielt:** Stubs für externe Abhängigkeiten (`TidalWindowClient`), `ArgumentCaptor` an interessanten Schnittstellen. Claude neigt zu Über-Mocking von Dingen, die man echt instanziieren könnte.
+- **Angular:** dasselbe Muster mit `TestBed` und Jest/Karma, `ng test` als Verifikation.
 
-**Mocking gezielt einsetzen.** Mockito-Stubs für externe Abhängigkeiten (`TidalWindowClient`, `CraneScheduleRepository`), `ArgumentCaptor` wo das Verhalten an der Schnittstelle interessiert. Was Claude erfahrungsgemäß übertreibt: Mocks für Dinge, die man auch echt instanziieren könnte.
-
-**Im Angular-Frontend** gilt dasselbe Muster mit `TestBed` und Jest bzw. Karma: Komponente, erwartetes Verhalten, `ng test` als Verifikation. Auch hier zahlt sich die CLAUDE.md des Workspace aus.
-
-## Woran generierte Tests scheitern
+## Review-Checkliste für generierte Tests
 
 <Callout type="korrektur">
-„Die Tests sind grün, also sind sie gut" — das ist der häufigste Trugschluss beim Einstieg. Grün heißt nur: Der Test widerspricht der aktuellen Implementierung nicht. Ein Test, der die Implementierung Zeile für Zeile nachbetet — jeden Mock-Aufruf verifiziert, statt Fachverhalten zu prüfen — ist grün und trotzdem wertlos: Er bricht bei jedem Refactoring und findet keinen einzigen Fehler.
+„Grün heißt gut" — der häufigste Trugschluss. Grün heißt nur: kein Widerspruch zur aktuellen Implementierung. Ein Test, der die Implementierung nachbetet, ist grün, bricht bei jedem Refactoring und findet keinen einzigen Fehler.
 </Callout>
 
-Darauf beim Review achten:
+| Frage | ✓ gut | ✗ schlecht |
+| --- | --- | --- |
+| Verhalten oder Implementierung? | „Tiefgang über Grenzwert → Liegeplatz abgelehnt" | „`repository.save()` wurde einmal aufgerufen" |
+| Unbequeme Fälle da? | Grenzwerte, leere Listen, Zeitzonen | nur der Happy Path |
+| Alles trägt etwas bei? | jeder Test prüft eine fachliche Aussage | Getter- und Konstruktor-Tests |
 
-- **Testet er Verhalten oder Implementierung?** „Bei Tiefgang über Grenzwert wird der Liegeplatz abgelehnt" ist Verhalten. „`repository.save()` wurde einmal aufgerufen" ist meist Implementierung.
-- **Fehlen die unbequemen Fälle?** Grenzwerte, leere Listen, Zeitzonen — genau das, wofür man Tests eigentlich schreibt. Wer sie im Prompt benennt, bekommt sie auch.
-- **Ist etwas trivial Getestetes dabei?** Getter-Tests und Konstruktor-Tests blähen die Suite auf, ohne etwas abzusichern.
-
-Das menschliche Review bleibt also Teil des Ablaufs — wie man die Qualität über Stichproben hinaus systematisch misst, behandelt das Kapitel [Evals](../evals/).
+Fehlende unbequeme Fälle im Prompt benennen — dann kommen sie auch. Wie man Testqualität über Stichproben hinaus misst: [Evals](../evals/).
 
 <Callout type="praxis">
-Der wirksamste Zuschnitt in der Praxis: diff-basiert arbeiten. Nicht „teste dieses Modul", sondern „hier ist mein Branch-Diff — schreib Tests für das geänderte Verhalten". Das hält den Context klein, die Aufgabe scharf und die Ergebnisse prüfbar.
+Wirksamster Zuschnitt: **diff-basiert**. „Hier ist mein Branch-Diff — Tests für das geänderte Verhalten" statt „teste dieses Modul". Kleiner Context, scharfe Aufgabe, prüfbares Ergebnis.
 </Callout>
 
 <KeyTakeaway>
-- Unit-Tests sind der ideale Einstieg: begrenzter Scope, kein Produktionscode, maschinell prüfbares Ergebnis.
-- Claude Code muss die Tests selbst ausführen und iterieren — ein nie gelaufener Test ist nur ein Textvorschlag.
-- Konventionen gehören in die CLAUDE.md, nicht in jeden Prompt; Test-Slices halten die Schleife schnell.
-- Grün heißt nicht gut: Tests, die die Implementierung nachbeten, überstehen kein Refactoring und finden keine Fehler.
-- Diff-basiert arbeiten statt modulweise — kleiner Context, schärfere Aufgabe, besseres Ergebnis.
+- Unit-Tests sind der ideale Einstieg: begrenzter Scope, maschinell prüfbar, kein Produktionscode.
+- Claude muss die Tests selbst ausführen und iterieren — sonst ist es nur ein Textvorschlag.
+- Konventionen in die CLAUDE.md, Slices statt Volllast — das hält die Schleife schnell.
+- Grün ≠ gut: auf Verhalten statt Implementierung prüfen, unbequeme Fälle einfordern.
+- Diff-basiert arbeiten statt modulweise.
 </KeyTakeaway>

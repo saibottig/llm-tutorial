@@ -112,6 +112,11 @@ gereicht. Deshalb funktioniert in jeder MDX-Datei direkt:
 Callout-Varianten: `merke` (türkis), `achtung` (amber), `korrektur` (rot),
 `praxis` (blau). Die Beschriftung kommt aus `ui.ts` und ist sprachabhängig.
 
+Ebenfalls vorgebunden: `<Deep title="…">` — ein `<details>`-Ausklapper für
+Hintergrund und Herleitungen (`src/components/Deep.astro`, Label-Fallback aus
+`ui.ts` unter `deep.label`). Er hält den Haupttext kurz, ohne Substanz zu
+löschen.
+
 Markdown-Tabellen werden über dieselbe Prop in `Table.astro` gewrappt, damit
 breite Tabellen in ihrem eigenen Kasten scrollen statt die Seite zu schieben.
 
@@ -158,9 +163,25 @@ Astro-Import nötig, damit es auch ohne Build läuft.
 Die Kapitel folgen einem Muster. Wer eines ergänzt, sollte es einhalten,
 sonst fällt es auf:
 
-**Aufbau.** Einstieg mit der konkreten Beobachtung oder Frage → Mechanik →
-Demo (falls vorhanden) → praktische Konsequenzen → `<KeyTakeaway>` mit 4–5
-Punkten. Keine Zusammenfassung am Anfang.
+**Aufbau.** Einstieg mit der **Kernaussage in 1–2 Sätzen** (keine
+rhetorische Aufwärmung, keine Anekdote) → Mechanik → Demo (falls vorhanden) →
+praktische Konsequenzen → `<KeyTakeaway>` mit 4–5 Punkten.
+
+**Informationsdichte.** Der Verdichtungspass vom Juli 2026 hat die Kapitel
+von ~650 auf ~350–450 sichtbare Wörter gebracht. Diese Regeln halten:
+
+- Aufzählbares wird Tabelle oder Liste, Abläufe werden nummerierte Schritte,
+  Kontraste werden ✓/✗-Zeilen — kein Fließtext für strukturierbare Inhalte.
+- Konkretes Artefakt statt Beschreibung: echter Befehl, echter Prompt, echte
+  Config. Wenn ein Satz durch eine Codezeile ersetzbar ist, ersetzt ihn die
+  Codezeile.
+- Herleitungen und Hintergrund gehören in einen `<Deep title="…">`-Ausklapper
+  (pro Sprache vorgebunden wie Callout) — Substanz wird verschoben, nicht
+  gelöscht.
+- Meta-Sätze („Das ist wichtig, weil…", „Es lohnt sich…") werden gestrichen;
+  die Aussage selbst trägt.
+- Faustregel: maximal 1–2 `<Deep>`-Blöcke pro Kapitel; wenn mehr nötig
+  scheint, ist das Kapitel zu breit geschnitten.
 
 **Zielgruppe und Beispielwelt.** Entwickler:innen in einem
 Container-Terminal-Softwareunternehmen, Claude Code als zentral verwaltetes

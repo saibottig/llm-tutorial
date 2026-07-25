@@ -5,7 +5,7 @@ part: 4
 order: 4
 ---
 
-Bei **Multi-Agent-Orchestrierung** arbeiten mehrere Agenten an einem Ergebnis. In Claude Code begegnet einem das als Sub-Agent: Die Hauptsitzung startet für eine Teilaufgabe — etwa „durchsuche das Monorepo nach allen Verwendungen dieser Schnittstelle" — einen eigenen Agenten mit frischem Context. Das klassische Muster dahinter: ein Orchestrator, der die Aufgabe zerlegt und an spezialisierte Sub-Agenten verteilt, deren Ergebnisse er anschließend zusammenführt.
+In Claude Code heißt Multi-Agent: Die Hauptsitzung startet für eine Teilaufgabe einen **Sub-Agenten** mit frischem Context — etwa „durchsuche das Monorepo nach allen Verwendungen dieser Schnittstelle". Das Muster dahinter:
 
 ```
                     ┌──────────────┐
@@ -19,76 +19,49 @@ Bei **Multi-Agent-Orchestrierung** arbeiten mehrere Agenten an einem Ergebnis. I
          └────────┘   └────────┘   └────────┘
 ```
 
-Der Vorteil liegt auf der Hand: **Parallelisierung.** Drei unabhängige Teilaufgaben laufen gleichzeitig statt nacheinander. Bei Recherche über viele Quellen oder Analysen über viele Dateien ist der Zeitgewinn erheblich.
-
-## Der zweite Vorteil, der meist übersehen wird
-
-Es gibt einen zweiten Grund für Sub-Agenten, der wichtiger ist als die Parallelisierung — und der genau umgekehrt zu dem läuft, was man üblicherweise darüber hört.
+Der offensichtliche Vorteil ist **Parallelisierung**. Der wichtigere wird meist übersehen:
 
 <Callout type="korrektur">
-Man liest oft, Multi-Agent-Systeme litten unter „mehr Context Pollution, weil jeder Agent über den Context Bescheid wissen muss". Das ist so nicht richtig.
+„Multi-Agent = mehr Context Pollution, weil jeder Agent alles wissen muss" — so nicht richtig. Sub-Agenten sind primär **Context-Isolation**: Der Sub-Agent liest zwanzig Dateien, verfolgt drei Sackgassen, produziert 50.000 Token Rohmaterial — und gibt **800 Token Zusammenfassung** zurück. Alles andere bleibt in seinem Context.
 
-Tatsächlich sind Sub-Agenten primär eine **Technik zur Context-Isolation**. Ein Sub-Agent bekommt einen eigenen, frischen Context, arbeitet darin und gibt am Ende nur eine Zusammenfassung zurück. Die zwanzig Dateien, die er gelesen hat, die drei Sackgassen, die er verfolgt hat, die Rohausgaben seiner Tool-Aufrufe — all das bleibt in seinem Context und landet nie im Hauptthread.
-
-Der Orchestrator sieht statt 50.000 Token Rohmaterial eine Zusammenfassung von 800 Token.
-
-Der Trade-off lautet also nicht „mehr Tokens *und* mehr Pollution", sondern:
-
-> **Mehr Tokens insgesamt, aber weniger Pollution im Hauptthread.**
-
-Und weil der Hauptthread derjenige ist, der über die Gesamtqualität entscheidet, ist das oft ein guter Tausch.
+Der Trade-off lautet: **mehr Tokens insgesamt, weniger Pollution im Hauptthread.** Und weil der Hauptthread die Gesamtqualität bestimmt, ist das oft ein guter Tausch.
 </Callout>
 
-## Was es kostet
+## Kosten und Schutz
 
-Der Preis ist real und beträchtlich. Jeder Sub-Agent baut seinen eigenen Context auf, bekommt seine eigenen Instruktionen, macht seine eigenen Tool-Aufrufe. Vieles wird mehrfach gemacht.
+**Kosten:** deutlich über einem einzelnen Agenten — je nach Zuschnitt von knapper Verdopplung bis Zehnfachem und mehr. Konkrete Zahlen für den eigenen Fall: messen, nicht aus fremden Aufbauten übernehmen. Verlässlich ist nur: Es ist eine Größenordnung, keine Randnotiz.
 
-Zur Größenordnung: Ein einzelner Agent verbraucht bereits ein Mehrfaches eines einfachen Chat-Aufrufs, weil die Tool-Schleife den Verlauf immer weiter aufbläht. Ein Multi-Agent-System liegt noch einmal deutlich darüber — je nach Zuschnitt in der Größenordnung von einer knappen Verdopplung bis zum Zehnfachen und mehr gegenüber einem einzelnen Agenten.
+**Häufigster Ausfall: Schleifen.** Orchestrator fragt nach, Sub-Agent liefert Unbefriedigendes, Orchestrator fragt erneut — bis Budget oder Geduld aufgebraucht sind. Schutzmaßnahmen von Anfang an einbauen:
 
-<Callout type="achtung">
-Die Spannbreite ist so groß, weil alles vom Zuschnitt abhängt: Wie viele Sub-Agenten, wie viel Kontext bekommt jeder mit, wie oft wird zurückgefragt. Wer eine konkrete Zahl für seinen Fall braucht, muss sie messen — übernommene Kennzahlen aus fremden Aufbauten sind hier wenig wert.
+| Maßnahme | Regel |
+| --- | --- |
+| Iterationslimit | harte Obergrenze pro Agent — wirksamste Einzelmaßnahme |
+| Token-Budget | Obergrenze pro Aufgabe, nicht pro Aufruf |
+| Tiefenbegrenzung | Sub-Agenten starten keine eigenen Sub-Agenten |
+| Fortschrittsprüfung | zwei Runden ohne Neues → abbrechen |
+| Zeitlimit | Wanduhrzeit als Reißleine |
 
-Was sich verlässlich sagen lässt: Es ist eine Größenordnung teurer, nicht ein paar Prozent. Das gehört in die Entscheidung.
-</Callout>
+## Wann es sich lohnt
 
-## Die Gefahr: Schleifen
+- ✓ **Unabhängige Teilaufgaben:** Recherche über viele Quellen, Analyse vieler Dateien, dieselbe Prüfung auf viele Objekte
+- ✓ **Viel Rohmaterial im Zwischenschritt:** Monorepo-Recherche im Sub-Agenten, nur das Fazit landet in der Sitzung, die den Code ändert
+- ✗ **Abhängige Schritte:** braucht Schritt 2 das Ergebnis von Schritt 1, zahlt man den Aufschlag ohne Gegenwert
+- ✗ **Aufgaben, die ein einzelner Agent schafft**
 
-Der häufigste Ausfallmodus ist, dass sich Agenten gegenseitig beschäftigen. Der Orchestrator fragt nach, der Sub-Agent liefert Unbefriedigendes, der Orchestrator fragt erneut — und das Ganze läuft, bis jemand eingreift oder das Budget aufgebraucht ist.
+Verwandt, aber keine Orchestrierung: mehrere Claude-Code-Sitzungen in getrennten **Git-Worktrees**, jede auf eigenem Branch — die Koordination macht der Mensch, die Einsicht ist dieselbe: getrennte Aufgaben, getrennte Contexte.
 
-Das lässt sich zuverlässig verhindern, und zwar mit einfachen Mitteln:
+<Deep title="Frameworks für eigene Multi-Agent-Systeme">
+Claude Code bringt Sub-Agenten eingebaut mit — für den Teamalltag reicht das, ein zusätzliches Framework ist unnötiger Aufbau. Wer darüber hinaus baut:
 
-- **Iterationslimit.** Harte Obergrenze für Runden pro Agent. Die wirksamste Einzelmaßnahme.
-- **Token-Budget.** Obergrenze für die gesamte Aufgabe, nicht nur pro Aufruf.
-- **Tiefenbegrenzung.** Sub-Agenten dürfen keine eigenen Sub-Agenten starten. Eine Ebene reicht fast immer.
-- **Fortschrittsprüfung.** Wenn zwei Runden nacheinander nichts Neues bringen, abbrechen.
-- **Zeitlimit.** Wanduhrzeit als letzte Reißleine.
-
-<Callout type="praxis">
-Diese Schutzmaßnahmen gehören von Anfang an eingebaut, nicht nachträglich. Ein System ohne Iterationslimit funktioniert in der Entwicklung meist einwandfrei und fällt beim ersten ungewöhnlichen Fall unangenehm auf.
-</Callout>
-
-## Wann es sich lohnt — und wann nicht
-
-**Passend**, wenn Teilaufgaben wirklich unabhängig sind: Recherche über viele Quellen, Analyse vieler Dateien, dieselbe Prüfung auf viele Objekte angewendet. Ebenso, wenn ein Zwischenschritt viel Rohmaterial erzeugt, das im Hauptthread nichts verloren hat — der Isolationsvorteil. Der Alltagsfall in Claude Code: Die Recherche im Monorepo läuft im Sub-Agenten, und nur das Fazit landet in der Sitzung, die den Code ändert.
-
-Eine verwandte Technik für echte Parallelarbeit: mehrere Claude-Code-Sitzungen in getrennten **Git-Worktrees**, jede auf einem eigenen Branch an einer eigenen Aufgabe. Das ist keine Orchestrierung — die Koordination übernimmt der Mensch — aber es nutzt dieselbe Einsicht, dass getrennte Aufgaben getrennte Contexte verdienen.
-
-**Unpassend**, wenn die Schritte voneinander abhängen. Wenn Schritt zwei das Ergebnis von Schritt eins braucht, gibt es nichts zu parallelisieren, und man zahlt den Aufschlag ohne Gegenwert. Ebenso bei Aufgaben, die klein genug für einen einzelnen Agenten sind.
-
-## Womit man es baut
-
-Für den Alltag im Team ist die Antwort meist schon da: **Claude Code bringt Sub-Agenten eingebaut mit** — kein zusätzliches Framework nötig. Wer darüber hinaus eigene Multi-Agent-Systeme baut, findet etablierte Frameworks:
-
-- **crewAI** — rollenbasiert, sehr zugänglich, gut für den klassischen Orchestrator-mit-Spezialisten-Aufbau.
-- **LangGraph** — Ablauf als Graph, mehr Kontrolle über Zustand und Verzweigungen.
-- **OpenAI Agents SDK** — schlanker Ansatz mit Übergaben zwischen Agenten.
-
-Die Reihenfolge ist bewusst: Wenn das [Harness](../claude-code/) Sub-Agenten schon anbietet, ist ein zusätzliches Framework häufig unnötiger Aufbau.
+- **crewAI** — rollenbasiert, zugänglich, klassischer Orchestrator-mit-Spezialisten-Aufbau
+- **LangGraph** — Ablauf als Graph, mehr Kontrolle über Zustand und Verzweigungen
+- **OpenAI Agents SDK** — schlanker Ansatz mit Übergaben zwischen Agenten
+</Deep>
 
 <KeyTakeaway>
-- Multi-Agent bringt Parallelisierung — und, oft wichtiger, Context-Isolation: Rohmaterial bleibt beim Sub-Agenten.
-- Der Trade-off ist nicht „mehr Pollution", sondern mehr Tokens insgesamt bei weniger Pollution im Hauptthread.
-- Die Mehrkosten sind eine Größenordnung, keine Randnotiz — und stark vom Zuschnitt abhängig. Messen statt übernehmen.
-- Schleifen sind der typische Ausfall und mit Iterationslimit, Budget und Tiefenbegrenzung gut beherrschbar.
-- Lohnt sich bei unabhängigen Teilaufgaben, nicht bei abhängigen Schritten.
+- Sub-Agenten bringen Parallelisierung — und, wichtiger, Context-Isolation: Rohmaterial bleibt draußen.
+- Trade-off: mehr Tokens insgesamt, weniger Pollution im Hauptthread — oft ein guter Tausch.
+- Mehrkosten sind eine Größenordnung und stark zuschnittabhängig: messen statt übernehmen.
+- Schleifen mit Iterationslimit, Budget und Tiefenbegrenzung von Anfang an verhindern.
+- Lohnt bei unabhängigen Teilaufgaben; Worktrees sind die manuelle Variante derselben Idee.
 </KeyTakeaway>

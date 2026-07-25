@@ -5,78 +5,59 @@ part: 4
 order: 2
 ---
 
-If you do the same task repeatedly, you do not want to phrase it from scratch each time. "Create a Jira ticket for this task." "Write unit tests for this diff." "Summarise where this review stands." The [unit-test workflow](../unit-tests/) from the last chapter is exactly such a case — and this chapter shows how to pin such procedures down.
+Recurring tasks — "tests for this diff", "a ticket for this task" — nobody wants to phrase fresh every time. Before automating them, one distinction decides cost and reliability:
 
-Before building one, a distinction is worth making that saves a lot of money and trouble in practice.
-
-## Workflow or agent
-
-**A workflow** is a fixed sequence. The steps live in your code; the model handles individual ones:
-
-```
-fetch diff → model: propose test cases → model: write code
-  → run tests → on failure: one repair pass → result
-```
-
-**An agent** is given a goal and decides the steps itself:
+| | Workflow | Agent |
+| --- | --- | --- |
+| Steps | fixed in code | chosen by the model each round |
+| Model's role | handles individual steps | pursues a goal until "done" |
+| Cost/time | predictable | a multiple, open-ended |
+| Testable | yes | hard |
 
 ```
-Goal: "Ensure test coverage for this diff."
-  → model decides each round which tool comes next
-  → until it considers itself done
+Workflow:  fetch diff → propose test cases → write code
+             → run tests → on failure fix once → result
+
+Agent:     goal: "Ensure test coverage for this diff."
+             → model picks the next tool each round → until it deems itself done
 ```
 
 <Callout type="merke">
-The question is not which is more modern but whether the steps are known in advance.
-
-If they are, use a workflow. It is cheaper, faster, predictable and testable. If they are not — because the task has to explore what needs doing — you need an agent.
-
-The most common mistake is building an agent for something a workflow could handle.
+What matters is not which is more modern but whether the steps are known in advance. Known → workflow (cheaper, faster, testable). Unknown, because the task must explore → agent. The most common mistake: an agent for something a workflow could do.
 </Callout>
 
-## When an agent is worth it
+## Four questions before any agent
 
-Four questions worth asking before building one:
+1. Is the task genuinely open — not fully describable up front?
+2. Does the outcome justify a multiple of tokens and time?
+3. Can the model do the task at all?
+4. Does anything catch failures — tests, review, rollback?
 
-1. **Is the task genuinely open-ended?** Can it not be fully described up front?
-2. **Does the outcome justify the cost?** An agent needs a multiple of the tokens and time.
-3. **Can the model do this at all?** No amount of orchestration rescues a task the model fails at.
-4. **Are errors catchable?** Are there tests, review, rollback — anything that intercepts a failure?
+One "no" → build simpler.
 
-If any answer is "no", a simpler construction is the better choice.
+## Rules for good workflows
 
-## What makes a good workflow
-
-**One purpose per workflow.** "Create a ticket" is good. "Manage projects" is too vague to work reliably.
-
-**Examples rather than rules.** Two or three real examples of the desired result work considerably better than a long list of rules. That goes double for formats.
-
-**Pass in the context you have.** A ticket workflow should receive the diff, the branch name and the affected module — not have to ask for them.
-
-**Fix the output format.** If the result is processed further, it should come back structured rather than as prose that has to be parsed.
-
-**Think about failure.** What happens when the result is unusable? A workflow without an answer to that is unpleasant in production.
-
-## Where these procedures live in Claude Code
-
-**Slash commands and skills.** A recurring procedure gets stored in the repo as a [skill](../skills/) or a custom slash command — `/tests-for-diff` instead of a paragraph typed fresh every time. The procedure is then versioned, available to the whole team and improvable in one place.
-
-**Headless in the pipeline.** Claude Code also runs non-interactively (`claude -p "…"`). That allows steps inside Bitbucket Pipelines — say, an automatic review comment on every PR, or a nightly check. Here the workflow rules apply doubly: fixed output format, tight permissions, hard budget — nobody is sitting in the pipeline to intervene.
+- **One purpose per workflow.** "Create a ticket" ✓ — "manage projects" ✗.
+- **Examples over rules.** Two or three real result examples beat any rule list, especially for formats.
+- **Pass context in, don't have it asked for.** A ticket workflow receives diff, branch and module — it does not ask.
+- **Fix the output format** when the result is processed further.
+- **Define the failure case.** What happens with an unusable result?
 
 <Callout type="praxis">
-A good way in is to do the thing manually three or four times — and note which information you needed each time. That list is the specification. Starting with the prompt instead reliably means forgetting half the context.
+Free specification: do the task manually three or four times and note which information you needed each time. That list is the workflow. Starting with the prompt instead reliably forgets half the context.
 </Callout>
 
-## The middle ground
+## Where workflows live in Claude Code
 
-In practice much of it sits in between: a workflow with fixed steps, one of which is agentic. The test workflow above fixes the steps but gives the model freedom within "write code" to read files and look things up.
+- **Skills / slash commands in the repo:** `/tests-for-diff` instead of a freshly typed paragraph each time — versioned, team-wide, improvable in one place → [skills](../skills/).
+- **Headless in the pipeline:** `claude -p "…"` runs non-interactively in Bitbucket Pipelines (review comment per PR, nightly check). Stricter rules apply: fixed output format, tight permissions, hard budget — nobody is sitting next to it.
 
-That is often the best compromise — predictability in the large, flexibility in the detail.
+The most practical shape is often the **middle form**: fixed steps, one of which is agentic — the test workflow pins the sequence but lets the model look up files freely within "write code".
 
 <KeyTakeaway>
-- Workflow: the steps are fixed and the model handles individual ones. Agent: the goal is fixed and the model chooses the steps.
-- If the steps are known in advance, a workflow is almost always better — cheaper, faster, testable.
-- Before building an agent: is the task open, is the cost justified, can the model do it, are errors catchable?
-- In Claude Code, procedures are versioned as skills or slash commands and run headless in Bitbucket Pipelines too.
-- Examples beat rules, and missing context is the most common cause of poor results.
+- Workflow: steps fixed, model handles individual ones. Agent: goal fixed, model chooses the steps.
+- Steps known in advance → workflow, almost always: cheaper, faster, testable.
+- Four questions before an agent: open? worth it? feasible? catchable?
+- Workflows live as skills/slash commands in the repo and headless in Bitbucket Pipelines.
+- Examples beat rules; missing context is the most common cause of poor results.
 </KeyTakeaway>

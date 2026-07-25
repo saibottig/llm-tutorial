@@ -5,72 +5,63 @@ part: 5
 order: 1
 ---
 
-Abgerechnet wird pro Token, und zwar **Eingabe und Ausgabe getrennt**. Ausgabe ist dabei durchweg deutlich teurer als Eingabe, meist um den Faktor fünf.
+Abgerechnet wird pro Token, Eingabe und Ausgabe getrennt. Die überraschende Wahrheit dahinter: **In Claude-Code-Sitzungen dominiert die Eingabe mit 80–95 % der Kosten** — obwohl Ausgabe pro Token etwa fünfmal teurer ist. Der Grund steht im Kapitel [Context](../context/): Jede Runde schickt den gesamten Verlauf erneut mit; Runde 30 bezahlt den Anfang zum dreißigsten Mal.
 
-Zur Größenordnung, Preise je eine Million Token:
+<Deep title="Preisstruktur der Modellklassen">
+Preise je 1 Mio. Token, Größenordnungen (ändern sich; die Verhältnisse bleiben):
 
 | Modellklasse | Eingabe | Ausgabe |
 | --- | --- | --- |
-| groß, für schwierige Aufgaben | ca. 5 $ | ca. 25 $ |
-| mittel, für den Großteil der Last | ca. 3 $ | ca. 15 $ |
-| klein, für einfache Aufgaben | ca. 1 $ | ca. 5 $ |
+| groß, für schwierige Aufgaben | ~5 $ | ~25 $ |
+| mittel, für den Großteil der Last | ~3 $ | ~15 $ |
+| klein, für einfache Aufgaben | ~1 $ | ~5 $ |
 
-Diese Zahlen ändern sich, das Verhältnis bleibt: Ausgabe kostet ein Vielfaches der Eingabe, und zwischen den Klassen liegt etwa Faktor fünf. Auch wenn im Enterprise-Betrieb keine private Rechnung anfällt: Dieselbe Mechanik steht hinter den Nutzungskontingenten — wer sie versteht, kommt mit seinem Kontingent weiter.
-
-## Wo das Geld tatsächlich hingeht
-
-Die Intuition trügt hier regelmäßig. In Claude-Code-Sitzungen — wie in allem Agentischen — dominiert nicht die Ausgabe, sondern die **Eingabe**. Trotz des höheren Ausgabepreises.
-
-Der Grund steht im Kapitel [Context](../context/): Bei jeder Runde geht der gesamte bisherige Verlauf erneut mit — jede gelesene Java-Klasse, jede Testausgabe. Eine Sitzung mit dreißig Runden schickt den Anfang dreißigmal. Die Antworten sind dagegen jeweils kurz.
+Zwischen den Klassen liegt je etwa Faktor fünf. Im Enterprise-Betrieb fällt keine private Rechnung an — aber dieselbe Mechanik steckt hinter den Nutzungskontingenten.
+</Deep>
 
 <Callout type="merke">
-In agentischen Abläufen entfallen typischerweise 80 bis 95 Prozent der Kosten auf die Eingabe. Wer sparen will, muss deshalb an der Eingabeseite ansetzen — sprich: am Context. Kostendisziplin und die Context-Hygiene aus dem Kapitel [Context Window](../context-window/) sind dieselbe Übung.
+Sparen heißt: an der Eingabeseite ansetzen, also am Context. Kostendisziplin und die Context-Hygiene aus dem Kapitel [Context Window](../context-window/) sind dieselbe Übung — knapper Context ist billiger *und* besser.
 </Callout>
 
-## Die vier Hebel der Mechanik
+## Die vier Mechanik-Hebel
 
-**1. Prompt Caching.** Mit Abstand der größte Hebel. Cache-Lesen kostet etwa ein Zehntel des normalen Eingabepreises; bei einem stabilen Sitzungsanfang heißt das bis zu 90 Prozent weniger auf dem dominierenden Kostenblock. Claude Code nutzt das automatisch — kaputtmachen kann man es trotzdem, siehe [Prompt Caching](../prompt-caching/).
+| Hebel | Wirkung | Wie |
+| --- | --- | --- |
+| [Prompt Caching](../prompt-caching/) | bis −90 % auf der Eingabe | automatisch — nur nicht kaputtmachen (MCP/CLAUDE.md mid-session) |
+| Modellwahl je Aufgabe | Faktor 5 pro Klasse | `/model`; Commit-Text und Umbenennung brauchen kein Spitzenmodell |
+| Context knapp halten | linear pro gespartem Token | [MCP-Server](../mcp/) aus, auf Dateien zeigen, Recherche in [Sub-Agenten](../multi-agent/) |
+| Stapelverarbeitung | −50 % | asynchrone Verarbeitung für alles, was warten kann |
 
-**2. Modellwahl nach Aufgabe.** Nicht jede Aufgabe braucht das größte Modell. Ein Commit-Text, eine Umbenennung über zehn Dateien, eine Formatierungsfrage — dafür reicht die kleine Klasse zu einem Fünftel des Preises. In Claude Code wechselt `/model` das Modell; das große Modell ist für die Aufgaben da, an denen das kleine scheitert.
+## Die fünf Alltags-Gewohnheiten
 
-**3. Context knapp halten.** Jedes Token, das nicht mitgeht, kostet nichts. Nicht benötigte [MCP-Server](../mcp/) abschalten, gezielt auf Dateien zeigen statt „schau dich mal um", Recherche in [Sub-Agenten](../multi-agent/) auslagern. Das spart doppelt, weil knapper Context zugleich die Qualität hebt.
-
-**4. Stapelverarbeitung.** Wenn Ergebnisse nicht sofort gebraucht werden — nächtliche Auswertungen, Massenmigrationen in der Pipeline — bieten Anbieter asynchrone Verarbeitung zum halben Preis an.
-
-## Die Gewohnheiten, die im Alltag zählen
-
-Aus der Praxis vieler Teams haben sich einige Gewohnheiten als die wirksamsten herausgestellt:
-
-- **Eine Sitzung pro Aufgabe.** `/clear` zwischen unabhängigen Aufgaben ist die billigste Einzelmaßnahme: Der Verlauf der alten Aufgabe geht sonst bei jeder Runde der neuen mit — als bezahlter, aktiv störender Ballast.
-- **Plan Mode vor großen Änderungen.** Ein verworfener Plan kostet ein paar tausend Token. Eine verworfene Implementierung samt Fehlversuchen kostet ein Vielfaches — und hinterlässt einen vollgelaufenen Verlauf.
-- **Befehle selbst ausführen, wenn kein Modell nötig ist.** Mit dem `!`-Präfix läuft ein Shell-Befehl direkt, und nur seine Ausgabe landet im Context — ohne Modellrunde drumherum.
-- **`/compact` an Abschnittsgrenzen** statt automatisch an der Wand — die Zusammenfassung ist besser, wenn sie einen abgeschlossenen Stand zusammenfasst.
-- **Präzise Aufgaben stellen.** „Schreib Tests für die geänderten Methoden in diesem Diff" statt „kümmer dich um Tests" — je schärfer die Aufgabe, desto weniger Erkundungsrunden bezahlt man mit.
+1. **Eine Sitzung pro Aufgabe.** `/clear` zwischen unabhängigen Aufgaben — sonst reitet der alte Verlauf als bezahlter, aktiv störender Ballast mit. Die billigste Einzelmaßnahme.
+2. **Plan Mode vor großen Änderungen.** Verworfener Plan: ein paar tausend Token. Verworfene Implementierung samt Fehlversuchen: ein Vielfaches plus vollgelaufener Verlauf.
+3. **`!`-Präfix für Befehle ohne Modellbedarf.** Der Befehl läuft direkt, nur die Ausgabe landet im Context — keine Modellrunde drumherum.
+4. **`/compact` an Abschnittsgrenzen** statt automatisch an der Wand — die Zusammenfassung eines abgeschlossenen Stands ist besser.
+5. **Präzise Aufgaben.** „Tests für die geänderten Methoden in diesem Diff" statt „kümmer dich um Tests" — jede Erkundungsrunde kostet.
 
 <Callout type="praxis">
-Ein nützlicher Reflex vor jeder Optimierung: `/context` ansehen. Wenn dort zwei ungenutzte MCP-Server und der Verlauf dreier erledigter Aufgaben liegen, ist das der Hebel — nicht die Formulierung des nächsten Prompts.
+Vor jeder Optimierung: `/context` ansehen. Zwei ungenutzte MCP-Server und der Verlauf dreier erledigter Aufgaben sind ein größerer Hebel als jede Prompt-Formulierung.
 </Callout>
 
 ## Was wenig bringt
 
-- **Am Prompt kürzen.** Zweihundert Token in der Aufgabenbeschreibung einzusparen, während der Verlauf zwanzigtausend hat, ist Symbolpolitik.
-- **Ausgabe knapp halten.** Hilft nur dort, wo die Ausgabe wirklich lang ist. Bei Agenten ist sie es selten.
-- **Auf ein billigeres Modell wechseln, wenn die Aufgabe es nicht hergibt.** Wenn dafür drei Anläufe nötig sind, war nichts gespart.
+- ✗ **Am Prompt kürzen** — 200 Token sparen bei 20.000 Token Verlauf ist Symbolpolitik
+- ✗ **Ausgabe knapp halten** — bei Agenten ist sie selten der Kostentreiber
+- ✗ **Billigeres Modell trotz harter Aufgabe** — drei Anläufe sparen nichts
 
-## Für alles, was automatisiert läuft
+## Zusatzregeln für Automatisiertes
 
-Sobald Claude Code headless in einer Pipeline arbeitet ([Agentische Workflows](../agentic-workflows/)), gelten drei zusätzliche Regeln:
+Sobald Claude Code headless in einer Pipeline läuft ([Agentische Workflows](../agentic-workflows/)):
 
-**Kosten pro Vorgang messen, nicht pro Anfrage.** Ein Pipeline-Durchlauf sind schnell fünfzig Aufrufe. Der Preis pro Aufruf sagt für sich genommen nichts.
-
-**Auf den schlechtesten Fall schauen, nicht auf den Durchschnitt.** Kosten sind stark rechtsschief verteilt: Die meisten Vorgänge sind billig, einige wenige explodieren.
-
-**Harte Obergrenzen einziehen.** Ein Limit pro Vorgang, nicht nur pro Aufruf — dasselbe Argument wie bei den Schutzmaßnahmen im Kapitel [Multi-Agent](../multi-agent/). Ohne Obergrenze ist eine Schleife nicht nur ein Fehler, sondern eine Rechnung.
+- **Pro Vorgang messen, nicht pro Anfrage** — ein Pipeline-Durchlauf sind schnell fünfzig Aufrufe.
+- **Schlechtesten Fall planen** — Kosten sind rechtsschief verteilt: die meisten Vorgänge billig, wenige explodieren.
+- **Harte Obergrenzen pro Vorgang** — ohne Limit ist eine Schleife keine Panne, sondern eine Rechnung → [Multi-Agent](../multi-agent/).
 
 <KeyTakeaway>
-- Eingabe und Ausgabe werden getrennt bepreist; trotzdem dominiert bei Agenten die Eingabe mit 80 bis 95 Prozent, weil der Verlauf jedes Mal mitgeht.
-- Die Mechanik-Hebel: Caching, Modellwahl je Aufgabe, knapper Context, Stapelverarbeitung.
-- Die Alltags-Gewohnheiten: eine Sitzung pro Aufgabe, Plan Mode vor großen Änderungen, `!` für direkte Befehle, `/compact` an Abschnittsgrenzen, präzise Aufgaben.
-- Vor dem Optimieren `/context` ansehen — der Ballast dort ist meist der größere Hebel als jede Formulierung.
-- Automatisierte Abläufe brauchen Messung pro Vorgang und harte Obergrenzen.
+- Eingabe dominiert mit 80–95 %, weil der Verlauf jede Runde mitgeht — sparen heißt Context sparen.
+- Mechanik-Hebel: Caching, Modellwahl je Aufgabe, knapper Context, Stapelverarbeitung.
+- Gewohnheiten: `/clear` pro Aufgabe, Plan Mode, `!`-Präfix, `/compact` an Grenzen, präzise Aufgaben.
+- Erst `/context` ansehen, dann optimieren.
+- Automatisiertes braucht Messung pro Vorgang und harte Obergrenzen.
 </KeyTakeaway>
