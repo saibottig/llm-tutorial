@@ -5,52 +5,52 @@ part: 5
 order: 2
 ---
 
-After the first weeks with [unit tests](../unit-tests/) the question reliably arrives: what else can Claude Code be used for? The worst answer is "everything" — it leads to disappointing attempts at unsuitable tasks and the premature conclusion that the tool is no good.
+After the first weeks with [unit tests](../unit-tests/) the question arrives: what else? The worst answer is "everything" — it produces disappointing attempts at unsuitable tasks. Better: three questions before every attempt.
 
-A grid works better. Three questions, asked before investing time:
+## The grid
 
-**1. Does the task repeat — or is it big enough?** For a recurring task, the setup effort (gathering context, sharpening the prompt, fixing the procedure) spreads across many runs. A one-off task has to be large enough on its own to carry that effort.
-
-**2. Is the result checkable?** Tests that run. Code that compiles. A diff someone reviews. Without a verification path there is no way to tell whether a result is good or merely looks good — with [hallucinations](../hallucinations/), a real difference.
-
-**3. Is the context obtainable?** Does the required knowledge live in code, tickets, docs — things Claude can read? Or in a colleague's head and three years of hallway conversations? Missing context is the most common cause of weak results.
+| # | Question | What is behind it |
+| --- | --- | --- |
+| 1 | **Does the task repeat** — or is it big enough? | setup effort must spread across runs |
+| 2 | **Is the result checkable?** | without a verification path, good and good-looking are indistinguishable → [hallucinations](../hallucinations/) |
+| 3 | **Is the context obtainable?** | does the knowledge live in code/ticket/docs — or in a colleague's head? |
 
 <Callout type="merke">
-Two out of three answered "yes" makes it worth a try. Three times "no" means: leave it — not because the model is too weak, but because the task offers the tool nothing to grip.
+Two of three "yes" → worth a try. Three times "no" → leave it: the task offers the tool nothing to grip; the model is not the problem.
 </Callout>
 
-## Candidates that pass the grid
+## Candidates that pass
 
-From our environment, roughly sorted by barrier to entry:
-
-- **Closing test gaps.** The established case — checkable, recurring, context lives in the repo.
-- **Explaining legacy code.** The module whose expert is on holiday: Claude skims faster than any human and answers "why is there this special case for reefer containers?" with pointers to the exact places in the code. Checkable by reading precisely those places.
-- **Stack trace and log analysis.** Stack trace plus affected code into the context, hypothesis out. Checkable, because the hypothesis can be verified against behaviour.
-- **Mechanical migrations.** Replacing a deprecated API, a Spring Boot version bump, applying one pattern across thirty files. Recurring, checkable via build and tests — and as a fixed procedure, a candidate for a [workflow](../agentic-workflows/).
-- **Docs from code.** The Confluence page for an interface that has lagged two releases behind: regenerate it from the current code, review by the domain owner.
-- **Pre-review pass.** Before human review, have Claude check your own diff for anomalies. Replaces no review — but raises the baseline of what reaches the human.
+| Use case | Why it works |
+| --- | --- |
+| Closing test gaps | checkable, recurring, context in the repo |
+| Explaining legacy code | Claude skims faster than any human; checkable by reading the cited places |
+| Stack trace / log analysis | trace + code in, hypothesis out; verifiable against behaviour |
+| Mechanical migrations | deprecated APIs, version bumps, one pattern across 30 files; checkable via build/tests |
+| Confluence docs from code | the interface page two releases behind; review by the domain owner |
+| Pre-review pass | check your own diff before human review; raises the baseline |
 
 ## Anti-candidates
 
-The counter-list matters just as much:
-
-- **Architecture decisions.** "Should we carve out the yard module?" has no checkable result, and the decisive context — team structure, history, politics — is written down nowhere.
-- **Code nobody can check.** If no one on the team can judge the result, the verification path is missing by definition.
-- **Highly specific optimisation logic.** The fine points of crane scheduling that encode years of terminal experience: the context is not obtainable, and whether a subtly wrong result would even be noticed is an open question.
-- **One-offs with high context cost.** If gathering the context takes longer than the task itself, it was the wrong tool.
+| Case | Where it fails |
+| --- | --- |
+| Architecture decisions | no checkable result; the decisive context (history, politics) is written down nowhere |
+| Code nobody can check | the verification path is missing by definition |
+| Highly specific optimisation logic (e.g. crane scheduling) | years of terminal experience are not obtainable; subtle errors go unnoticed |
+| One-off with high context cost | gathering context takes longer than the task |
 
 ## From single case to team workflow
 
-If a use case passes the grid and proves itself three times, the next step pays off: capture the procedure — as a [skill](../skills/) or slash command, as described in [Agentic Workflows](../agentic-workflows/). Then the team benefits, not just the person who discovered the case.
+Grid passed + proven three times → capture as a [skill](../skills/) or slash command ([Agentic Workflows](../agentic-workflows/)). Then the team benefits, not just the discoverer.
 
 <Callout type="praxis">
-Surprisingly effective during a rollout phase: a Confluence page where every discovered use case is recorded in two sentences plus the prompt used — including the failures. The page quickly becomes the team's most-read, and the failures save everyone else the same detours.
+Surprisingly effective during rollout: a Confluence page listing every discovered case in two sentences plus the prompt — **including the failures**. It quickly becomes the team's most-read page and saves everyone the same detours.
 </Callout>
 
 <KeyTakeaway>
-- Three questions before every attempt: Does the task repeat? Is the result checkable? Is the context obtainable?
-- Good candidates: test gaps, explaining legacy code, log analysis, mechanical migrations, docs from code, pre-review passes.
-- Anti-candidates: architecture decisions, uncheckable results, domain context that cannot be obtained.
-- Capture proven cases as a skill or workflow so the whole team benefits.
-- Document discovered cases — and failures — visibly; it speeds up everyone's onboarding.
+- Three questions before every attempt: does it repeat? checkable? context obtainable?
+- Good candidates: test gaps, explaining legacy, log analysis, migrations, docs from code, pre-review.
+- Anti-candidates: architecture questions, the uncheckable, unobtainable domain context.
+- Capture what works as a skill/slash command — team benefit over individual knowledge.
+- Document cases and failures visibly: it speeds up everyone's onboarding.
 </KeyTakeaway>

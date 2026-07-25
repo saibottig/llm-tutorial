@@ -5,78 +5,56 @@ part: 5
 order: 5
 ---
 
-You change a phrase in the CLAUDE.md or sharpen a skill. The next result looks better. Was it the change, or was it chance?
+You sharpen the CLAUDE.md or a skill, the next result looks better — change or chance? Without measurement, unanswerable. **Evals** are the answer: a fixed set of test cases with defined scoring, against which every change runs.
 
-Without measurement that question cannot be answered. **Evals** are the answer: a fixed set of test cases with a defined scoring method, against which every change is run.
+Why trying it out is not enough:
 
-## Why trying it out is not enough
-
-With ordinary software you check changes with tests, because behaviour is deterministic. With models that goes away:
-
-- **The same input gives different outputs.** A single run tells you little.
-- **Improvements in one place break others.** A prompt that fixes case A often breaks case B — and you only notice if you still test B.
-- **Your own impression deceives.** After a change you check exactly the cases you made it for. That is not a sample.
+- **The same input produces different outputs** — one run says little.
+- **Improving A often breaks B** — noticed only if B is still being tested.
+- **Your own impression deceives** — you check exactly the cases you made the change for. That is not a sample.
 
 <Callout type="merke">
-Without evals you optimise on anecdotes. That works for a while and then becomes unreliable, without you noticing when it tipped.
+Without evals you optimise on anecdotes. That works for a while, then tips over unnoticed.
 </Callout>
 
-## How to start
+## Getting started
 
-Getting started is easier than the term suggests.
+1. **Collect cases, don't invent them:** ~20 real inputs from actual use; the most valuable are the ones that went wrong.
+2. **Start small:** 20 cases separate effect from noise; waiting for 1,000 means never starting.
+3. **Define scoring** — three kinds:
 
-**Collect cases, do not invent them.** Twenty real inputs from actual use are worth more than a hundred made-up ones. Especially valuable: the cases that went wrong. If you are not in production yet, collect while playing through manually.
-
-**Start small.** Twenty cases is a usable start. Two is too few to separate noise from effect; waiting for a thousand means never starting.
-
-**Define the scoring.** For each case it must be clear what "correct" means. Roughly three kinds:
-
-| Kind | Scoring | Suits |
+| Kind | Scoring | Fits |
 | --- | --- | --- |
-| exact | string or value comparison | classification, extraction, IDs |
-| programmatic | code checks the output | valid JSON, tests pass, schema satisfied |
-| judgemental | a human or model rates it | summaries, tone, explanations |
+| exact | string/value comparison | classification, extraction, IDs |
+| programmatic | code checks the output | valid JSON, tests pass |
+| judged | human or model scores | summaries, tone |
 
-The first two are cheap and reliable. The third is more expensive and less stable — shift as much as possible into the first two.
+The first two are cheap and stable — shift as much as possible there.
 
-## LLM-as-judge, with care
+<Deep title="LLM-as-judge: the three quirks">
+- **Concrete criteria over grades:** "Does the answer name all three required points?" is more stable than "rate 1–10".
+- **Position effects:** comparing two answers, models systematically favour one position — swap the order and average.
+- **The judge itself needs checking:** a few hand-scored cases show whether it agrees with human judgement. Uncalibrated, it reliably measures the wrong thing.
+</Deep>
 
-For soft criteria you have a model do the rating. That is workable but has quirks worth knowing:
+## Measure alongside: cost, runtime, variance
 
-- **Concrete criteria rather than grades.** "Does the answer name all three required points?" produces steadier judgements than "rate the quality from 1 to 10".
-- **Position effects.** When comparing two answers, models systematically favour one position. If you compare, swap the order and average.
-- **The judge needs checking too.** A handful of hand-scored cases shows whether the rating agrees with human judgement at all. An uncalibrated judge reliably measures the wrong thing.
-
-## What to measure alongside
-
-Quality is not the only quantity that shifts while optimising:
-
-- **Cost per case** — otherwise you optimise quality up and the invoice with it
-- **Runtime** — especially for interactive applications
-- **Failure rate** — aborted runs, invalid outputs, loops
-- **Variance** — how much the result fluctuates across repeated runs of the same case
-
-The last is the most commonly forgotten. A setup that is good on average and occasionally very bad is often more painful in production than one that is consistently slightly weaker.
+Besides quality, optimisation also shifts cost per case, runtime, error rate and **variance** — the most-forgotten one: a setup that is good on average and occasionally very bad is worse in production than one consistently slightly weaker.
 
 <Callout type="praxis">
-Evals are most useful not as a grand quality measurement but as **regression protection**. Every case that was once wrong goes into the collection. Then the next rebuild tells you immediately if it breaks again. That collection grows on its own and after a few months is the most valuable artefact in the whole project.
+The biggest payoff is **regression protection**: every case that was once wrong goes into the collection — at the next rebuild it reports itself. The collection grows on its own and after months is the project's most valuable artefact.
 </Callout>
 
 ## The team question: are the generated tests any good?
 
-For the rollout phase there is one concrete application of this thinking. After a few months of [unit tests with Claude Code](../unit-tests/), the question arrives: has test quality risen — or only the test count?
+After months of [unit tests with Claude Code](../unit-tests/): has test quality risen — or just the count? Line coverage cannot answer that (a parroting test covers a lot and finds nothing). More honest: **mutation testing** (Java: PIT) — plants bugs in the production code and measures how many the tests notice. Applied to one module with generated and one with hand-written tests, it shows whether the generated suite checks or is merely green.
 
-Line coverage alone cannot answer that: a test that parrots the implementation covers many lines and still finds nothing. A more honest sample comes from **mutation testing** (for Java, e.g. PIT): it deliberately plants bugs in the production code and measures how many of them the tests notice. Applied to one or two modules — one with generated tests, one with hand-written ones — it shows whether the generated suite genuinely checks or is merely green. That is the programmatic scoring kind from the table above, applied to your own workflow.
-
-## The connection to everything else
-
-Almost everything in this tutorial is a change whose effect you should measure: a different model, a reworked CLAUDE.md, fewer active [MCP servers](../mcp/), a different split across [sub-agents](../multi-agent/), an extra verification stage against [hallucinations](../hallucinations/).
-
-Without evals those are all guesses. With evals they are decisions.
+Almost everything in this tutorial is a measurable change: model choice, CLAUDE.md rework, fewer [MCP servers](../mcp/), a different [sub-agent](../multi-agent/) split, a verification stage against [hallucinations](../hallucinations/). Without evals those are guesses — with evals, decisions.
 
 <KeyTakeaway>
-- Models are not deterministic — single runs and personal impressions do not count as evidence.
-- Twenty real cases with clear scoring is a usable start; failed cases are the most valuable.
-- Exact and programmatic scoring are steadier and cheaper than having a model judge.
-- Alongside quality, track cost, runtime and variance — and the biggest payoff is regression protection.
+- Models are not deterministic — single runs and impressions do not count as evidence.
+- 20 real cases with clear scoring suffice to start; failed cases are the most valuable.
+- Exact and programmatic beat judged — and the biggest payoff is regression protection.
+- Measure cost, runtime and variance alongside quality.
+- Quality of generated tests: mutation testing (PIT), not line coverage.
 </KeyTakeaway>

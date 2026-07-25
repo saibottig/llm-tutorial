@@ -5,44 +5,38 @@ part: 4
 order: 3
 ---
 
-A normal workday rarely starts with code. It starts with a Jira ticket, leads through the code and ends with a pull request in Bitbucket — and ideally an updated Confluence page. Through [MCP](../mcp/), Claude Code can reach every one of those stations.
+The workday starts with a Jira ticket and ends with a Bitbucket PR — via [MCP](../mcp/), Claude Code reaches every station in between. Cloud: official Atlassian remote server (one-time OAuth). Data Center: community server via `claude mcp add`. What is enabled is governed by the [central configuration](../claude-code/).
 
-## The connection
+## The full pass in five steps
 
-For the cloud products there is the official Atlassian remote MCP server: connected once via OAuth, Claude Code can read and create Jira tickets, search and write Confluence pages and work with Bitbucket repositories. For Data Center installations there are corresponding community servers that plug in via `claude mcp add` — which of these are enabled here is governed by the central configuration from the [Claude Code](../claude-code/) chapter.
-
-Do not forget the cost side: every connected server puts its tool definitions into every request. The demo in the [MCP](../mcp/) chapter shows it concretely — servers you do not currently need stay off.
-
-## The full pass
-
-This is what the workflow looks like when it runs well:
-
-**1. Ticket instead of retelling.** "Implement TOS-4711" is enough as a starting point: Claude reads the title, description, acceptance criteria and the comments — including the discussion in which the requirement got sharpened. That is routinely more context than a verbal summary carries.
-
-**2. Plan mode before the first edit.** In plan mode Claude Code only reads — ticket, code, affected modules — and presents an implementation plan before changing anything. For anything touching more than a handful of files this intermediate step pays twice: misunderstandings get caught before they become code, and a discarded plan costs a fraction of a discarded implementation — the argument from [Working Cost-Consciously](../cost/).
-
-**3. Implementation with verification.** Code and tests as described in the [Unit Tests](../unit-tests/) chapter: Claude runs build and tests itself and iterates.
-
-**4. Branch and pull request.** Branch following the team scheme (`feature/TOS-4711-…`), commits, PR against the main branch. Claude composes the PR description from the diff and the ticket — what changed, why, and what reviewers need to know.
-
-**5. Docs, when they belong to it.** If the change alters documented behaviour, Claude can update the affected Confluence page along the way — as a proposal you review, not as a silent automatism.
+1. **Ticket instead of retelling.** "Implement TOS-4711" is enough: Claude reads title, description, acceptance criteria and the comment discussion — more context than any verbal summary carries.
+2. **Plan mode before the first edit.** Read-only: Claude reads ticket, code, modules and presents a plan. A discarded plan costs a fraction of a discarded implementation → [Working Cost-Consciously](../cost/). From a handful of affected files upward: always.
+3. **Implementation with verification.** Code and tests, Claude runs build and tests itself → [Unit Tests](../unit-tests/).
+4. **Branch and PR.** `feature/TOS-4711-…` per team scheme; the PR description is composed from diff + ticket.
+5. **Docs along the way** — update the affected Confluence page as a proposal, not a silent automatism.
 
 <Callout type="praxis">
-The underrated part of this workflow is step 4. A good PR description needs exactly what Claude already has in context at that moment: the full diff and the ticket. Reviewers notice the difference immediately — and it costs nothing extra.
+The underrated step is no. 4: a good PR description needs exactly what is already in context — diff and ticket. Costs nothing extra, reviewers notice immediately.
 </Callout>
 
-## Where the line runs
+## The line: read broadly, write narrowly
 
-**Read broadly, write narrowly.** Reading tickets and Confluence pages is low-risk and almost always useful. Write access — commenting on tickets, editing pages, creating PRs — should be approved individually, or at least shown before sending. A wrong comment on the wrong ticket is visible to the outside; a wrongly edited file is not.
+| Access | Risk | Recommendation |
+| --- | --- | --- |
+| read tickets/pages | low | allow |
+| create PR | medium, visible | show before sending |
+| comment tickets, edit pages | externally visible | confirm individually |
+
+A wrong comment on the wrong ticket is public; a wrongly edited file is not.
 
 <Callout type="achtung">
-Everything Claude reads via MCP is external input: ticket descriptions, comments and Confluence pages can contain text that looks like an instruction — maliciously planted or simply ambiguous. Claude can interpret such text as an order. Why that is structurally hard to prevent, and how to bound the risk, is the subject of the [Prompt Injection](../prompt-injection/) chapter.
+Everything read via MCP is external input: ticket texts, comments and Confluence pages can contain text that looks like an instruction — and Claude can interpret it as an order. Why that is structurally hard to prevent: [Prompt Injection](../prompt-injection/).
 </Callout>
 
 <KeyTakeaway>
-- Through the Atlassian MCP server, Claude Code reaches Jira, Confluence and Bitbucket — the complete path from ticket to PR.
-- A ticket reference carries more context than any retelling: description, acceptance criteria, comments.
-- Plan mode before implementation: a discarded plan is cheap, a discarded implementation is not.
-- Have PR descriptions generated from diff and ticket — the underrated win of the workflow.
-- Read broadly, write narrowly — and everything read is external input, see Prompt Injection.
+- Via Atlassian MCP, Claude Code reaches Jira, Confluence and Bitbucket — from ticket to PR.
+- Ticket reference beats retelling: description, acceptance criteria, comments come along.
+- Plan mode before implementation — a discarded plan is cheap, a discarded implementation is not.
+- Generate the PR description from diff + ticket: the underrated win.
+- Read broadly, write narrowly — and everything read is external input.
 </KeyTakeaway>

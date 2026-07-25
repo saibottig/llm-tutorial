@@ -1,64 +1,49 @@
 ---
 title: KV Cache
-description: The buffer that makes text generation affordable at all — and the reason long context eats so much memory.
+description: The cache that makes text generation affordable at all — and the reason long context eats so much memory.
 part: 2
 order: 1
 ---
 
-To understand why models need so much memory and why long context is expensive, you need to look at one mechanism: the **KV cache**.
+The **KV cache** is the mechanism behind two everyday observations: why long contexts are expensive and why [prompt caching](../prompt-caching/) saves so much.
 
-## The problem
+## Problem and solution in four sentences
 
-A language model produces text one token at a time. For each new token it looks back at all the previous ones — that is the core of the attention mechanism. In doing so it computes two vectors per token per layer of the network: a **key** and a **value**. Loosely: the key is the address saying "there is something about this topic here", the value is the content at that address.
-
-Without a buffer the model would have to recompute those vectors for the entire preceding text on every single new token. For token 1,000 that is a thousand computations; for token 1,001, a thousand and one. The work grows quadratically with text length. It would simply be unaffordable.
-
-## The fix
-
-The observation is simple: **the keys and values of tokens already processed do not change.** A token once written is not reinterpreted after the fact.
-
-So they are computed once and kept. For each new token the model only has to compute that token's own key and value and append them to the cache. Quadratic work becomes linear.
+For every new token the model looks back at all previous ones (attention) and would need their intermediate values — **keys and values** — recomputed each time. That would be quadratic effort: a thousand computations for token 1,000, a thousand and one for token 1,001. The rescue: keys and values of already-processed tokens **never change again**. So they are computed once and kept — quadratic becomes linear.
 
 <Callout type="merke">
-The KV cache is the reason text generation is practical at all. It is not a marginal optimisation but a precondition.
+The KV cache is not an optimisation at the margins but the precondition for text generation being practical at all.
 </Callout>
 
 ## The price: memory
 
-What is saved in compute has to be paid in memory. And that bill gets uncomfortable at long context.
+Compute is saved, memory is paid — growing linearly with context length. For a 70B-class model roughly **0.3 MB per token**:
 
-Cache size grows linearly with context length. For every token, a key and a value vector are stored in every layer. On a model in the 70-billion class that comes to roughly **0.3 MB per token**. That sounds harmless until you extrapolate:
-
-| Context length | KV cache (70B model) |
-| --- | --- |
-| 8,000 tokens | approx. 2.5 GB |
-| 32,000 tokens | approx. 10 GB |
-| 128,000 tokens | approx. 40 GB |
-| 1,000,000 tokens | approx. 305 GB |
-
-For comparison: the weights of that same model take about 39 GB when quantised. At 128,000 tokens of context the KV cache is therefore **as large as the model itself**. At a million tokens it exceeds it eightfold.
+| Context length | KV cache (70B model) | For comparison |
+| --- | --- | --- |
+| 8,000 tokens | ~2.5 GB | |
+| 128,000 tokens | ~40 GB | ≈ the model weights themselves (~39 GB) |
+| 1,000,000 tokens | ~305 GB | ≈ 8× the model |
 
 <Callout type="achtung">
-This is the real reason providers often set usable context length below the technical maximum — and why long context costs extra with some of them. The limit is not the model but the memory for its cache. That is exactly the operational decision mentioned back in [Tokens](../token/).
+This is why providers cap usable context length and sometimes surcharge long context: the limit is not the model but the memory for its cache — the operational decision from the [Tokens](../token/) chapter.
 </Callout>
 
-## What helps
+<Deep title="How operators shrink the cache">
+Three techniques that show up in model descriptions:
 
-Because this growth is such a problem, there is a set of countermeasures — worth knowing when reading model descriptions:
+- **Grouped-query attention (GQA):** several attention heads share keys/values — a factor of 4–8 smaller. Standard in current models; the table above already assumes it.
+- **Quantised KV cache:** 8 instead of 16 bits per value — half the requirement, modest quality cost.
+- **PagedAttention:** manage the cache in blocks like an operating system's virtual memory — less waste, shared prefixes across concurrent requests (popularised by vLLM).
+</Deep>
 
-- **Grouped-query attention (GQA).** Several attention heads share one set of keys and values. Depending on configuration this shrinks the cache by a factor of four to eight. Practically every current model uses it; the numbers in the table above already assume it.
-- **Quantised KV cache.** Keys and values are stored with fewer bits, say 8 instead of 16. Halves the requirement at modest quality cost.
-- **PagedAttention.** The cache is managed in blocks rather than as one contiguous region — like virtual memory in an operating system. This cuts waste considerably and allows shared prefixes across concurrent requests. Popularised by vLLM.
+## The bridge to the next chapter
 
-## The link to prompt caching
-
-The KV cache normally lives only for the duration of one request. The obvious question: why not keep it across requests when the beginning stays the same?
-
-That is exactly what **prompt caching** is, and it is the largest cost lever available — especially in Claude Code sessions, whose beginning (tool definitions, system prompt, CLAUDE.md) stays stable across many turns. It gets [its own chapter](../prompt-caching/) because it makes such a difference in practice.
+The KV cache normally lives for one request. Keeping it across requests when the beginning stays the same is **prompt caching** — the largest cost lever there is, especially for Claude Code sessions with their stable prefix. [Continue there](../prompt-caching/).
 
 <KeyTakeaway>
-- The KV cache stores keys and values of already-processed tokens so they need not be recomputed for every new token.
-- It turns quadratic compute into linear — without it, text generation would not be practical.
-- The price is memory, growing linearly with context length: at 128k tokens, as much as the model itself.
-- The cache, not the model, is usually why usable context lengths are capped.
+- The KV cache stores the intermediate values of processed tokens — quadratic effort becomes linear.
+- The price is memory: at 128k context as much as the model itself, at 1M eight times as much.
+- The cache, not the model, is usually what caps usable context length.
+- Kept across requests, the mechanism is called prompt caching — the largest cost lever.
 </KeyTakeaway>

@@ -7,57 +7,51 @@ order: 1
 
 import Tokenizer from '../../../components/demos/Tokenizer.astro';
 
-Ein Sprachmodell liest keine Buchstaben und keine Wörter. Es liest **Token**. Das ist die kleinste Einheit, in der Text für das Modell überhaupt existiert: eine Zahl aus einem festen Vokabular, das typischerweise 100.000 bis 200.000 Einträge umfasst.
+Ein Modell liest weder Buchstaben noch Wörter, sondern **Token**: Zahlen aus einem festen Vokabular von 100.000–200.000 Einträgen. Alles in einer Claude-Code-Sitzung — CLAUDE.md, Java-Klassen, Stacktraces, Jira-Tickets — wird in Token gemessen, gezählt und abgerechnet.
 
-Ein Token entspricht meist einem kurzen Wort, einer Silbe, einer Endung oder einem Satzzeichen. Häufige Wörter bekommen ein eigenes Token, seltene werden in mehrere Stücke zerlegt. Deshalb ist `Fenster` ein Token, `Rechtsschutzversicherung` aber mehrere.
+Grobe Anhaltspunkte:
 
-## Wer bestimmt, wie zerlegt wird
+| Text | Tokenverbrauch |
+| --- | --- |
+| häufiges kurzes Wort (`Fenster`) | 1 Token |
+| langes Kompositum (`Rechtsschutzversicherung`) | mehrere Token |
+| Englisch | ~5 Zeichen pro Token |
+| Deutsch | ~15 % mehr Token als Englisch |
+| Code, Logs, JSON | deutlich mehr als Fließtext gleicher Länge |
 
-Die Zerlegung übernimmt der **Tokenizer**, und der gehört fest zum Modell. Er wird zusammen mit dem Modell trainiert und ausgeliefert. Derselbe Text ergibt bei demselben Modell immer exakt dieselbe Tokenfolge — egal, wo das Modell läuft, wer es betreibt oder wie viel Speicher die Maschine hat.
+## Der Tokenizer gehört zum Modell
+
+Derselbe Text ergibt bei demselben Modell immer exakt dieselbe Tokenfolge — egal wo es läuft oder wer es betreibt.
 
 <Callout type="korrektur">
-Man liest oft, die Tokenzahl hänge vom Server ab, auf dem das Modell läuft. Das stimmt nicht. Die Tokenisierung ist Teil des Modells und liegt fest.
+„Die Tokenzahl hängt vom Server ab" — nein. Die Tokenisierung ist Teil des Modells und fix. Vom Betreiber abhängt die **nutzbare Kontextlänge**: ein Modell kann technisch 1M Token können, aber auf 200k begrenzt betrieben werden.
 
-Vom Betreiber abhängt etwas anderes: die **nutzbare Kontextlänge**. Ein Modell mag technisch eine Million Token verarbeiten können — wenn der Anbieter nur so viel Speicher bereitstellt, dass 200.000 hineinpassen, ist bei 200.000 Schluss. Das ist eine Betriebsentscheidung, keine Eigenschaft des Modells.
+Auch veraltet: „Deutsch kostet 2–3×". Das galt für ältere Tokenizer. Gemessen mit aktuellen: **+16 %** (`o200k_base`) statt **+53 %** (`cl100k_base`).
 </Callout>
-
-## Die Faustregel und ihr Verfallsdatum
-
-Die verbreitetste Regel lautet: ein Token sind ungefähr vier Zeichen. Für Englisch liegt sie mit aktuellen Modellen eher bei fünf. Für Deutsch hört man dagegen oft, es seien nur zwei bis drei — Deutsch sei durch seine Komposita deutlich teurer.
-
-Das war einmal richtig und ist es heute so nicht mehr. Ältere Tokenizer waren stark auf Englisch optimiert; deutscher Text kostete real gut 50 Prozent mehr Token als derselbe Inhalt auf Englisch. Aktuelle Tokenizer haben diese Lücke weitgehend geschlossen — übrig bleibt ein Aufschlag von etwa 15 Prozent.
 
 <Tokenizer locale="de" />
 
-Die Zahlen in dieser Demo sind nicht geschätzt, sondern beim Bauen der Seite mit den echten Tokenizern berechnet. Aufschlussreich ist vor allem die Gegenüberstellung am Ende: **derselbe Text, zwei Tokenizer, deutlich unterschiedliche Ergebnisse.** Genau das ist der Beleg dafür, dass die Tokenzahl am Modell hängt.
+Die Zahlen der Demo sind beim Bauen mit den echten Tokenizern berechnet. Die Gegenüberstellung am Ende — derselbe Text, zwei Tokenizer, verschiedene Ergebnisse — ist der Beleg, dass die Tokenzahl am Modell hängt.
 
-## Warum das praktisch wichtig ist
+## Praktische Regeln
 
-Alles, was in einer Claude-Code-Sitzung vorkommt — die CLAUDE.md, eine Java-Klasse, ein Stacktrace, der Text eines Jira-Tickets — wird in Token gemessen. Token sind die Recheneinheit für fast alles:
+- **Messen statt schätzen.** Anbieter haben Zähl-Endpunkte; in Claude Code zeigt `/context` den Verbrauch der Sitzung.
+- **Nie mit fremdem Tokenizer schätzen** (z. B. `tiktoken` für ein Nicht-OpenAI-Modell): je nach Inhalt zweistellig daneben, am stärksten bei Code und Nicht-Englisch.
+- **Abrechnung, Grenzen, Geschwindigkeit** — alles wird in Token gemessen: Preise pro Token (Ein-/Ausgabe getrennt), Context Window in Token, Durchsatz in Token/s.
 
-- **Abrechnung.** Anbieter rechnen pro Token ab, Ein- und Ausgabe getrennt und unterschiedlich teuer.
-- **Grenzen.** Das Context Window wird in Token gemessen, nicht in Zeichen oder Seiten.
-- **Geschwindigkeit.** Durchsatz wird in Token pro Sekunde angegeben.
+<Deep title="Warum Modelle Buchstaben nicht zählen können">
+Ein Token ist keine Bedeutungseinheit — die Zerlegung folgt der Statistik des Trainingskorpus, nicht der Grammatik:
 
-Wer die Größe eines Textes abschätzen will, sollte deshalb nicht Zeichen zählen und teilen, sondern messen. Anbieter stellen dafür Endpunkte bereit, die exakt zählen, statt zu raten.
-
-<Callout type="achtung">
-Ein verbreiteter Fehler ist, für die Schätzung einen fremden Tokenizer zu verwenden — etwa `tiktoken` für ein Modell, das gar nicht damit arbeitet. Das Ergebnis liegt je nach Sprache und Inhalt zweistellig daneben. Bei Code und nicht-englischem Text ist die Abweichung am größten.
-</Callout>
-
-## Was ein Token nicht ist
-
-Ein Token ist keine Bedeutungseinheit. Die Zerlegung folgt der Statistik des Trainingskorpus, nicht der Grammatik. Deshalb passieren Dinge, die auf den ersten Blick seltsam wirken:
-
-- Ein Leerzeichen gehört meistens zum **folgenden** Wort — `" Fenster"` ist ein Token, `"Fenster"` am Satzanfang ein anderes.
+- Ein Leerzeichen gehört meist zum **folgenden** Wort: `" Fenster"` und `"Fenster"` am Satzanfang sind verschiedene Token.
 - Dieselbe Buchstabenfolge kann je nach Umgebung unterschiedlich zerlegt werden.
-- Zahlen werden häufig in mehrere Token zerhackt, was ein Grund dafür ist, dass Modelle beim Rechnen stolpern.
+- Zahlen werden in Stücke zerhackt — ein Grund, warum Modelle beim Rechnen stolpern.
 
-Das erklärt auch den Klassiker, warum Modelle Buchstaben in einem Wort schlecht zählen können: Sie sehen die Buchstaben gar nicht einzeln, sondern nur die Token-Brocken.
+Das Modell sieht nie einzelne Buchstaben, nur Token-Brocken. Deshalb scheitert es am Buchstabenzählen — es zählt in einer Einheit, die es nicht sehen kann.
+</Deep>
 
 <KeyTakeaway>
-- Ein Token ist die kleinste Einheit, in der ein Modell Text wahrnimmt — eine Zahl aus einem festen Vokabular.
-- Der Tokenizer gehört zum Modell und ist fix. Vom Betreiber hängt die nutzbare Kontextlänge ab, nicht die Tokenisierung.
-- Die Regel „Deutsch kostet zwei- bis dreimal so viel" stammt aus der Zeit älterer Tokenizer. Heute liegt der Aufschlag bei etwa 15 Prozent — bei Komposita mehr.
-- Zum Abschätzen messen statt rechnen — und nie mit dem Tokenizer eines anderen Modells.
+- Ein Token ist die kleinste Einheit, in der ein Modell Text wahrnimmt — alles wird darin gemessen und bezahlt.
+- Der Tokenizer ist Teil des Modells und fix; der Betreiber bestimmt nur die nutzbare Kontextlänge.
+- Deutsch kostet heute ~15 % mehr als Englisch, nicht 2–3× — die alte Regel stammt von älteren Tokenizern.
+- Messen statt rechnen, nie mit dem Tokenizer eines anderen Modells.
 </KeyTakeaway>

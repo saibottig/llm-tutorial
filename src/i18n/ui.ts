@@ -46,6 +46,7 @@ export const ui = {
     'callout.korrektur': 'Häufiges Missverständnis',
     'callout.praxis': 'Aus der Praxis',
     'takeaway.title': 'Das Wichtigste',
+    'deep.label': 'Hintergrund — nur bei Interesse',
 
     'demo.title': 'Zum Ausprobieren',
     'demo.reset': 'Zurücksetzen',
@@ -149,6 +150,7 @@ export const ui = {
     'callout.korrektur': 'Common misconception',
     'callout.praxis': 'In practice',
     'takeaway.title': 'Takeaways',
+    'deep.label': 'Background — if you want the details',
 
     'demo.title': 'Try it',
     'demo.reset': 'Reset',

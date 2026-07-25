@@ -5,52 +5,52 @@ part: 5
 order: 2
 ---
 
-Nach den ersten Wochen mit [Unit-Tests](../unit-tests/) kommt verlässlich die Frage: Wofür lässt sich Claude Code noch einsetzen? Die schlechteste Antwort darauf ist „für alles" — sie führt zu enttäuschenden Versuchen an ungeeigneten Aufgaben und dem voreiligen Schluss, das Werkzeug tauge nichts.
+Nach den ersten Wochen mit [Unit-Tests](../unit-tests/) kommt die Frage: Wofür noch? Die schlechteste Antwort ist „für alles" — sie produziert enttäuschende Versuche an ungeeigneten Aufgaben. Besser: drei Fragen vor jedem Versuch.
 
-Besser ist ein Raster. Drei Fragen, gestellt bevor man Zeit investiert:
+## Das Raster
 
-**1. Wiederholt sich die Aufgabe — oder ist sie groß genug?** Bei einer wiederkehrenden Aufgabe verteilt sich der Einrichtungsaufwand (Kontext beschaffen, Prompt schärfen, Ablauf festlegen) über viele Durchläufe. Eine Einmalaufgabe muss dafür schon selbst groß genug sein, um ihn zu tragen.
-
-**2. Ist das Ergebnis prüfbar?** Tests, die laufen. Code, der kompiliert. Ein Diff, den jemand reviewt. Ohne Prüfweg lässt sich nicht unterscheiden, ob das Ergebnis gut ist oder nur gut aussieht — bei [Halluzinationen](../hallucinations/) ein realer Unterschied.
-
-**3. Ist der Context beschaffbar?** Steht das nötige Wissen im Code, im Ticket, in der Doku — Dinge, die Claude lesen kann? Oder steckt es im Kopf einer Kollegin und in drei Jahren Flurfunk? Fehlender Context ist der häufigste Grund für schwache Ergebnisse.
+| # | Frage | Dahinter steckt |
+| --- | --- | --- |
+| 1 | **Wiederholt sich die Aufgabe** — oder ist sie groß genug? | Einrichtungsaufwand muss sich über Durchläufe verteilen |
+| 2 | **Ist das Ergebnis prüfbar?** | ohne Prüfweg ist gut von gut aussehend nicht unterscheidbar → [Halluzinationen](../hallucinations/) |
+| 3 | **Ist der Context beschaffbar?** | steht das Wissen in Code/Ticket/Doku — oder im Kopf einer Kollegin? |
 
 <Callout type="merke">
-Zwei von drei Fragen mit „ja" sind ein Versuch wert. Dreimal „nein" heißt: Finger weg — nicht weil das Modell zu schwach wäre, sondern weil die Aufgabe dem Werkzeug keine Angriffsfläche bietet.
+Zwei von drei „ja" → einen Versuch wert. Dreimal „nein" → Finger weg: Die Aufgabe bietet dem Werkzeug keine Angriffsfläche, nicht das Modell ist zu schwach.
 </Callout>
 
-## Kandidaten, die das Raster bestehen
+## Kandidaten, die bestehen
 
-Aus unserem Umfeld, grob nach Einstiegshürde sortiert:
-
-- **Testlücken schließen.** Der etablierte Fall — prüfbar, wiederkehrend, Context liegt im Repo.
-- **Legacy-Code erklären.** Das Modul, dessen Kenner gerade im Urlaub ist: Claude liest schneller quer als jeder Mensch und beantwortet „Warum gibt es diesen Sonderfall für Reefer-Container?" mit Verweis auf die Stellen im Code. Prüfbar durch Nachlesen an genau diesen Stellen.
-- **Stacktrace- und Loganalyse.** Stacktrace plus betroffener Code in den Context, Hypothese heraus. Prüfbar, weil die Hypothese sich am Verhalten verifizieren lässt.
-- **Mechanische Migrationen.** Deprecated-API ersetzen, Spring-Boot-Versionssprung, ein Muster über dreißig Dateien ziehen. Wiederkehrend, per Build und Tests prüfbar — und als fester Ablauf ein Kandidat für einen [Workflow](../agentic-workflows/).
-- **Doku aus Code.** Die Confluence-Seite zur Schnittstelle, die seit zwei Releases hinterherhinkt: aus dem aktuellen Code neu generieren lassen, Review durch den Fachverantwortlichen.
-- **Review-Vorstufe.** Vor dem menschlichen Review den eigenen Diff von Claude auf Auffälligkeiten prüfen lassen. Ersetzt kein Review — hebt aber die Grundlinie dessen, was beim Menschen ankommt.
+| Anwendungsfall | Warum es funktioniert |
+| --- | --- |
+| Testlücken schließen | prüfbar, wiederkehrend, Context im Repo |
+| Legacy-Code erklären | Claude liest schneller quer als jeder Mensch; prüfbar durch Nachlesen der genannten Stellen |
+| Stacktrace-/Loganalyse | Stacktrace + Code rein, Hypothese raus; am Verhalten verifizierbar |
+| Mechanische Migrationen | deprecated APIs, Versionssprünge, ein Muster über 30 Dateien; per Build/Tests prüfbar |
+| Confluence-Doku aus Code | die zwei Releases hinterherhinkende Schnittstellen-Seite; Review durch Fachverantwortliche |
+| Review-Vorstufe | eigenen Diff vor dem menschlichen Review prüfen lassen; hebt die Grundlinie |
 
 ## Anti-Kandidaten
 
-Genauso wichtig ist die Gegenliste:
-
-- **Architekturentscheidungen.** „Sollen wir das Yard-Modul herausschneiden?" hat kein prüfbares Ergebnis und der entscheidende Context — Teamzuschnitt, Historie, Politik — steht nirgends.
-- **Code, den niemand prüfen kann.** Wenn im Team niemand das Ergebnis beurteilen kann, fehlt der Prüfweg per Definition.
-- **Hochspezifische Optimierungslogik.** Die Feinheiten der Kranplanung, in denen jahrelange Terminal-Erfahrung steckt: Der Context ist nicht beschaffbar, und ob ein subtil falsches Ergebnis auffällt, ist offen.
-- **Einmalaufgaben mit hohem Kontextaufwand.** Wenn das Zusammentragen des Contexts länger dauert als die Aufgabe selbst, war es das falsche Werkzeug.
+| Fall | Woran es scheitert |
+| --- | --- |
+| Architekturentscheidungen | kein prüfbares Ergebnis; entscheidender Context (Historie, Politik) steht nirgends |
+| Code, den niemand prüfen kann | Prüfweg fehlt per Definition |
+| Hochspezifische Optimierungslogik (z. B. Kranplanung) | Jahre an Terminal-Erfahrung sind nicht beschaffbar; subtil Falsches fällt nicht auf |
+| Einmalaufgabe mit hohem Kontextaufwand | Context beschaffen dauert länger als die Aufgabe |
 
 ## Vom Einzelfall zum Team-Workflow
 
-Besteht ein Anwendungsfall das Raster und bewährt sich dreimal, lohnt der nächste Schritt: den Ablauf festhalten — als [Skill](../skills/) oder Slash-Command, wie im Kapitel [Agentische Workflows](../agentic-workflows/) beschrieben. Dann profitiert das Team, nicht nur die Person, die den Fall entdeckt hat.
+Raster bestanden + dreimal bewährt → als [Skill](../skills/) oder Slash-Command festhalten ([Agentische Workflows](../agentic-workflows/)). Dann profitiert das Team, nicht nur die Entdeckerin.
 
 <Callout type="praxis">
-Was in der Einführungsphase überraschend viel bewirkt: eine Confluence-Seite, auf der jeder gefundene Anwendungsfall mit zwei Sätzen und dem verwendeten Prompt festgehalten wird — auch die Fehlschläge. Die Seite wird schnell zur meistgelesenen des Teams, und die Fehlschläge ersparen anderen dieselben Umwege.
+Überraschend wirksam in der Einführungsphase: eine Confluence-Seite, auf der jeder gefundene Fall mit zwei Sätzen und dem Prompt steht — **auch die Fehlschläge**. Sie wird schnell zur meistgelesenen Seite des Teams und erspart anderen dieselben Umwege.
 </Callout>
 
 <KeyTakeaway>
-- Drei Fragen vor jedem Versuch: Wiederholt sich die Aufgabe? Ist das Ergebnis prüfbar? Ist der Context beschaffbar?
-- Gute Kandidaten: Testlücken, Legacy-Code erklären, Loganalyse, mechanische Migrationen, Doku aus Code, Review-Vorstufe.
-- Anti-Kandidaten: Architekturentscheidungen, unprüfbare Ergebnisse, nicht beschaffbarer Fach-Context.
-- Bewährte Fälle als Skill oder Workflow festhalten, damit das ganze Team profitiert.
-- Gefundene Fälle — und Fehlschläge — sichtbar dokumentieren; das beschleunigt das Onboarding aller.
+- Drei Fragen vor jedem Versuch: wiederholt sich's? prüfbar? Context beschaffbar?
+- Gute Kandidaten: Testlücken, Legacy erklären, Loganalyse, Migrationen, Doku aus Code, Review-Vorstufe.
+- Anti-Kandidaten: Architekturfragen, Unprüfbares, nicht beschaffbarer Fach-Context.
+- Bewährtes als Skill/Slash-Command festhalten — Teamnutzen statt Einzelwissen.
+- Fälle und Fehlschläge sichtbar dokumentieren: beschleunigt das Onboarding aller.
 </KeyTakeaway>

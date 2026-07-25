@@ -1,0 +1,80 @@
+---
+import { t, type Locale, type UIKey } from '../i18n/ui';
+
+interface Props {
+  locale?: Locale;
+  title?: string;
+}
+
+const { locale = 'de', title } = Astro.props;
+const label = title ?? t(locale)('deep.label' as UIKey);
+---
+
+<details class="deep">
+  <summary class="deep__summary">
+    <span class="deep__glyph" aria-hidden="true">▸</span>
+    {label}
+  </summary>
+  <div class="deep__body"><slot /></div>
+</details>
+
+<style>
+  .deep {
+    margin-top: 1.4em;
+    margin-bottom: 1.4em;
+    border: 1px dashed var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+  }
+
+  .deep__summary {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.6rem 1rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    color: var(--text-faint);
+    cursor: pointer;
+    list-style: none;
+    user-select: none;
+  }
+
+  .deep__summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .deep__summary:hover {
+    color: var(--text);
+  }
+
+  .deep__glyph {
+    font-size: 0.7rem;
+    transition: transform 0.15s ease;
+  }
+
+  .deep[open] .deep__glyph {
+    transform: rotate(90deg);
+  }
+
+  .deep__body {
+    padding: 0.2rem 1rem 0.9rem;
+  }
+
+  .deep__body :global(> * + *) {
+    margin-top: 0.7em;
+  }
+
+  .deep__body :global(p),
+  .deep__body :global(li) {
+    font-size: 0.92rem;
+    line-height: 1.6;
+    color: var(--text-muted, var(--text));
+  }
+
+  .deep__body :global(ul),
+  .deep__body :global(ol) {
+    padding-left: 1.2rem;
+  }
+</style>

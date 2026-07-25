@@ -5,78 +5,56 @@ part: 5
 order: 5
 ---
 
-Man ändert eine Formulierung in der CLAUDE.md oder schärft einen Skill nach. Das nächste Ergebnis sieht besser aus. War es die Änderung, oder war es Zufall?
+Man schärft die CLAUDE.md oder einen Skill nach, das nächste Ergebnis sieht besser aus — Änderung oder Zufall? Ohne Messung ist das nicht zu beantworten. **Evals** sind die Antwort: eine feste Menge Testfälle mit definierter Bewertung, gegen die jede Änderung läuft.
 
-Ohne Messung ist diese Frage nicht zu beantworten. **Evals** sind die Antwort darauf: eine feste Menge von Testfällen mit einer definierten Bewertung, gegen die jede Änderung läuft.
+Warum Ausprobieren nicht reicht:
 
-## Warum Ausprobieren nicht reicht
-
-Bei normaler Software prüft man Änderungen mit Tests, weil Verhalten deterministisch ist. Bei Modellen fällt das weg:
-
-- **Dieselbe Eingabe ergibt verschiedene Ausgaben.** Ein einzelner Durchlauf sagt wenig.
-- **Verbesserungen an einer Stelle verschlechtern andere.** Ein Prompt, der Fall A repariert, bricht oft Fall B — und das merkt man nur, wenn man B noch testet.
-- **Der eigene Eindruck täuscht.** Man prüft nach einer Änderung genau die Fälle, für die man sie gemacht hat. Das ist keine Stichprobe.
+- **Dieselbe Eingabe ergibt verschiedene Ausgaben** — ein Durchlauf sagt wenig.
+- **Verbesserung an A bricht oft B** — das merkt man nur, wenn B mitgetestet wird.
+- **Der eigene Eindruck täuscht** — man prüft genau die Fälle, für die man die Änderung gemacht hat. Das ist keine Stichprobe.
 
 <Callout type="merke">
-Ohne Evals optimiert man auf Anekdoten. Das funktioniert eine Weile und wird dann unzuverlässig, ohne dass man merkt, wann es gekippt ist.
+Ohne Evals optimiert man auf Anekdoten. Das funktioniert eine Weile und kippt dann unbemerkt.
 </Callout>
 
-## Wie man anfängt
+## Der Einstieg
 
-Der Einstieg ist einfacher, als der Begriff vermuten lässt.
-
-**Fälle sammeln, nicht erfinden.** Zwanzig echte Eingaben aus der tatsächlichen Nutzung sind mehr wert als hundert ausgedachte. Besonders wertvoll: die Fälle, bei denen es schiefging. Wer noch nicht produktiv ist, sammelt beim manuellen Durchspielen mit.
-
-**Klein anfangen.** Zwanzig Fälle sind ein brauchbarer Start. Zwei sind zu wenig, um Rauschen von Wirkung zu trennen; auf tausend zu warten heißt, nie anzufangen.
-
-**Bewertung festlegen.** Für jeden Fall muss klar sein, was „richtig" heißt. Grob drei Sorten:
+1. **Fälle sammeln, nicht erfinden:** ~20 echte Eingaben aus der Nutzung; die wertvollsten sind die, bei denen es schiefging.
+2. **Klein anfangen:** 20 Fälle trennen Wirkung von Rauschen; auf 1.000 zu warten heißt nie anzufangen.
+3. **Bewertung festlegen** — drei Sorten:
 
 | Sorte | Bewertung | Passt für |
 | --- | --- | --- |
-| exakt | String- oder Wertevergleich | Klassifikation, Extraktion, IDs |
-| programmatisch | Code prüft die Ausgabe | valides JSON, Tests laufen durch, Schema erfüllt |
-| beurteilend | Mensch oder Modell bewertet | Zusammenfassungen, Tonfall, Erklärungen |
+| exakt | String-/Wertevergleich | Klassifikation, Extraktion, IDs |
+| programmatisch | Code prüft die Ausgabe | valides JSON, Tests laufen durch |
+| beurteilend | Mensch oder Modell bewertet | Zusammenfassungen, Tonfall |
 
-Die ersten beiden sind billig und verlässlich. Die dritte ist teurer und weniger stabil — man sollte so viel wie möglich in die ersten beiden verlagern.
+Die ersten beiden sind billig und stabil — so viel wie möglich dorthin verlagern.
 
-## LLM-as-Judge, mit Vorsicht
+<Deep title="LLM-as-Judge: die drei Eigenheiten">
+- **Konkrete Kriterien statt Schulnoten:** „Nennt die Antwort alle drei geforderten Punkte?" ist stabiler als „Bewerte 1–10".
+- **Positionseffekte:** Beim Vergleich zweier Antworten bevorzugen Modelle systematisch eine Position — Reihenfolge tauschen und mitteln.
+- **Der Judge braucht selbst Prüfung:** ein paar handbewertete Fälle zeigen, ob er mit menschlichem Urteil übereinstimmt. Unkalibriert misst er zuverlässig das Falsche.
+</Deep>
 
-Für weiche Kriterien lässt man ein Modell bewerten. Das ist praktikabel, hat aber Eigenheiten, die man kennen sollte:
+## Mitmessen: Kosten, Laufzeit, Streuung
 
-- **Konkrete Kriterien statt Schulnoten.** „Nennt die Antwort alle drei geforderten Punkte?" liefert stabilere Urteile als „Bewerte die Qualität von 1 bis 10".
-- **Positionseffekte.** Beim Vergleich zweier Antworten bevorzugen Modelle systematisch eine Position. Wer vergleicht, sollte die Reihenfolge tauschen und mitteln.
-- **Der Judge braucht selbst Prüfung.** Ein paar von Hand bewertete Fälle zeigen, ob die Bewertung überhaupt mit menschlichem Urteil zusammenpasst. Ein unkalibrierter Judge misst zuverlässig das Falsche.
-
-## Was man dabei mitmisst
-
-Qualität ist nicht die einzige Größe, die sich beim Optimieren verändert:
-
-- **Kosten pro Fall** — sonst optimiert man Qualität hoch und die Rechnung gleich mit
-- **Laufzeit** — besonders bei interaktiven Anwendungen
-- **Fehlerrate** — abgebrochene Läufe, ungültige Ausgaben, Schleifen
-- **Streuung** — wie stark schwankt das Ergebnis über mehrere Durchläufe desselben Falls
-
-Der letzte Punkt ist der am häufigsten vergessene. Ein Aufbau, der im Schnitt gut und gelegentlich sehr schlecht ist, ist im Betrieb oft unangenehmer als einer, der durchgehend leicht schwächer ist.
+Neben Qualität verändern sich beim Optimieren auch Kosten pro Fall, Laufzeit, Fehlerrate und **Streuung** — der meistvergessene Punkt: Ein Aufbau, der im Schnitt gut und gelegentlich sehr schlecht ist, ist im Betrieb unangenehmer als einer, der durchgehend leicht schwächer ist.
 
 <Callout type="praxis">
-Am nützlichsten sind Evals nicht als große Qualitätsmessung, sondern als **Regressionsschutz**. Jeder Fall, der einmal falsch war, wandert in die Sammlung. Dann merkt man beim nächsten Umbau sofort, wenn er wieder kaputtgeht. Diese Sammlung wächst von allein und ist nach ein paar Monaten das wertvollste Artefakt am ganzen Projekt.
+Der größte Nutzen ist **Regressionsschutz**: Jeder Fall, der einmal falsch war, wandert in die Sammlung — beim nächsten Umbau meldet er sich selbst. Die Sammlung wächst von allein und ist nach Monaten das wertvollste Artefakt des Projekts.
 </Callout>
 
 ## Die Team-Frage: Sind die generierten Tests gut?
 
-Für die Einführungsphase gibt es eine konkrete Anwendung dieses Denkens. Nach ein paar Monaten [Unit-Tests mit Claude Code](../unit-tests/) steht die Frage im Raum: Ist die Testqualität gestiegen — oder nur die Testanzahl?
+Nach Monaten [Unit-Tests mit Claude Code](../unit-tests/): Ist die Testqualität gestiegen — oder nur die Anzahl? Zeilenabdeckung beantwortet das nicht (ein nachbetender Test deckt viel ab und findet nichts). Ehrlicher: **Mutation Testing** (Java: PIT) — baut gezielt Fehler in den Produktionscode ein und misst, wie viele die Tests bemerken. Auf je ein Modul mit generierten und handgeschriebenen Tests angewendet, zeigt es, ob die generierte Suite prüft oder nur grün ist.
 
-Zeilenabdeckung allein beantwortet das nicht: Ein Test, der die Implementierung nachbetet, deckt viele Zeilen ab und findet trotzdem nichts. Eine ehrlichere Stichprobe liefert **Mutation Testing** (für Java etwa PIT): Es baut gezielt Fehler in den Produktionscode ein und misst, wie viele davon die Tests bemerken. Auf ein, zwei Module angewendet — je eines mit generierten und mit handgeschriebenen Tests — zeigt es, ob die generierte Suite wirklich prüft oder nur grün ist. Das ist die programmatische Bewertungssorte aus der Tabelle oben, angewendet auf den eigenen Workflow.
-
-## Der Zusammenhang mit dem Rest
-
-Fast alles in diesem Tutorial ist eine Änderung, deren Wirkung man messen sollte: ein anderes Modell, eine umgebaute CLAUDE.md, weniger aktive [MCP-Server](../mcp/), ein anderer Zuschnitt bei [Sub-Agenten](../multi-agent/), eine zusätzliche Prüfstufe gegen [Halluzinationen](../hallucinations/).
-
-Ohne Evals sind das alles Vermutungen. Mit Evals sind es Entscheidungen.
+Fast alles in diesem Tutorial ist eine messbare Änderung: Modellwahl, CLAUDE.md-Umbau, weniger [MCP-Server](../mcp/), anderer [Sub-Agenten](../multi-agent/)-Zuschnitt, Prüfstufe gegen [Halluzinationen](../hallucinations/). Ohne Evals sind das Vermutungen — mit Evals Entscheidungen.
 
 <KeyTakeaway>
-- Modelle sind nicht deterministisch — einzelne Durchläufe und der eigene Eindruck taugen nicht als Beleg.
-- Zwanzig echte Fälle mit klarer Bewertung sind ein brauchbarer Start; gescheiterte Fälle sind die wertvollsten.
-- Exakte und programmatische Bewertung sind stabiler und billiger als Beurteilung durch ein Modell.
-- Neben Qualität gehören Kosten, Laufzeit und Streuung ins Bild — und der größte Nutzen liegt im Regressionsschutz.
+- Modelle sind nicht deterministisch — Einzelläufe und Eindrücke taugen nicht als Beleg.
+- 20 echte Fälle mit klarer Bewertung reichen zum Start; gescheiterte Fälle sind die wertvollsten.
+- Exakt und programmatisch schlagen beurteilend — und der größte Nutzen ist Regressionsschutz.
+- Neben Qualität auch Kosten, Laufzeit und Streuung messen.
+- Testqualität generierter Tests: Mutation Testing (PIT) statt Zeilenabdeckung.
 </KeyTakeaway>

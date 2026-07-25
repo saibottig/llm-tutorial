@@ -5,59 +5,48 @@ part: 5
 order: 4
 ---
 
-A **hallucination** is an output that sounds plausible and is wrong. Invented sources, functions that do not exist, wrong figures carrying a correct-looking decimal place.
-
-## Why it happens
-
-A language model produces text by repeatedly choosing the most likely next token. It does not ask "is this true?" but "what fits here?".
-
-Most of the time those coincide — in a well-trained model, true statements are also the likely ones. But when the model does not know something, no gap appears. The most plausible continuation appears instead. And it looks exactly like a correct answer, because it was produced by the same rules.
+A **hallucination** is an output that sounds plausible and is wrong: invented sources, non-existent methods, wrong figures with a correct-looking decimal place. The mechanism: the model repeatedly picks the most likely next token — it asks "what fits here?", not "is this true?". Where knowledge is missing, no gap appears but the most plausible continuation — produced by the same rules as a correct answer, and therefore indistinguishable from one.
 
 <Callout type="merke">
-Hallucinations are not a defect that could be repaired. They are the flip side of the very capability that makes models useful: fluently producing plausible continuations. A model that never hallucinated would also be one that never usefully filled anything in.
+Hallucinations are not a repairable defect but the flip side of the useful ability to fill in fluently. And: **confidence of tone says nothing about correctness** — an invented citation sounds just as assured as a correct one.
 </Callout>
 
-One further point matters: **confidence of tone says nothing about correctness.** A model phrases an invented citation just as confidently as a correct one. That linguistic assurance is a stylistic property, not a signal.
+## Risk zones in a developer's day
 
-## Where it shows up most
+- **APIs and libraries:** the plausible-sounding Spring property, the Angular API from an older major version, the Mockito method with a slightly different name
+- **Specific numbers:** version numbers, years, prices, statistics
+- **Sources and citations:** title and author formats are easy to imitate
+- **Anything after the training cutoff:** a new Spring Boot release does not exist for the model until the release notes are in the context
+- **Niche knowledge:** the thinner the training material, the more invention replaces recall
 
-- **Specific numbers and dates** — years, version numbers, prices, statistics.
-- **Sources and citations** — the classic, because title and author formats are easy to imitate.
-- **Niche knowledge** — the thinner the training material, the more likely invention replaces recall.
-- **APIs and libraries** — methods that *could* exist but do not: a plausible-sounding Spring configuration property, an Angular API from an older major version, a Mockito method with a slightly different name.
-- **Anything after the training cutoff** — there is simply no knowledge here, only extrapolation. A new Spring Boot release is unknown to the model until you put the release notes into the context.
+## Remedies, by effectiveness
 
-## What genuinely helps
-
-**Grounding.** By far the most effective measure: give the model the facts rather than querying them. A model answering from an attached document hallucinates dramatically less than one answering from memory. The difference is not gradual but categorical.
-
-**Require citations.** Demand that every claim be tied to a place in the supplied material. No support, no claim. That makes gaps visible instead of filling them.
-
-**Permit not knowing.** Models would rather answer than say nothing. An explicit sentence in the prompt — that "not in the material" is a full answer — noticeably changes behaviour.
-
-**Make it verifiable.** Where possible, build so the output can be checked: code that compiles and gets run, figures that get recomputed, IDs checked against a database. Automatic verification beats any admonition — in programming this is the verification loop from the [Unit Tests](../unit-tests/) chapter: a hallucinated method does not survive a compiler run.
-
-**A second pass.** A separate pass checking an output against the source material catches a good share of errors — especially effective when it runs with fresh context rather than as self-criticism in the same conversation.
+| Measure | Effect |
+| --- | --- |
+| **Grounding** — supply the facts instead of querying them | categorically better, not gradually: answers from attached material hallucinate dramatically less |
+| **Build verifiable** — code compiles, tests run, IDs checked against the database | automatic verification beats any admonition; the [verification loop](../unit-tests/): a hallucinated method does not survive a compiler run |
+| **Require citations** — tie every claim to a place in the material | makes gaps visible instead of filling them |
+| **Permit not knowing** — "not in the material" is a full answer | noticeably changes behaviour |
+| **Second pass with fresh context** — check the output against the source | catches a good share; much weaker as self-criticism in the same conversation |
 
 <Callout type="praxis">
-For research with citations one simple mechanical step pays off: actually fetch every URL given. Invented sources surface immediately, and that is cheaper and more reliable than any attempt to prevent them through prompting.
+For research with citations: actually fetch every URL given. Invented sources surface immediately — cheaper and more reliable than any prompt trick.
 </Callout>
 
-## What helps little
+## What achieves little
 
-- **Writing "do not make things up" in the prompt.** Changes little, because the model does not know it is making things up.
-- **Asking how confident it is.** Self-reported confidence is poorly calibrated. A model can be very confidently wrong, and the self-report about it is itself generated text.
-- **Larger models.** They hallucinate less often, but not never — and more convincingly when they do.
+- ✗ **"Don't invent anything" in the prompt** — the model does not know it is inventing
+- ✗ **Asking how confident it is** — self-assessed confidence is poorly calibrated and is itself generated text
+- ✗ **A bigger model** — hallucinates less often, but more convincingly
 
-## The practical consequence
+## The design question
 
-Handling this is a design question, not a prompting question. For every place a model output is used further, the question worth asking is: **what happens if this is entirely invented?**
-
-If the answer is "nothing bad", grounding is enough. If it is "nobody will notice and it will do damage", a verification stage is needed. That is the same thought as in [Prompt Injection](../prompt-injection/): control belongs outside the model.
+For every place a model output is used further: **what happens if this is pure invention?** "Nothing bad" → grounding suffices. "Nobody would notice and it causes damage" → add a verification stage. The same principle as [prompt injection](../prompt-injection/): control belongs outside the model.
 
 <KeyTakeaway>
-- Hallucinations arise because models extend probability rather than check truth — they are not a fixable defect.
-- Confidence of language is no indicator of correctness.
-- Grounding works categorically better than any prompt wording; required citations and permitted uncertainty reinforce it.
-- Automatically verifiable outputs beat any admonition — and the design question is what happens if the output is invented.
+- Hallucinations arise from probability, not truth-checking — no fixable defect.
+- Linguistic confidence is no signal of correctness.
+- Grounding works categorically; for code, the verification loop is the remedy — compiler and tests.
+- Confidence queries and prompt prohibitions achieve little.
+- Design question per usage site: what happens if this is invented?
 </KeyTakeaway>

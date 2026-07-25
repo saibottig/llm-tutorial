@@ -5,27 +5,17 @@ part: 3
 order: 3
 ---
 
-Ein Sprachmodell kann von sich aus nur eines: Text erzeugen. Es kann keine Datei lesen, kein `./gradlew test` ausführen, nichts im Internet nachschlagen. Wenn Claude Code all das trotzdem tut, steckt dahinter **Tool Use** — auch Function Calling genannt. Es ist der Mechanismus, auf dem [MCP](../mcp/), [Skills](../skills/) und alles Agentische aufbauen.
+Ein Modell kann von sich aus nur Text erzeugen — keine Datei lesen, kein `./gradlew test` starten. Dass Claude Code es doch tut, ist **Tool Use**: der Mechanismus unter [MCP](../mcp/), [Skills](../skills/) und allem Agentischen.
 
-## Wie es funktioniert
+## Der Ablauf
 
-Der Ablauf ist überraschend schlicht:
+1. **Harness beschreibt die Werkzeuge** — Name, Beschreibung, Parameterschema pro Tool (Datei lesen, editieren, Shell).
+2. **Modell fordert einen Aufruf an** — strukturiert statt als Text: „führe `bash` mit `./gradlew test --tests 'BerthAllocationServiceTest'` aus".
+3. **Harness führt aus** — hier greifen die [Permissions](../setup/), nicht das Modell.
+4. **Ergebnis geht zurück** — die Testausgabe wird an den Verlauf angehängt.
+5. **Modell macht weiter** — antwortet oder fordert das nächste Tool an, z. B. den Edit für den roten Test.
 
-1. **Das Harness beschreibt die Werkzeuge.** Claude Code schickt zu jedem Tool — Datei lesen, Datei editieren, Shell-Befehl ausführen — einen Namen, eine Beschreibung und ein Schema der Parameter mit.
-2. **Das Modell fordert einen Aufruf an.** Statt Text zu antworten, gibt es strukturiert aus: „Führe `bash` mit `./gradlew test --tests 'BerthAllocationServiceTest'` aus."
-3. **Das Harness führt aus.** Claude Code — nicht das Modell — startet den Befehl tatsächlich. Hier greifen die Permissions aus dem Kapitel [Projekt-Setup](../setup/).
-4. **Das Ergebnis geht zurück.** Die Testausgabe wird als neue Nachricht an den Verlauf angehängt.
-5. **Das Modell macht weiter.** Mit dem Ergebnis im Context antwortet es oder fordert das nächste Tool an — etwa den Edit, der den roten Test repariert.
-
-<Callout type="merke">
-Der Punkt, der am häufigsten missverstanden wird: **Das Modell führt nichts aus.** Es formuliert nur einen Wunsch. Ob dieser Wunsch erfüllt wird, entscheidet ausschließlich das Harness — und damit die Permissions, die du konfiguriert hast.
-
-Das ist keine Einschränkung, sondern die wichtigste Sicherheitseigenschaft des ganzen Aufbaus. Jeder Tool-Aufruf ist ein Punkt, an dem geprüft, gefiltert, protokolliert oder eine Rückfrage gestellt werden kann. Siehe [Prompt Injection](../prompt-injection/).
-</Callout>
-
-## Die Schleife
-
-Die Schritte 2 bis 5 wiederholen sich, bis das Modell keinen Aufruf mehr anfordert, sondern antwortet. Diese Schleife ist der gesamte Kern dessen, was einen Agenten ausmacht:
+Schritte 2–5 wiederholen sich, bis das Modell antwortet statt aufzurufen:
 
 ```
 Anfrage → Modell → Tool-Aufruf? ─ja→ ausführen → Ergebnis anhängen ─┐
@@ -33,18 +23,22 @@ Anfrage → Modell → Tool-Aufruf? ─ja→ ausführen → Ergebnis anhängen �
                         └─nein→ Antwort                              └──┘
 ```
 
-Mehr ist es nicht. Wenn Claude Code eine Klasse liest, den Test schreibt, ihn ausführt, die Fehlermeldung sieht und nachbessert — das ist diese Schleife, viermal durchlaufen. Der Rest — Kontextverwaltung, Rechteprüfung, Fehlerbehandlung — ist Aufgabe des Harness, siehe [Claude Code](../claude-code/).
+Mehr ist ein „Agent" nicht: diese Schleife plus Abbruchbedingung. Klasse lesen, Test schreiben, ausführen, Fehler sehen, nachbessern = viermal durch die Schleife. Der Rest ist [Harness-Arbeit](../claude-code/).
 
-## Was gute Tool-Beschreibungen ausmacht
+<Callout type="merke">
+**Das Modell führt nichts aus.** Es formuliert Wünsche; ob sie erfüllt werden, entscheidet das Harness nach deinen Permissions. Das ist die wichtigste Sicherheitseigenschaft des Aufbaus: Jeder Tool-Aufruf ist ein Prüfpunkt → [Prompt Injection](../prompt-injection/).
+</Callout>
 
-Das Modell entscheidet allein anhand von Name, Beschreibung und Schema, ob und wie es ein Tool benutzt. Es sieht den Code nicht. Deshalb ist die Beschreibung nicht Dokumentation, sondern die eigentliche Steuerung. Das wird praktisch relevant, sobald man eigene Tools anbindet — etwa über einen [MCP-Server](../mcp/) für ein internes System.
+## Eigene Tools beschreiben
 
-Der häufigste Fehler ist, nur zu beschreiben, *was* ein Tool tut. Mindestens genauso wichtig ist, *wann* es benutzt werden soll:
+Relevant, sobald man z. B. per [MCP-Server](../mcp/) ein internes System anbindet. Das Modell entscheidet allein anhand von Name, Beschreibung und Schema — es sieht den Code nie. Die Beschreibung ist Steuerung, nicht Doku, und muss sagen, **wann** das Tool dran ist:
 
 ```json
 {
   "name": "suche_vessel_call",
-  "description": "Sucht eine Schiffsanmeldung nach Schiffsname oder Call-ID. Verwende dies, sobald nach einem konkreten Vessel Call gefragt wird — antworte nie aus dem Gedächtnis, die Anlaufdaten ändern sich laufend.",
+  "description": "Sucht eine Schiffsanmeldung nach Schiffsname oder Call-ID.
+    Verwende dies bei jeder Frage zu einem konkreten Vessel Call — antworte
+    nie aus dem Gedächtnis, die Anlaufdaten ändern sich laufend.",
   "input_schema": {
     "type": "object",
     "properties": {
@@ -55,23 +49,21 @@ Der häufigste Fehler ist, nur zu beschreiben, *was* ein Tool tut. Mindestens ge
 }
 ```
 
-Weitere Punkte aus der Praxis:
+Regeln dazu:
 
-- **Wenige, klar getrennte Tools** schlagen viele überlappende. Bei zu großer Auswahl greift das Modell messbar häufiger daneben.
-- **Sprechende Namen.** `suche_vessel_call` ist besser als `suche`.
-- **Fehler gehören zurückgemeldet**, nicht verschluckt. Ein kompletter Stacktrace als Tool-Ergebnis versetzt das Modell in die Lage, die Ursache zu finden — eine verschluckte Exception nicht.
-- **Mehrere Aufrufe gleichzeitig** sind möglich und sinnvoll, wenn die Aufrufe voneinander unabhängig sind — drei Dateien parallel lesen statt nacheinander.
+- **Wenige, klar getrennte Tools** — zu viel Auswahl senkt messbar die Trefferquote.
+- **Sprechende Namen** — `suche_vessel_call`, nicht `suche`.
+- **Fehler komplett zurückmelden** — ein voller Stacktrace als Tool-Ergebnis ermöglicht die Nachbesserung; eine verschluckte Exception nicht.
+- **Unabhängige Aufrufe parallel** — drei Dateien gleichzeitig lesen statt nacheinander.
 
-## Der Preis: Context
+## Der Preis
 
-Jede Tool-Definition steht im Context — bei **jeder einzelnen Anfrage**, unabhängig davon, ob das Tool gebraucht wird. Zehn Tools mit ausführlichen Schemas kosten schnell mehrere tausend Token pro Aufruf.
-
-Das ist der Ausgangspunkt für das nächste Kapitel: [MCP](../mcp/) macht es einfach, sehr viele Tools anzubinden — und macht damit genau dieses Problem sichtbar.
+Jede Tool-Definition steht bei **jeder Anfrage** im Context, auch ungenutzt — zehn Tools mit ausführlichen Schemas kosten schnell mehrere tausend Token pro Aufruf. Das nächste Kapitel [MCP](../mcp/) macht daraus das zentrale Kostenthema.
 
 <KeyTakeaway>
-- Tool Use ist der Mechanismus, mit dem das Modell die Außenwelt erreicht — jede Dateiänderung und jeder Testlauf in Claude Code läuft darüber.
-- Das Modell fordert Aufrufe nur an; ausgeführt werden sie vom Harness gemäß deiner Permissions. Darin liegt die zentrale Kontrollmöglichkeit.
-- Die Tool-Beschreibung ist Steuerung, nicht Dokumentation: Sie muss sagen, wann das Tool zu benutzen ist.
-- Fehler und Stacktraces gehören vollständig ins Tool-Ergebnis — sie sind das Material der Nachbesserung.
-- Jede Definition kostet Context bei jeder Anfrage — auch ungenutzt.
+- Tool Use = Modell fordert an, Harness führt aus; jede Dateiänderung und jeder Testlauf in Claude Code läuft darüber.
+- Ein Agent ist die Tool-Schleife plus Abbruchbedingung — mehr nicht.
+- Tool-Beschreibungen sind Steuerung: sie müssen sagen, wann das Tool zu benutzen ist.
+- Fehler vollständig zurückmelden — sie sind das Material der Nachbesserung.
+- Jede Definition kostet Context bei jeder Anfrage, auch ungenutzt.
 </KeyTakeaway>

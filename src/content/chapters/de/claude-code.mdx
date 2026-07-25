@@ -5,60 +5,41 @@ part: 3
 order: 1
 ---
 
-Zwei Kolleginnen nutzen dasselbe Modell für dieselbe Aufgabe — und bekommen spürbar unterschiedliche Ergebnisse. Das liegt selten am Modell. Es liegt an dem, was zwischen Eingabe und Modellaufruf passiert.
+Ein Modell allein ist eine Funktion: Text rein, Text raus. Alles, was daraus ein Werkzeug macht, heißt **Harness** — und Claude Code ist genau das: ein Harness im Terminal, per Plugin auch in IntelliJ und VS Code. Zwei Kolleginnen mit demselben Modell bekommen unterschiedliche Ergebnisse, weil ihre Einrichtung unterschiedlich ist — nicht ihr Modell.
 
-Ein Modell allein ist eine Funktion: Text rein, Text raus. Alles, was daraus ein benutzbares Werkzeug macht, gehört zum **Harness** — der Software-Infrastruktur um das Modell herum. Claude Code ist genau das: ein Harness, das im Terminal läuft und über Plugins auch in IntelliJ und VS Code.
+## Was Claude Code pro Anfrage übernimmt
 
-## Was Claude Code tatsächlich tut
-
-Man unterschätzt leicht, wie viel das ist:
-
-- **Context zusammenstellen.** Welche Dateien werden mitgeschickt? Die `CLAUDE.md` des Projekts? Welcher Teil des Verlaufs? Diese Auswahl entscheidet maßgeblich über die Antwortqualität — mehr dazu im Kapitel [Projekt-Setup](../setup/).
-- **Die Tool-Schleife fahren.** Dateien lesen, editieren, `./gradlew test` ausführen, Ergebnisse einhängen, Fehler behandeln — die Schleife aus dem Kapitel [Tool Use](../tool-use/).
-- **Context verwalten.** Erkennen, wann das [Context Window](../context-window/) eng wird, und rechtzeitig komprimieren statt an der Wand abzubrechen.
-- **Rechte durchsetzen.** Welche Befehle laufen ohne Rückfrage, welche brauchen Bestätigung, welche sind verboten.
-- **Caching optimieren.** Den Aufbau so anordnen, dass der [Cache](../prompt-caching/) greift.
-- **Zustand halten.** Sitzungen, Dateizustände, Rückgängigmachen.
+| Aufgabe | Konkret | Kapitel |
+| --- | --- | --- |
+| Context zusammenstellen | CLAUDE.md, relevante Dateien, Verlauf | [Projekt-Setup](../setup/) |
+| Tool-Schleife fahren | Dateien lesen/editieren, `./gradlew test`, Fehler behandeln | [Tool Use](../tool-use/) |
+| Context verwalten | rechtzeitig komprimieren statt an der Wand abbrechen | [Context Window](../context-window/) |
+| Rechte durchsetzen | was ohne Rückfrage läuft, was Bestätigung braucht | [Projekt-Setup](../setup/) |
+| Caching optimieren | Aufbau so anordnen, dass der Cache greift | [Prompt Caching](../prompt-caching/) |
+| Zustand halten | Sitzungen, Dateizustände, Rückgängigmachen | — |
 
 <Callout type="merke">
-Je besser das Harness, desto besser lässt sich ein Modell nutzen. Bei anspruchsvollen Aufgaben ist der Unterschied zwischen einem gut und einem schlecht eingerichteten Claude Code oft größer als der zwischen zwei Modellgenerationen. Deshalb lohnt sich die Einrichtung — sie ist kein Beiwerk, sie ist der Hebel.
+Bei anspruchsvollen Aufgaben macht der Unterschied zwischen gut und schlecht eingerichtetem Claude Code oft mehr aus als der zwischen zwei Modellgenerationen. Die Einrichtung ist der Hebel, nicht das Beiwerk.
 </Callout>
 
-## Terminal und IDE
+## Terminal und IDE: ein Werkzeug
 
-Claude Code ist zuerst ein Terminal-Programm: Man startet es im Projektverzeichnis, beschreibt die Aufgabe, und es arbeitet mit den Dateien und Befehlen dieses Verzeichnisses. Die IDE-Integrationen für IntelliJ und VS Code setzen auf dasselbe Werkzeug auf — sie zeigen Diffs im Editor an und übernehmen die geöffnete Datei als Kontext, ändern aber nichts am Prinzip.
+Claude Code startet im Projektverzeichnis und arbeitet mit dessen Dateien und Befehlen. Die IDE-Integrationen setzen auf dasselbe Werkzeug auf — Diffs im Editor, geöffnete Datei als Kontext. Sitzungen, Permissions, CLAUDE.md: alles identisch. Was man im Terminal lernt, gilt in der IDE.
 
-Für den Alltag heißt das: Was man im Terminal lernt, gilt in der IDE genauso. Sitzungen, Permissions, `CLAUDE.md` — alles identisch.
+## Enterprise-Betrieb: drei Konsequenzen
 
-## Die Einführungsphase im Unternehmen
-
-Claude Code läuft bei uns als zentral verwaltetes Enterprise-Werkzeug. Das hat drei praktische Konsequenzen:
-
-**Richtlinien sind vorkonfiguriert.** Welche Befehle ohne Rückfrage laufen dürfen, welche MCP-Server erlaubt sind, wohin Daten fließen dürfen — das ist teilweise zentral festgelegt. Wenn etwas nicht geht, ist das meist Absicht, keine Fehlfunktion.
-
-**Kosten sind ein Teamthema.** Abgerechnet wird über das Unternehmen, nicht über eine private Karte. Das nimmt die Hemmschwelle, macht aber bewussten Umgang wichtiger — die Mechanik dahinter steht im Kapitel [Kostenbewusst arbeiten](../cost/).
-
-**Erfahrungen sind übertragbar.** Eine gute `CLAUDE.md`, ein bewährter Ablauf, ein nützlicher Skill — all das lässt sich im Team teilen, statt dass jede Person bei null anfängt. Die Kapitel in [Teil 4](../unit-tests/) bauen genau darauf auf.
-
-## Woran man eine gute Einrichtung erkennt
-
-Sechs Fragen, die sich bei der Arbeit mit Claude Code immer wieder lohnen:
-
-1. **Was kommt in den Context?** Werden gezielt relevante Dateien geladen, oder pauschal zu viel?
-2. **Was passiert bei einer langen Sitzung?** Automatische Compaction oder Qualitätsverlust?
-3. **Sind nur die Tools aktiv, die gebraucht werden?** Jeder [MCP-Server](../mcp/) kostet Context.
-4. **Sind die Permissions passend abgestuft?** Testläufe ohne Rückfrage, Löschbefehle mit.
-5. **Bleibt der Sitzungsaufbau cache-freundlich?** Stabiler Anfang, Änderungen ans Ende.
-6. **Kann ich sehen, was gesendet wurde?** `/context` zeigt, was die Sitzung gerade belegt.
+1. **Richtlinien sind vorkonfiguriert.** Erlaubte Befehle, freigegebene MCP-Server, Datenflüsse — teils zentral festgelegt. Wenn etwas nicht geht: meist Absicht, keine Fehlfunktion.
+2. **Kosten sind ein Teamthema.** Abrechnung über das Unternehmen senkt die Hemmschwelle — und macht bewussten Umgang wichtiger → [Kostenbewusst arbeiten](../cost/).
+3. **Erfahrungen sind teilbar.** CLAUDE.md, Skills, Abläufe wandern ins Repo statt in private Notizen → [Teil 4](../unit-tests/).
 
 <Callout type="praxis">
-Wenn Claude Code sich seltsam verhält, ist die erste Frage fast nie „Welches Modell?", sondern „Was stand eigentlich im Context?". Sehr häufig ist die Antwort: etwas Veraltetes, etwas Fehlendes oder viel zu viel Irrelevantes. Ein Blick in `/context` klärt das schneller als jede Vermutung.
+Verhält sich Claude Code seltsam, lautet die erste Frage nicht „Welches Modell?", sondern „Was stand im Context?" — `/context` zeigt es. Die Antwort ist fast immer: etwas Veraltetes, etwas Fehlendes oder zu viel Irrelevantes.
 </Callout>
 
 <KeyTakeaway>
-- Claude Code ist ein Harness: die Software um das Modell, die Context, Tools, Rechte und Caching verwaltet.
-- Die Qualität der Einrichtung macht bei schwierigen Aufgaben oft mehr aus als die Modellwahl.
-- Terminal und IDE-Integration sind dasselbe Werkzeug — Wissen überträgt sich eins zu eins.
-- Im Enterprise-Betrieb sind Richtlinien vorkonfiguriert und Kosten ein Teamthema.
-- Bei seltsamem Verhalten zuerst den Context prüfen (`/context`), nicht das Modell verdächtigen.
+- Claude Code ist ein Harness: Context, Tool-Schleife, Compaction, Rechte, Caching — pro Anfrage.
+- Die Qualität der Einrichtung schlägt bei schwierigen Aufgaben die Modellwahl.
+- Terminal und IDE sind dasselbe Werkzeug — Wissen überträgt sich eins zu eins.
+- Enterprise heißt: Richtlinien vorkonfiguriert, Kosten Teamthema, Einrichtung teilbar.
+- Erste Diagnose bei seltsamem Verhalten: `/context`, nicht das Modell.
 </KeyTakeaway>
