@@ -1,0 +1,103 @@
+---
+import Sidebar from '../components/Sidebar.astro';
+import { t, type Locale } from '../i18n/ui';
+import { url } from '../lib/chapters';
+import '../styles/global.css';
+
+interface Props {
+  locale: Locale;
+  title: string;
+  description: string;
+  currentSlug?: string;
+}
+
+const { locale, title, description, currentSlug } = Astro.props;
+const tr = t(locale);
+const siteTitle = tr('site.title');
+const fullTitle = title === siteTitle ? title : `${title} — ${siteTitle}`;
+const other: Locale = locale === 'de' ? 'en' : 'de';
+const altHref = currentSlug ? url(other, currentSlug) : url(other);
+---
+
+<!doctype html>
+<html lang={locale} data-theme-default>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{fullTitle}</title>
+    <meta name="description" content={description} />
+    <meta name="generator" content={Astro.generator} />
+    <meta property="og:title" content={fullTitle} />
+    <meta property="og:description" content={description} />
+    <meta property="og:type" content="article" />
+    <meta property="og:locale" content={locale === 'de' ? 'de_DE' : 'en_US'} />
+    <link rel="alternate" hreflang={other} href={altHref} />
+    <link rel="alternate" hreflang={locale} href={currentSlug ? url(locale, currentSlug) : url(locale)} />
+    <link
+      rel="icon"
+      href={`${import.meta.env.BASE_URL.replace(/\/$/, '')}/favicon.svg`}
+      type="image/svg+xml"
+    />
+    <script is:inline>
+      // Applied before first paint so a stored light choice doesn't flash dark.
+      try {
+        const stored = localStorage.getItem('theme');
+        if (stored === 'light' || stored === 'dark') {
+          document.documentElement.dataset.theme = stored;
+        }
+      } catch {}
+    </script>
+  </head>
+  <body>
+    <a class="skip-link" href="#content">{locale === 'de' ? 'Zum Inhalt' : 'Skip to content'}</a>
+
+    <header class="topbar">
+      <button class="iconbtn" id="menu-toggle" type="button" aria-expanded="false" aria-controls="sidebar" aria-label={tr('nav.menu')}>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <line x1="3" y1="6" x2="21" y2="6"></line>
+          <line x1="3" y1="12" x2="21" y2="12"></line>
+          <line x1="3" y1="18" x2="21" y2="18"></line>
+        </svg>
+      </button>
+      <a class="topbar__title" href={url(locale)}>{siteTitle}</a>
+    </header>
+
+    <div class="shell">
+      <Sidebar locale={locale} currentSlug={currentSlug} />
+      <main class="main" id="content">
+        <slot />
+      </main>
+    </div>
+
+    <script>
+      const sidebar = document.getElementById('sidebar');
+      const toggle = document.getElementById('menu-toggle');
+      let scrim: HTMLElement | null = null;
+
+      function setOpen(open: boolean) {
+        if (!sidebar || !toggle) return;
+        sidebar.dataset.open = String(open);
+        toggle.setAttribute('aria-expanded', String(open));
+        if (open && !scrim) {
+          scrim = document.createElement('button');
+          scrim.className = 'scrim';
+          scrim.setAttribute('aria-label', 'Close');
+          scrim.addEventListener('click', () => setOpen(false));
+          document.body.appendChild(scrim);
+        } else if (!open && scrim) {
+          scrim.remove();
+          scrim = null;
+        }
+      }
+
+      toggle?.addEventListener('click', () => setOpen(sidebar?.dataset.open !== 'true'));
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && sidebar?.dataset.open === 'true') setOpen(false);
+      });
+      // Navigating within the drawer should close it.
+      sidebar?.querySelectorAll('.sidebar__link').forEach((a) =>
+        a.addEventListener('click', () => setOpen(false)),
+      );
+    </script>
+  </body>
+</html>

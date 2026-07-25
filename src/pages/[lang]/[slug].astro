@@ -1,0 +1,87 @@
+---
+import type { GetStaticPaths } from 'astro';
+import { render } from 'astro:content';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import CalloutDe from '../../components/mdx/CalloutDe.astro';
+import CalloutEn from '../../components/mdx/CalloutEn.astro';
+import TakeawayDe from '../../components/mdx/TakeawayDe.astro';
+import TakeawayEn from '../../components/mdx/TakeawayEn.astro';
+import Table from '../../components/mdx/Table.astro';
+import { getChapters, neighbours, slugOf, chapterUrl } from '../../lib/chapters';
+import { locales, t, type Locale, type UIKey } from '../../i18n/ui';
+
+export const getStaticPaths = (async () => {
+  const paths = [];
+  for (const lang of locales) {
+    const chapters = await getChapters(lang);
+    for (const chapter of chapters) {
+      paths.push({
+        params: { lang, slug: slugOf(chapter) },
+        props: { chapter, chapters },
+      });
+    }
+  }
+  return paths;
+}) satisfies GetStaticPaths;
+
+const { lang } = Astro.params;
+const locale = lang as Locale;
+const { chapter, chapters } = Astro.props;
+const tr = t(locale);
+
+const slug = slugOf(chapter);
+const { index, previous, next } = neighbours(chapters, slug);
+const { Content } = await render(chapter);
+
+const components = {
+  Callout: locale === 'de' ? CalloutDe : CalloutEn,
+  KeyTakeaway: locale === 'de' ? TakeawayDe : TakeawayEn,
+  table: Table,
+};
+---
+
+<BaseLayout
+  locale={locale}
+  title={chapter.data.title}
+  description={chapter.data.description}
+  currentSlug={slug}
+>
+  <article>
+    <header class="chapterhead">
+      <p class="chapterhead__eyebrow">
+        <b>{String(index + 1).padStart(2, '0')}</b>
+        <span>{tr(`part.${chapter.data.part}` as UIKey)}</span>
+      </p>
+      <h1>{chapter.data.title}</h1>
+      <p class="chapterhead__desc">{chapter.data.description}</p>
+    </header>
+
+    <div class="prose">
+      <Content components={components} />
+    </div>
+  </article>
+
+  <nav class="pagenav" aria-label={tr('nav.chapters')}>
+    {
+      previous && (
+        <a class="pagenav__link" href={chapterUrl(locale, slugOf(previous))} rel="prev">
+          <span class="pagenav__dir">← {tr('nav.previous')}</span>
+          <span class="pagenav__title">{previous.data.title}</span>
+        </a>
+      )
+    }
+    {
+      next && (
+        <a class="pagenav__link pagenav__link--next" href={chapterUrl(locale, slugOf(next))} rel="next">
+          <span class="pagenav__dir">{tr('nav.next')} →</span>
+          <span class="pagenav__title">{next.data.title}</span>
+        </a>
+      )
+    }
+  </nav>
+
+  <footer class="sitefoot">
+    <span>{tr('footer.builtWith')}</span>
+    <a href="https://github.com/saibottig/llm-tutorial">{tr('footer.source')}</a>
+  </footer>
+</BaseLayout>

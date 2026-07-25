@@ -1,0 +1,6 @@
+---
+import Callout from '../Callout.astro';
+const { type, title } = Astro.props;
+---
+
+<Callout type={type} title={title} locale="en"><slot /></Callout>

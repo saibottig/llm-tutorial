@@ -1,0 +1,67 @@
+---
+import { t, type Locale } from '../i18n/ui';
+
+interface Props {
+  locale?: Locale;
+}
+
+const { locale = 'de' } = Astro.props;
+---
+
+<section class="takeaway" aria-label={t(locale)('takeaway.title')}>
+  <p class="takeaway__label">{t(locale)('takeaway.title')}</p>
+  <div class="takeaway__body"><slot /></div>
+</section>
+
+<style>
+  .takeaway {
+    margin-top: 3rem;
+    padding: 1.15rem 1.3rem 1.3rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--bg-elev);
+    position: relative;
+  }
+
+  .takeaway::before {
+    content: '';
+    position: absolute;
+    inset: -1px -1px auto;
+    height: 2px;
+    border-radius: var(--radius) var(--radius) 0 0;
+    background: linear-gradient(90deg, var(--accent), transparent 70%);
+  }
+
+  .takeaway__label {
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: var(--text-faint);
+    margin-bottom: 0.7rem;
+  }
+
+  .takeaway__body :global(ul) {
+    padding-left: 0;
+    list-style: none;
+  }
+
+  .takeaway__body :global(li) {
+    position: relative;
+    padding-left: 1.4rem;
+    font-size: 0.95rem;
+    line-height: 1.6;
+  }
+
+  .takeaway__body :global(li + li) {
+    margin-top: 0.55em;
+  }
+
+  .takeaway__body :global(li)::before {
+    content: '→';
+    position: absolute;
+    left: 0;
+    color: var(--accent);
+    font-weight: 600;
+  }
+</style>

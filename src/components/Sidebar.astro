@@ -1,0 +1,90 @@
+---
+import { getParts, slugOf, chapterUrl, url } from '../lib/chapters';
+import { t, type Locale, type UIKey } from '../i18n/ui';
+
+interface Props {
+  locale: Locale;
+  currentSlug?: string;
+}
+
+const { locale, currentSlug } = Astro.props;
+const tr = t(locale);
+const parts = await getParts(locale);
+
+// Continuous 1..n numbering across parts, so the sidebar numbers match the
+// chapter head numbering.
+let running = 0;
+const numbered = parts.map((p) => ({
+  ...p,
+  chapters: p.chapters.map((c) => ({ chapter: c, n: ++running })),
+}));
+---
+
+<nav class="sidebar" id="sidebar" data-open="false" aria-label={tr('nav.chapters')}>
+  <a class="sidebar__brand" href={url(locale)}>
+    <strong>{tr('site.title')}</strong>
+    <span>{tr('site.tagline')}</span>
+  </a>
+
+  {
+    numbered.map((part) => (
+      <div class="sidebar__part">
+        <div class="sidebar__partLabel">
+          <span class="sidebar__partNum">{String(part.part).padStart(2, '0')}</span>
+          <span>{tr(`part.${part.part}` as UIKey)}</span>
+        </div>
+        {part.chapters.map(({ chapter, n }) => {
+          const slug = slugOf(chapter);
+          const current = slug === currentSlug;
+          return (
+            <a
+              class="sidebar__link"
+              href={chapterUrl(locale, slug)}
+              aria-current={current ? 'page' : undefined}
+            >
+              <span class="sidebar__num">{String(n).padStart(2, '0')}</span>
+              <span>{chapter.data.title}</span>
+            </a>
+          );
+        })}
+      </div>
+    ))
+  }
+
+  <div class="sidebar__foot">
+    <div class="langswitch" role="group" aria-label={tr('nav.language')}>
+      {
+        (['de', 'en'] as const).map((l) => (
+          <a
+            href={currentSlug ? chapterUrl(l, currentSlug) : url(l)}
+            aria-current={l === locale ? 'true' : undefined}
+            hreflang={l}
+          >
+            {l.toUpperCase()}
+          </a>
+        ))
+      }
+    </div>
+    <button class="iconbtn" id="theme-toggle" type="button" aria-label="Theme" title="Theme">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+        <path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"></path>
+      </svg>
+    </button>
+  </div>
+</nav>
+
+<script>
+  const root = document.documentElement;
+  const toggle = document.getElementById('theme-toggle');
+  toggle?.addEventListener('click', () => {
+    const prefersLight = window.matchMedia('(prefers-color-scheme: light)').matches;
+    const current = root.dataset.theme ?? (prefersLight ? 'light' : 'dark');
+    const next = current === 'dark' ? 'light' : 'dark';
+    root.dataset.theme = next;
+    try {
+      localStorage.setItem('theme', next);
+    } catch {
+      /* private mode — the choice just won't persist */
+    }
+  });
+</script>

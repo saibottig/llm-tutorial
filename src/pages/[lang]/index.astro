@@ -1,0 +1,64 @@
+---
+import type { GetStaticPaths } from 'astro';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { getParts, getChapters, slugOf, chapterUrl } from '../../lib/chapters';
+import { locales, t, type Locale, type UIKey } from '../../i18n/ui';
+
+export const getStaticPaths = (() =>
+  locales.map((lang) => ({ params: { lang } }))) satisfies GetStaticPaths;
+
+const { lang } = Astro.params;
+const locale = lang as Locale;
+const tr = t(locale);
+
+const parts = await getParts(locale);
+const all = await getChapters(locale);
+const first = all[0];
+
+let running = 0;
+const numbered = parts.map((p) => ({
+  ...p,
+  chapters: p.chapters.map((c) => ({ chapter: c, n: ++running })),
+}));
+---
+
+<BaseLayout locale={locale} title={tr('site.title')} description={tr('site.description')}>
+  <section class="hero">
+    <h1>{tr('site.tagline')}</h1>
+    <p>{tr('site.description')}</p>
+    {
+      first && (
+        <a class="hero__cta" href={chapterUrl(locale, slugOf(first))}>
+          {tr('nav.start')} →
+        </a>
+      )
+    }
+  </section>
+
+  {
+    numbered.map((part) => (
+      <section class="partsection">
+        <div class="partsection__head">
+          <span class="partsection__num">{String(part.part).padStart(2, '0')}</span>
+          <h2>{tr(`part.${part.part}` as UIKey)}</h2>
+        </div>
+        <p class="partsection__blurb">{tr(`part.${part.part}.blurb` as UIKey)}</p>
+        <div class="cardgrid">
+          {part.chapters.map(({ chapter, n }) => (
+            <a class="card" href={chapterUrl(locale, slugOf(chapter))}>
+              <span class="card__num">{String(n).padStart(2, '0')}</span>
+              <h3>{chapter.data.title}</h3>
+              <p>{chapter.data.description}</p>
+            </a>
+          ))}
+        </div>
+      </section>
+    ))
+  }
+
+  <footer class="sitefoot">
+    <span>{all.length} {tr('nav.chapterCount')}</span>
+    <span>{tr('footer.builtWith')}</span>
+    <a href="https://github.com/saibottig/llm-tutorial">{tr('footer.source')}</a>
+  </footer>
+</BaseLayout>

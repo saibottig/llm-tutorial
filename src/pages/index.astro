@@ -1,0 +1,39 @@
+---
+// Static hosting has no server-side redirects, so the root is a meta-refresh
+// page to the default locale. The visible links are the no-JS / crawler
+// fallback and double as a language picker if the refresh is blocked.
+import { url } from '../lib/chapters';
+import '../styles/global.css';
+
+const de = url('de');
+const en = url('en');
+---
+
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta http-equiv="refresh" content={`0; url=${de}`} />
+    <title>LLM-Tutorial</title>
+    <meta name="description" content="Ein praxisnahes Tutorial zu Token, Context, Tools und Agenten." />
+    <link rel="canonical" href={de} />
+    <link rel="alternate" hreflang="de" href={de} />
+    <link rel="alternate" hreflang="en" href={en} />
+    <link rel="icon" href={`${import.meta.env.BASE_URL.replace(/\/$/, '')}/favicon.svg`} type="image/svg+xml" />
+  </head>
+  <body>
+    <main class="main">
+      <div class="hero">
+        <h1>LLM-Tutorial</h1>
+        <p>
+          Weiterleitung zur deutschen Fassung … / Redirecting to the German edition …
+        </p>
+        <p style="margin-top:1.5rem;display:flex;gap:.75rem;flex-wrap:wrap">
+          <a class="hero__cta" href={de} style="margin-top:0">Deutsch →</a>
+          <a class="hero__cta" href={en} style="margin-top:0;background:var(--surface);color:var(--text)">English →</a>
+        </p>
+      </div>
+    </main>
+  </body>
+</html>

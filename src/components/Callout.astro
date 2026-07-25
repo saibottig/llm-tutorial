@@ -1,0 +1,92 @@
+---
+import { t, type Locale, type UIKey } from '../i18n/ui';
+
+type Variant = 'merke' | 'achtung' | 'korrektur' | 'praxis';
+
+interface Props {
+  type?: Variant;
+  locale?: Locale;
+  title?: string;
+}
+
+const { type = 'merke', locale = 'de', title } = Astro.props;
+const label = title ?? t(locale)(`callout.${type}` as UIKey);
+---
+
+<aside class:list={['callout', `callout--${type}`]}>
+  <p class="callout__label">
+    <span class="callout__glyph" aria-hidden="true">
+      {type === 'merke' && '◆'}
+      {type === 'achtung' && '▲'}
+      {type === 'korrektur' && '✕'}
+      {type === 'praxis' && '●'}
+    </span>
+    {label}
+  </p>
+  <div class="callout__body"><slot /></div>
+</aside>
+
+<style>
+  .callout {
+    margin-top: 1.6em;
+    margin-bottom: 1.6em;
+    padding: 0.95rem 1.15rem 1.05rem;
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--tone, var(--accent));
+    border-radius: var(--radius-sm);
+    background: var(--tone-wash, var(--accent-wash));
+  }
+
+  .callout--merke {
+    --tone: var(--accent);
+    --tone-wash: var(--accent-wash);
+  }
+  .callout--achtung {
+    --tone: var(--warn);
+    --tone-wash: var(--warn-wash);
+  }
+  .callout--korrektur {
+    --tone: var(--danger);
+    --tone-wash: var(--danger-wash);
+  }
+  .callout--praxis {
+    --tone: var(--info);
+    --tone-wash: var(--info-wash);
+  }
+
+  .callout__label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: var(--tone);
+    margin-bottom: 0.5rem;
+  }
+
+  .callout__glyph {
+    font-size: 0.65rem;
+    line-height: 1;
+  }
+
+  .callout__body :global(> * + *) {
+    margin-top: 0.75em;
+  }
+
+  .callout__body :global(p) {
+    font-size: 0.945rem;
+    line-height: 1.62;
+  }
+
+  .callout__body :global(ul),
+  .callout__body :global(ol) {
+    padding-left: 1.2rem;
+    font-size: 0.945rem;
+  }
+
+  .callout__body :global(li + li) {
+    margin-top: 0.3em;
+  }
+</style>
