@@ -5,6 +5,8 @@ part: 3
 order: 5
 ---
 
+import Terminal from '../../../components/demos/Terminal.astro';
+
 A **skill** is a folder containing an instruction — procedural knowledge that only costs context when it is used. The core is a `SKILL.md`:
 
 ```markdown
@@ -56,6 +58,8 @@ Anything you do repeatedly the same way where the house procedure matters:
 - naming and test conventions
 
 Placed in the repo under `.claude/skills/` → automatically available team-wide, and the [CLAUDE.md](../setup/) stays lean instead of swelling into a handbook.
+
+<Terminal script="skills" locale="en" variant="inline" />
 
 <KeyTakeaway>
 - A skill is a folder with an instruction; only name and description stay permanently in context.

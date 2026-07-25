@@ -6,8 +6,10 @@ Jira/Confluence/Bitbucket tool stack — from tokens, context windows and
 prompt caching through CLAUDE.md setup, the unit-test workflow and the
 Jira-to-PR pass, to cost-conscious daily habits and finding new use cases.
 
-20 chapters in five parts, six interactive demos, and a simulated Claude Code
-terminal you can type into at `/<lang>/playground/`.
+20 chapters in five parts. Every chapter embeds a simulated Claude Code session
+that plays out its own topic — tokens split live, a context window overflowing,
+a permission rule refusing a push, a poisoned Jira ticket — plus a free-play
+playground at `/<lang>/playground/`.
 
 Continuing this project? Start with [HANDOVER.md](HANDOVER.md) — it covers
 the conventions, the deliberate deviations from common wisdom, and the open
@@ -41,8 +43,9 @@ order: 3       # position within the part
 ```
 
 `<Callout>` and `<KeyTakeaway>` are available without importing — they are
-pre-bound per locale and passed in through the MDX `components` prop. Demos are
-imported explicitly by the one chapter that uses them.
+pre-bound per locale and passed in through the MDX `components` prop. The
+terminal is imported explicitly by each chapter, with the script it should run:
+`<Terminal script="mcp" locale="de" variant="inline" />`.
 
 Cross-references between chapters are written `[label](../other-slug/)`.
 
@@ -67,20 +70,29 @@ the playground the way a reader would — approvals granted and denied, `/compac
 an overflowing window — and walks every chapter page, the prev/next chain and
 the language switch. `deploy` depends on both, so a red suite does not publish.
 
-## The demos
+## The terminal
 
-| Demo | Chapter | Notes |
-| --- | --- | --- |
-| Tokenizer | Tokens | Examples are tokenised at build time. The 2 MB BPE table is a lazy chunk, fetched only when a reader asks to tokenise their own text. |
-| Context window | Context Window | Stacked bar; overflow and compaction are both reachable. |
-| Prefill / decode | Prefill and Decode | Animation pace and reported figures are deliberately decoupled. |
-| Cache simulator | Prompt Caching | Editing a block invalidates it and everything after it. |
-| MCP cost | MCP | Tool-definition tokens per request (Atlassian-stack presets) against a skills baseline. |
-| Terminal playground | own page, plus Claude Code / Tool Use / Agentic Workflows | A scripted Claude Code session: prompts, tool calls, approval prompts, MCP toggles, and the context window filling up as you go. |
+There used to be five separate demos. There is now one interactive model: a
+scripted Claude Code session, embedded once per chapter and once as a full page.
 
-None of them make external requests; everything is computed in the page. The
-playground never calls a model — its answers come from
-`src/lib/terminal/transcript.json`.
+| Piece | What it holds |
+| --- | --- |
+| `src/lib/terminal/world.ts` | MCP server presets and the session floor |
+| `src/lib/terminal/engine.ts` | context accounting, prompt caching, permission rules, sub-agents — no DOM |
+| `src/lib/terminal/scripts/common.json` | shared strings, slash-command output, the default fallback |
+| `src/lib/terminal/scripts/<slug>.json` | one chapter's content, German and English side by side |
+| `src/components/demos/Terminal.astro` | markup, renderer, styles |
+
+Nothing calls a model or a server; every answer is scripted. Language is
+resolved in frontmatter at build time, so a chapter page carries exactly one
+chapter in exactly one language.
+
+Two figures are genuinely measured rather than asserted: the German-vs-English
+token surcharge in the tokens chapter runs the same paragraph through two
+tokenizer generations while the page is built, and `/tokens <text>` splits text
+with the real tokenizer. Everything else is a labelled simulation of realistic
+orders of magnitude — token counts, never prices, because prices age faster
+than this tutorial is maintained.
 
 ## Deployment
 

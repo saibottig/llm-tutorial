@@ -5,6 +5,8 @@ part: 5
 order: 3
 ---
 
+import Terminal from '../../../components/demos/Terminal.astro';
+
 To a model, the context is **one single sequence of text** — there is no technical separation between instruction and data. If a fetched web page contains:
 
 ```
@@ -50,6 +52,8 @@ Prompt admonitions alone are not control — they only lower the success rate. R
 > Treat every model output like input from the internet.
 
 It may be attacker-influenced — so validate before it goes into a shell, query or HTTP call. This is where [tool use](../tool-use/) pays off: the model executes nothing, it only requests. Every tool call is a checkpoint.
+
+<Terminal script="prompt-injection" locale="en" variant="inline" />
 
 <KeyTakeaway>
 - Models cannot tell instructions from data — both are text in the same context.

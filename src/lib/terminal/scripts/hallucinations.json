@@ -1,0 +1,136 @@
+{
+  "_comment": "A confident wrong answer, then the same question with the model allowed to look. The point is not that models lie — it is that a plausible answer and a correct one look identical until something checks.",
+  "title": {
+    "de": "Eine Antwort, die stimmig klingt",
+    "en": "An answer that sounds right"
+  },
+  "strings": {
+    "greeting": {
+      "de": "Zwei Antworten auf dieselbe Frage. Eine ist erfunden, eine belegt — und sie klingen gleich gut. Der Unterschied liegt nicht im Ton, sondern darin, ob nachgesehen wurde.",
+      "en": "Two answers to the same question. One is invented, one is evidenced — and they sound equally good. The difference is not the tone but whether anything was checked."
+    }
+  },
+  "scenarios": [
+    {
+      "id": "confident",
+      "label": {
+        "de": "Ohne nachzusehen",
+        "en": "Without looking"
+      },
+      "hint": {
+        "de": "Flüssig, konkret, mit Methodennamen — und frei erfunden.",
+        "en": "Fluent, specific, with method names — and entirely made up."
+      },
+      "reset": true,
+      "commands": [
+        {
+          "de": "Wie heißt die Methode für die Reefer-Grenzwerte? Antworte aus dem Gedächtnis.",
+          "en": "What is the method for the reefer limits called? Answer from memory."
+        }
+      ]
+    },
+    {
+      "id": "verified",
+      "label": {
+        "de": "Mit Nachsehen",
+        "en": "With looking"
+      },
+      "hint": {
+        "de": "Dieselbe Frage, ein Grep davor. Die Antwort ändert sich.",
+        "en": "The same question with a grep in front. The answer changes."
+      },
+      "reset": true,
+      "commands": [
+        {
+          "de": "Wie heißt die Methode für die Reefer-Grenzwerte? Sieh nach.",
+          "en": "What is the method for the reefer limits called? Go and look."
+        }
+      ]
+    }
+  ],
+  "intents": [
+    {
+      "id": "from-memory",
+      "match": [
+        "aus dem gedächtnis",
+        "from memory",
+        "gedächtnis",
+        "ohne nachzusehen",
+        "without looking"
+      ],
+      "steps": [
+        {
+          "type": "assistant",
+          "text": {
+            "de": "Die Grenzwerte werden in ReeferValidationService.checkTemperatureRange(Container, TemperatureRange) geprüft, konfiguriert über reefer.validation.limits in der application.yml.",
+            "en": "The limits are checked in ReeferValidationService.checkTemperatureRange(Container, TemperatureRange), configured via reefer.validation.limits in application.yml."
+          }
+        },
+        {
+          "type": "note",
+          "text": {
+            "de": "Das klingt richtig: passender Klassenname, plausible Signatur, glaubwürdiger Konfigurationspfad. Nichts davon existiert. Ein Sprachmodell erzeugt das wahrscheinlichste nächste Token — und ein plausibler Methodenname ist wahrscheinlich, ob es ihn gibt oder nicht.",
+            "en": "It sounds right: a fitting class name, a plausible signature, a believable configuration path. None of it exists. A language model produces the most likely next token — and a plausible method name is likely whether or not it exists."
+          }
+        }
+      ]
+    },
+    {
+      "id": "verified",
+      "match": [
+        "sieh nach",
+        "go and look",
+        "nachsehen",
+        "verify",
+        "prüf nach",
+        "check it"
+      ],
+      "steps": [
+        {
+          "type": "tool",
+          "name": "Grep",
+          "arg": "temperature|Temperatur",
+          "tokens": 380,
+          "out": [
+            "ReeferSlotPlanner.java:188",
+            "application.yml:31"
+          ]
+        },
+        {
+          "type": "tool",
+          "name": "Read",
+          "arg": "src/main/java/com/terminal/yard/ReeferSlotPlanner.java",
+          "kind": "files",
+          "tokens": 2340,
+          "out": [
+            {
+              "de": "212 Zeilen",
+              "en": "212 lines"
+            }
+          ]
+        },
+        {
+          "type": "assistant",
+          "text": {
+            "de": "ReeferSlotPlanner.validateTemperature(ReeferUnit) in Zeile 188 — privat, wird nur aus assignSlot() gerufen. Die Grenzwerte stehen unter reefer.temp.min und reefer.temp.max.",
+            "en": "ReeferSlotPlanner.validateTemperature(ReeferUnit) on line 188 — private, called only from assignSlot(). The limits live under reefer.temp.min and reefer.temp.max."
+          }
+        },
+        {
+          "type": "note",
+          "text": {
+            "de": "Andere Klasse, andere Methode, anderer Konfigurationspfad. Die erste Antwort war nicht „unsicherer“ formuliert — sie war genauso bestimmt. Selbstsicherheit ist kein Signal.",
+            "en": "Different class, different method, different configuration path. The first answer was not phrased more hesitantly — it was just as definite. Confidence is not a signal."
+          }
+        },
+        {
+          "type": "note",
+          "text": {
+            "de": "Deshalb ist die nützlichste Gewohnheit nicht „dem Modell misstrauen“, sondern es überprüfbar antworten lassen: Datei und Zeile verlangen, Tests laufen lassen, Behauptungen an etwas binden, das fehlschlagen kann.",
+            "en": "That is why the useful habit is not “distrust the model” but making it answer checkably: demand file and line, run the tests, tie claims to something that can fail."
+          }
+        }
+      ]
+    }
+  ]
+}

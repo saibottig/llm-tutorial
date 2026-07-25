@@ -5,6 +5,8 @@ part: 5
 order: 5
 ---
 
+import Terminal from '../../../components/demos/Terminal.astro';
+
 You sharpen the CLAUDE.md or a skill, the next result looks better — change or chance? Without measurement, unanswerable. **Evals** are the answer: a fixed set of test cases with defined scoring, against which every change runs.
 
 Why trying it out is not enough:
@@ -50,6 +52,8 @@ The biggest payoff is **regression protection**: every case that was once wrong 
 After months of [unit tests with Claude Code](../unit-tests/): has test quality risen — or just the count? Line coverage cannot answer that (a parroting test covers a lot and finds nothing). More honest: **mutation testing** (Java: PIT) — plants bugs in the production code and measures how many the tests notice. Applied to one module with generated and one with hand-written tests, it shows whether the generated suite checks or is merely green.
 
 Almost everything in this tutorial is a measurable change: model choice, CLAUDE.md rework, fewer [MCP servers](../mcp/), a different [sub-agent](../multi-agent/) split, a verification stage against [hallucinations](../hallucinations/). Without evals those are guesses — with evals, decisions.
+
+<Terminal script="evals" locale="en" variant="inline" />
 
 <KeyTakeaway>
 - Models are not deterministic — single runs and impressions do not count as evidence.

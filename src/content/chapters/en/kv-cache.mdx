@@ -5,6 +5,8 @@ part: 2
 order: 1
 ---
 
+import Terminal from '../../../components/demos/Terminal.astro';
+
 The **KV cache** is the mechanism behind two everyday observations: why long contexts are expensive and why [prompt caching](../prompt-caching/) saves so much.
 
 ## Problem and solution in four sentences
@@ -40,6 +42,8 @@ Three techniques that show up in model descriptions:
 ## The bridge to the next chapter
 
 The KV cache normally lives for one request. Keeping it across requests when the beginning stays the same is **prompt caching** — the largest cost lever there is, especially for Claude Code sessions with their stable prefix. [Continue there](../prompt-caching/).
+
+<Terminal script="kv-cache" locale="en" variant="inline" />
 
 <KeyTakeaway>
 - The KV cache stores the intermediate values of processed tokens — quadratic effort becomes linear.

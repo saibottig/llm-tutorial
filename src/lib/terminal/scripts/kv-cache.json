@@ -1,0 +1,91 @@
+{
+  "_comment": "The KV cache is invisible in a normal session, so the session makes it visible through what it causes: the first token is slow, the rest are fast, and long contexts slow everything down.",
+
+  "title": { "de": "Warum das erste Token so lange braucht", "en": "Why the first token takes so long" },
+
+  "strings": {
+    "greeting": {
+      "de": "Achte auf die zwei Phasen jeder Antwort: ein Block auf einmal, dann Token für Token. Der Unterschied ist der KV-Cache.",
+      "en": "Watch the two phases of every answer: one block at once, then token by token. The difference is the KV cache."
+    }
+  },
+
+  "scenarios": [
+    {
+      "id": "short",
+      "label": { "de": "Kurzer Context", "en": "Short context" },
+      "hint": {
+        "de": "Wenig davor, schnelles erstes Token.",
+        "en": "Little in front of it, fast first token."
+      },
+      "reset": true,
+      "commands": [{ "de": "Fasse die Berth-Regeln zusammen", "en": "Summarise the berth rules" }]
+    },
+    {
+      "id": "long",
+      "label": { "de": "Derselbe Prompt, volles Fenster", "en": "Same prompt, full window" },
+      "hint": {
+        "de": "Nichts am Prompt ändert sich — nur, was davor steht. Und das erste Token dauert länger.",
+        "en": "Nothing about the prompt changes — only what precedes it. And the first token takes longer."
+      },
+      "reset": true,
+      "commands": [
+        { "de": "Zeig mir den vollen Build-Log", "en": "Show me the full build log" },
+        { "de": "Fasse die Berth-Regeln zusammen", "en": "Summarise the berth rules" }
+      ]
+    }
+  ],
+
+  "intents": [
+    {
+      "id": "summarise",
+      "match": ["fasse", "summarise", "summarize", "zusammen", "berth-regeln", "berth rules"],
+      "steps": [
+        {
+          "type": "tool",
+          "name": "Read",
+          "arg": "src/main/java/com/terminal/berth/BerthAllocationService.java",
+          "kind": "files",
+          "tokens": 4180,
+          "out": [{ "de": "384 Zeilen", "en": "384 lines" }]
+        },
+        {
+          "type": "generate",
+          "promptTokens": 12500,
+          "outputTokens": 96,
+          "text": {
+            "de": "Tiefgang gegen Liegeplatztiefe, Länge gegen Liegeplatzlänge, Zeitfenster aus ETA und ETD. Bei Kollision gewinnt der frühere bestätigte ETA.",
+            "en": "Draft against berth depth, length against berth length, time window from ETA and ETD. On collision the earlier confirmed ETA wins."
+          }
+        },
+        {
+          "type": "note",
+          "text": {
+            "de": "Beim Prefill rechnet das Modell für jedes Prompt-Token Key und Value aus und legt sie ab — das ist der KV-Cache. Beim Decode muss es für jedes neue Token nur noch sich selbst dazurechnen, statt alles Vorherige erneut.",
+            "en": "During prefill the model computes a key and a value for every prompt token and stores them — that is the KV cache. During decode it only has to add itself for each new token instead of recomputing everything before it."
+          }
+        }
+      ]
+    },
+    {
+      "id": "build-log",
+      "match": ["build-log", "build log", "vollen build", "full build", "gradlew build", "--info"],
+      "steps": [
+        {
+          "type": "tool",
+          "name": "Bash",
+          "arg": "./gradlew build --info",
+          "tokens": 78000,
+          "out": ["BUILD SUCCESSFUL in 1m 48s"]
+        },
+        {
+          "type": "note",
+          "text": {
+            "de": "Der KV-Cache für diesen Context liegt jetzt im GPU-Speicher — und wächst linear mit der Contextlänge. Deshalb ist ein volles Fenster nicht nur teurer, sondern auch spürbar träger.",
+            "en": "The KV cache for this context now sits in GPU memory — and it grows linearly with context length. That is why a full window is not only more expensive but noticeably more sluggish."
+          }
+        }
+      ]
+    }
+  ]
+}

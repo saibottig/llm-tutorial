@@ -13,8 +13,8 @@ Entscheidungen bewusst so getroffen wurden — und wo die offenen Enden liegen.
 Ein Claude-Code-Tutorial für Entwicklungsteams in einem
 Container-Terminal-Softwareunternehmen (Java/Spring Boot, Angular,
 Jira/Confluence/Bitbucket): 20 Kapitel in fünf Teilen, vollständig auf Deutsch
-und Englisch, sechs interaktive Demos plus eine Playground-Seite, statischer
-Astro-Build auf GitHub Pages.
+und Englisch, in jedem Kapitel eine simulierte Claude-Code-Sitzung plus eine
+Playground-Seite, statischer Astro-Build auf GitHub Pages.
 
 Das Tutorial war ursprünglich ein allgemeines LLM-Grundlagen-Tutorial und
 wurde im Juli 2026 um Claude Code als roten Faden herum umgebaut: Die
@@ -23,33 +23,34 @@ zugeschnitten, fünf Kapitel kamen neu dazu (`claude-code`, `setup`,
 `unit-tests`, `atlassian`, `use-cases`), zwei entfielen (`vram-vs-ram` samt
 Demo; `harness`, dessen Inhalt im Kapitel `claude-code` aufging).
 
-| # | Slug | DE | EN | Demo |
-|---|---|---|---|---|
-| 1.1 | `token` | Token | Tokens | Tokenizer |
-| 1.2 | `context` | Context | Context | — |
-| 1.3 | `context-window` | Context Window | Context Window | ContextWindow |
-| 2.1 | `kv-cache` | KV-Cache | KV Cache | — |
-| 2.2 | `prefill-decode` | Prefill und Decode | Prefill and Decode | PrefillDecode |
-| 2.3 | `prompt-caching` | Prompt Caching | Prompt Caching | CacheSimulator |
-| 3.1 | `claude-code` | Claude Code | Claude Code | — |
-| 3.2 | `setup` | Projekt-Setup: CLAUDE.md und Permissions | Project Setup | — |
-| 3.3 | `tool-use` | Tool Use | Tool Use | — |
-| 3.4 | `mcp` | MCP | MCP | McpCost |
-| 3.5 | `skills` | Skills | Skills | — |
-| 4.1 | `unit-tests` | Der erste Anwendungsfall: Unit-Tests | The First Use Case: Unit Tests | — |
-| 4.2 | `agentic-workflows` | Agentische Workflows | Agentic Workflows | — |
-| 4.3 | `atlassian` | Ticket zu Pull Request | Ticket to Pull Request | — |
-| 4.4 | `multi-agent` | Multi-Agent-Orchestrierung | Multi-Agent Orchestration | — |
-| 5.1 | `cost` | Kostenbewusst arbeiten | Working Cost-Consciously | — |
-| 5.2 | `use-cases` | Anwendungsfälle finden | Finding Use Cases | — |
-| 5.3 | `prompt-injection` | Prompt Injection | Prompt Injection | — |
-| 5.4 | `hallucinations` | Halluzinationen | Hallucinations | — |
-| 5.5 | `evals` | Evals | Evals | — |
+| # | Slug | DE | EN |
+|---|---|---|---|
+| 1.1 | `token` | Token | Tokens |
+| 1.2 | `context` | Context | Context |
+| 1.3 | `context-window` | Context Window | Context Window |
+| 2.1 | `kv-cache` | KV-Cache | KV Cache |
+| 2.2 | `prefill-decode` | Prefill und Decode | Prefill and Decode |
+| 2.3 | `prompt-caching` | Prompt Caching | Prompt Caching |
+| 3.1 | `claude-code` | Claude Code | Claude Code |
+| 3.2 | `setup` | Projekt-Setup: CLAUDE.md und Permissions | Project Setup |
+| 3.3 | `tool-use` | Tool Use | Tool Use |
+| 3.4 | `mcp` | MCP | MCP |
+| 3.5 | `skills` | Skills | Skills |
+| 4.1 | `unit-tests` | Der erste Anwendungsfall: Unit-Tests | The First Use Case: Unit Tests |
+| 4.2 | `agentic-workflows` | Agentische Workflows | Agentic Workflows |
+| 4.3 | `atlassian` | Ticket zu Pull Request | Ticket to Pull Request |
+| 4.4 | `multi-agent` | Multi-Agent-Orchestrierung | Multi-Agent Orchestration |
+| 5.1 | `cost` | Kostenbewusst arbeiten | Working Cost-Consciously |
+| 5.2 | `use-cases` | Anwendungsfälle finden | Finding Use Cases |
+| 5.3 | `prompt-injection` | Prompt Injection | Prompt Injection |
+| 5.4 | `hallucinations` | Halluzinationen | Hallucinations |
+| 5.5 | `evals` | Evals | Evals |
 
-Dazu kommt der **Playground** unter `/<lang>/playground/` — eine simulierte
-Claude-Code-Sitzung, außerhalb der Kapitelnummerierung, verlinkt oben in der
-Sidebar und von der Startseite. Verkleinerte Instanzen derselben Komponente
-stecken in `claude-code` (3.1), `tool-use` (3.3) und `agentic-workflows` (4.2).
+Jedes Kapitel bettet eine Instanz der Terminal-Komponente ein, die genau sein
+Thema ablaufen lässt — der Inhalt steht in `src/lib/terminal/scripts/<slug>.json`.
+Dazu kommt der **Playground** unter `/<lang>/playground/` zum freien Spielen,
+außerhalb der Kapitelnummerierung, verlinkt oben in der Sidebar und von der
+Startseite.
 
 Teil-Titel und alle UI-Strings stehen in `src/i18n/ui.ts`, nicht im Markup.
 
@@ -134,39 +135,29 @@ löschen.
 Markdown-Tabellen werden über dieselbe Prop in `Table.astro` gewrappt, damit
 breite Tabellen in ihrem eigenen Kasten scrollen statt die Seite zu schieben.
 
-### Demos
+### Das Terminal ist die einzige Demo
 
-Demos werden **explizit importiert** — jede wird nur in genau einem Kapitel
-verwendet, das lohnt keine Vorbindung:
-
-```mdx
-import CacheSimulator from '../../../components/demos/CacheSimulator.astro';
-
-<CacheSimulator locale="de" />
-```
-
-Gemeinsame Optik (`.demo`, `.stat`, `.field`, `.statusline`, `.stack`) liegt in
-`src/styles/demos.css`. Demo-spezifisches CSS bleibt in der Komponente.
-
-### Der Terminal-Playground
-
-Die sechste Demo ist anders gebaut als die fünf davor, weil sie mehrfach pro
-Seite vorkommt und deutlich mehr Text mitbringt. Vier Dateien:
+Bis Juli 2026 gab es fünf Einzeldemos (Tokenizer, ContextWindow, PrefillDecode,
+CacheSimulator, McpCost). Sie sind ersetzt: **jedes Kapitel hat jetzt genau eine
+simulierte Claude-Code-Sitzung**, die sein Thema ablaufen lässt, plus die
+Playground-Seite zum freien Spielen. Ein Interaktionsmodell statt sechs.
 
 | Datei | Inhalt |
 |---|---|
-| `src/lib/terminal/world.ts` | Beispiel-Repo (Dateien mit Token-Gewichten) und die MCP-Server-Presets |
-| `src/lib/terminal/engine.ts` | Zustandsmaschine: Context-Buchhaltung, Slash-Commands, Intent-Matching — **kein DOM** |
-| `src/lib/terminal/transcript.json` | Alle sprachabhängigen Texte: Intents, Szenarien, Slash-Ausgaben |
+| `src/lib/terminal/world.ts` | MCP-Server-Presets und Session-Sockel |
+| `src/lib/terminal/engine.ts` | Zustandsmaschine: Context, Cache, Permissions, Sub-Agenten — **kein DOM** |
+| `src/lib/terminal/scripts/common.json` | geteilte Strings, Slash-Ausgaben, Block-Labels, Fallback |
+| `src/lib/terminal/scripts/<slug>.json` | Inhalt genau eines Kapitels (20 Stück) + `playground.json` |
 | `src/components/demos/Terminal.astro` | Markup, Renderer, Styles |
 
-Drei Entscheidungen, die man kennen sollte:
+**Sprachauflösung passiert zur Build-Zeit.** `Terminal.astro` klappt die
+`{de, en}`-Paare im Frontmatter auf die gebaute Sprache zusammen und schreibt
+nur das Ergebnis in den JSON-Config-Tag. Der Client bündelt **kein** Skript —
+eine Kapitelseite trägt genau ein Kapitel in genau einer Sprache. Wer im
+Client-Script `scripts/…` importiert, macht diese Ersparnis kaputt; ein Test
+wacht darüber.
 
-**Die MCP-Presets liegen in `world.ts`, nicht in der Komponente.**
-`McpCost.astro` importiert sie von dort. Zwei Demos, die dieselben Server
-unterschiedlich beziffern, wären der schlechtestmögliche Zustand.
-
-**Das Transcript ist JSON, nicht TypeScript.** Absicht: So kann
+**Skripte sind JSON, nicht TypeScript.** Absicht: So kann
 `scripts/check-translations.mjs` — bewusst abhängigkeitsfrei, ohne TS-Loader —
 die Übersetzungsparität erzwingen statt sie zu erhoffen. Jedes Objekt mit
 `de`-Schlüssel braucht ein nicht-leeres `en` daneben. Reine Strings bleiben
@@ -178,14 +169,43 @@ diese Trennung erlaubt es, bei einer abgelehnten Permission die restlichen
 Schritte fallen zu lassen, **bevor** sie etwas kosten — sonst würde ein „nein"
 im Context genauso teuer wie ein „ja".
 
+**Sub-Agenten buchen nicht auf den Hauptthread.** Der Renderer läuft ihre
+inneren Schritte mit `bill: false` — nur `summary` landet im Context. Wer das
+vergisst, macht Delegation exakt so teuer wie Inline-Arbeit und dreht damit die
+Aussage des Multi-Agent-Kapitels um. Ein Test vergleicht beide Szenarien.
+
+**Schritttypen** (die Liste in `engine.ts` und die im Prüfskript müssen
+zusammenpassen): `assistant`, `note`, `out`, `tool`, `subagent`, `generate`,
+`invalidate`, `chips`, `compare`, `meter`, `cache`, `clear`, `compact`, `mcp`,
+`rule`. Ein `tool` mit `ask: true` löst die Freigabe aus; `foreign`/`injected`
+markieren fremden Text; `kind: "files"` bucht auf die Dateien statt den Verlauf
+und zahlt beim zweiten Lesen derselben Datei nicht doppelt.
+
+**Zwei Zahlen sind echt gemessen, nicht behauptet.** Der `compare`-Schritt im
+Token-Kapitel lässt denselben Absatz beim Bauen durch `o200k_base` und
+`cl100k_base` laufen — daher stammen die +16 % / +53 % aus Abschnitt 5. Der
+`chips`-Schritt zerlegt seinen Text ebenfalls zur Build-Zeit. Nur was jemand
+selbst eintippt, wird geschätzt, bis er den Tokenizer per Klick nachlädt.
+
+**Permission-Regeln** stehen im Skript (`rules`) und erscheinen als schaltbares
+Panel. Die spezifischere Regel gewinnt (`Bash:git push` schlägt `Bash`), ohne
+Regel entscheidet das `ask` des Schritts. Damit ist das Setup-Kapitel keine
+Beschreibung mehr, sondern ein Schalter, den man umlegt.
+
 Instanz-Scoping: Root trägt `data-terminal`, die Konfiguration reist in einem
 `<script type="application/json">` mit, das Modul-Script initialisiert per
-`querySelectorAll` jede Instanz einzeln. **Keine festen Element-IDs** — sobald
-zwei Terminals auf einer Seite stehen, bricht das Muster der anderen Demos.
+`querySelectorAll` jede Instanz einzeln. **Keine festen Element-IDs.** Während
+ein Szenario läuft, steht `data-running="true"` am Root — `data-busy` allein
+fällt zwischen zwei abgespielten Befehlen kurz weg.
 
-Die Server-Presets der McpCost-Demo (Jira, Confluence, Bitbucket, …) sind
-Daten in `world.ts`, keine ui.ts-Strings. Dasselbe gilt für die Prosa im
-Transcript: `ui.ts` bekommt nur Chrome (Buttons, Labels, Statusline-Wörter).
+Zwei Kapitel weichen von den Inline-Standards ab, weil ihr Thema es verlangt:
+`mcp` bekommt `servers` (das Zuschalten *ist* die Interaktion) und `setup`
+bekommt `input` (eine Regel umlegen und denselben Prompt erneut schicken — ohne
+Eingabezeile bliebe nur das Szenario, das seine eigenen Regeln wieder setzt).
+
+Ein Kapitel ergänzen heißt: `src/lib/terminal/scripts/<slug>.json` anlegen und
+in beiden MDX-Dateien `<Terminal script="<slug>" locale="…" variant="inline" />`
+einsetzen. Fehlt das Skript, bricht das Build-Gate ab.
 
 ---
 
@@ -213,11 +233,11 @@ Astro-Import nötig, damit es auch ohne Build läuft.
 
 Das Prüfskript sieht Inhalte, kein Verhalten. Seit der Playground echte Logik
 mitbringt — Context-Buchhaltung, Compaction, Permission-Gate — liegt die in
-`tests/` als Playwright-Suite (34 Fälle, ~45 s):
+`tests/` als Playwright-Suite (rund 60 Fälle):
 
 | Datei | Deckt ab |
 |---|---|
-| `tests/playground.spec.ts` | Slash-Commands, Freigabe erlauben *und* ablehnen, Überlauf, Szenarien, Verlauf, Tab-Completion, beide Sprachen, Einbettungen |
+| `tests/playground.spec.ts` | alle 20 Kapitel-Terminals, Cache-Treffer, Permission-Regeln (allow/ask/deny), Sub-Agenten, Prompt-Injection, die gemessenen Tokenizer-Zahlen, Slash-Commands, beide Sprachen |
 | `tests/site.spec.ts` | alle 40 Kapitelseiten, Prev/Next-Kette, Sprachumschalter, 375 px, beide Themes, Konsolenfehler, Quell-Guards |
 | `tests/helpers.ts` | `Terminal`-Wrapper (`run`, `settle`, `contextK`) und die Kapitelliste |
 
@@ -226,10 +246,12 @@ gebündelte Module und aufgelöste Scoped Styles sind das, was Besucher bekommen
 und beide haben sich hier schon unterschieden. Im Deploy-Workflow hängt
 `deploy` an `build` *und* `test`; eine rote Suite erreicht Pages nicht.
 
-Zwei Fälle sind Quelltext-Prüfungen statt Laufzeit-Tests, weil sie genau die
-Regression fangen, die realistisch passiert: dass `Terminal.astro` kein
-`getElementById` benutzt (sonst teilen sich zwei Instanzen ihren Zustand) und
-dass `McpCost.astro` seine Server-Zahlen importiert statt sie zu duplizieren.
+Drei Fälle sind Quelltext-Prüfungen statt Laufzeit-Tests, weil sie genau die
+Regressionen fangen, die realistisch passieren: dass `Terminal.astro` kein
+`getElementById` benutzt (sonst teilen sich zwei Instanzen ihren Zustand), dass
+das Client-Script kein Kapitel-Skript importiert (sonst trägt jede Seite alle
+20 Kapitel in beiden Sprachen) und dass die fünf gelöschten Demos gelöscht
+bleiben.
 
 **Die Suite ist auf Mutationen geprüft.** Lässt man `compact()` fälschlich auch
 die MCP-Definitionen freigeben, oder bucht man die Schritte hinter einer

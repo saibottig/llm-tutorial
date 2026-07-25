@@ -1,0 +1,275 @@
+{
+  "_comment": "Workflow versus agent, run side by side on the same task. The difference in tool calls and tokens is the argument the chapter makes in prose.",
+  "title": {
+    "de": "Fester Ablauf gegen freies Ziel",
+    "en": "Fixed steps versus an open goal"
+  },
+  "strings": {
+    "greeting": {
+      "de": "Dieselbe Aufgabe, zweimal: einmal als Workflow mit festen Schritten, einmal als Agent mit einem Ziel. Vergleiche Tool-Aufrufe und Context am Ende.",
+      "en": "The same task twice: once as a workflow with fixed steps, once as an agent with a goal. Compare tool calls and context at the end."
+    }
+  },
+  "scenarios": [
+    {
+      "id": "workflow",
+      "label": {
+        "de": "Als Workflow",
+        "en": "As a workflow"
+      },
+      "hint": {
+        "de": "Vier Schritte, im Code festgelegt. Planbar und testbar.",
+        "en": "Four steps, fixed in code. Predictable and testable."
+      },
+      "reset": true,
+      "commands": [
+        {
+          "de": "/tests-fuer-diff",
+          "en": "/tests-fuer-diff"
+        }
+      ]
+    },
+    {
+      "id": "agent",
+      "label": {
+        "de": "Als Agent",
+        "en": "As an agent"
+      },
+      "hint": {
+        "de": "Ein Ziel, das Modell wählt die Schritte. Mehr Runden, offenes Ende.",
+        "en": "One goal, the model picks the steps. More rounds, open ended."
+      },
+      "reset": true,
+      "commands": [
+        {
+          "de": "Sorge für Testabdeckung dieses Diffs",
+          "en": "Make sure this diff is covered by tests"
+        }
+      ]
+    }
+  ],
+  "intents": [
+    {
+      "id": "workflow",
+      "match": [
+        "/tests-fuer-diff",
+        "tests-fuer-diff",
+        "workflow",
+        "fester ablauf",
+        "fixed steps"
+      ],
+      "steps": [
+        {
+          "type": "note",
+          "text": {
+            "de": "Schritt 1 von 4 — Diff holen. Die Schritte stehen im Skill, nicht im Ermessen des Modells.",
+            "en": "Step 1 of 4 — fetch the diff. The steps live in the skill, not in the model's discretion."
+          }
+        },
+        {
+          "type": "tool",
+          "name": "Bash",
+          "arg": "git diff --stat origin/develop...HEAD",
+          "tokens": 310,
+          "out": [
+            "BerthAllocationService.java | 14 +++---",
+            "1 file changed"
+          ]
+        },
+        {
+          "type": "note",
+          "text": {
+            "de": "Schritt 2 — Testfälle vorschlagen.",
+            "en": "Step 2 — propose test cases."
+          }
+        },
+        {
+          "type": "assistant",
+          "text": {
+            "de": "Der Diff berührt die Wartelisten-Sortierung. Ein Fall fehlt: zwei Anläufe ohne bestätigte ETA.",
+            "en": "The diff touches the waiting-list ordering. One case is missing: two calls without a confirmed ETA."
+          }
+        },
+        {
+          "type": "note",
+          "text": {
+            "de": "Schritt 3 — Test schreiben.",
+            "en": "Step 3 — write the test."
+          }
+        },
+        {
+          "type": "tool",
+          "name": "Write",
+          "arg": "src/test/java/com/terminal/berth/WaitingListOrderTest.java",
+          "ask": true,
+          "detail": {
+            "de": "Eine Testmethode, 24 Zeilen.",
+            "en": "One test method, 24 lines."
+          },
+          "tokens": 380,
+          "out": [
+            {
+              "de": "24 Zeilen geschrieben",
+              "en": "24 lines written"
+            }
+          ]
+        },
+        {
+          "type": "note",
+          "text": {
+            "de": "Schritt 4 — ausführen, bei Fehler genau einmal nachbessern.",
+            "en": "Step 4 — run, and on failure correct exactly once."
+          }
+        },
+        {
+          "type": "tool",
+          "name": "Bash",
+          "arg": "./gradlew test --tests '*WaitingListOrderTest'",
+          "tokens": 380,
+          "out": [
+            "BUILD SUCCESSFUL in 9s",
+            "1 test completed, 0 failed"
+          ]
+        },
+        {
+          "type": "assistant",
+          "text": {
+            "de": "Fertig nach vier Schritten. Wie viele es werden, wusste ich vorher — und dass es hier aufhört, auch.",
+            "en": "Done after four steps. I knew in advance how many there would be — and that it ends here."
+          }
+        }
+      ],
+      "command": "tests-fuer-diff"
+    },
+    {
+      "id": "agent",
+      "match": [
+        "testabdeckung",
+        "test coverage",
+        "sorge für",
+        "make sure",
+        "abdeckung",
+        "covered by"
+      ],
+      "steps": [
+        {
+          "type": "assistant",
+          "text": {
+            "de": "Ich schaue mir erst an, wo die Abdeckung überhaupt steht.",
+            "en": "Let me first look at where coverage actually stands."
+          }
+        },
+        {
+          "type": "tool",
+          "name": "Bash",
+          "arg": "git diff origin/develop...HEAD",
+          "tokens": 1900,
+          "out": [
+            {
+              "de": "1 Datei, 14 Zeilen geändert",
+              "en": "1 file, 14 lines changed"
+            }
+          ]
+        },
+        {
+          "type": "tool",
+          "name": "Read",
+          "arg": "src/main/java/com/terminal/berth/BerthAllocationService.java",
+          "kind": "files",
+          "tokens": 4180,
+          "out": [
+            {
+              "de": "384 Zeilen",
+              "en": "384 lines"
+            }
+          ]
+        },
+        {
+          "type": "tool",
+          "name": "Bash",
+          "arg": "./gradlew jacocoTestReport",
+          "tokens": 2400,
+          "out": [
+            "BUILD SUCCESSFUL in 51s",
+            "BerthAllocationService: 71 % line coverage"
+          ]
+        },
+        {
+          "type": "tool",
+          "name": "Glob",
+          "arg": "src/test/**/*Test.java",
+          "tokens": 280,
+          "out": [
+            {
+              "de": "23 Dateien",
+              "en": "23 files"
+            }
+          ]
+        },
+        {
+          "type": "tool",
+          "name": "Read",
+          "arg": "src/test/java/com/terminal/berth/BerthAllocationServiceTest.java",
+          "kind": "files",
+          "tokens": 1100,
+          "out": [
+            {
+              "de": "142 Zeilen",
+              "en": "142 lines"
+            }
+          ]
+        },
+        {
+          "type": "tool",
+          "name": "Write",
+          "arg": "src/test/java/com/terminal/berth/WaitingListOrderTest.java",
+          "ask": true,
+          "detail": {
+            "de": "Zwei Testmethoden, 41 Zeilen.",
+            "en": "Two test methods, 41 lines."
+          },
+          "tokens": 610,
+          "out": [
+            {
+              "de": "41 Zeilen geschrieben",
+              "en": "41 lines written"
+            }
+          ]
+        },
+        {
+          "type": "tool",
+          "name": "Bash",
+          "arg": "./gradlew test",
+          "tokens": 520,
+          "out": [
+            "BUILD SUCCESSFUL in 38s",
+            "131 tests completed, 0 failed"
+          ]
+        },
+        {
+          "type": "tool",
+          "name": "Bash",
+          "arg": "./gradlew jacocoTestReport",
+          "tokens": 2400,
+          "out": [
+            "BerthAllocationService: 84 % line coverage"
+          ]
+        },
+        {
+          "type": "assistant",
+          "text": {
+            "de": "84 % statt 71 %. Acht Tool-Aufrufe statt vier, rund dreimal so viel Context — und ich hätte auch weitermachen können, ohne dass etwas mich gestoppt hätte.",
+            "en": "84 % instead of 71 %. Eight tool calls instead of four, roughly three times the context — and I could have carried on, with nothing to stop me."
+          }
+        },
+        {
+          "type": "note",
+          "text": {
+            "de": "Der Agent hat mehr erreicht und mehr gekostet. Beides ist wahr — die Frage ist, ob die Aufgabe die Offenheit gebraucht hätte. Hier waren die Schritte vorab bekannt: dann ist der Workflow die bessere Wahl.",
+            "en": "The agent achieved more and cost more. Both are true — the question is whether the task needed the openness. Here the steps were known in advance: then the workflow is the better choice."
+          }
+        }
+      ]
+    }
+  ]
+}

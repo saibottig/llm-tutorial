@@ -1,0 +1,128 @@
+{
+  "_comment": "Skills as procedural knowledge that is loaded on demand — shown by the fact that the body only enters the context at the moment it is needed.",
+
+  "title": { "de": "Wissen, das erst beim Zugreifen kostet", "en": "Knowledge that only costs when reached for" },
+
+  "strings": {
+    "greeting": {
+      "de": "Im Projekt liegen vier Skills. Resident ist von jedem nur eine Zeile — der Rumpf wird gelesen, wenn er dran ist. Achte darauf, wann die Token anfallen.",
+      "en": "There are four skills in this project. Only one line of each is resident — the body is read when its turn comes. Watch when the tokens land."
+    }
+  },
+
+  "scenarios": [
+    {
+      "id": "resident",
+      "label": { "de": "Was immer mitläuft", "en": "What is always along for the ride" },
+      "hint": {
+        "de": "Vier Skills, vier Zeilen — 120 Token statt vier vollständiger Anleitungen.",
+        "en": "Four skills, four lines — 120 tokens instead of four full guides."
+      },
+      "reset": true,
+      "commands": [{ "de": "Welche Skills hast du?", "en": "Which skills do you have?" }, "/context"]
+    },
+    {
+      "id": "load",
+      "label": { "de": "Ein Skill wird geholt", "en": "A skill gets fetched" },
+      "hint": {
+        "de": "Erst beim passenden Auftrag landet der Rumpf im Context — und nur dieser eine.",
+        "en": "Only when a matching task arrives does the body land in the context — and only that one."
+      },
+      "reset": true,
+      "commands": [
+        { "de": "Mach ein Release für 3.4.0", "en": "Cut a release for 3.4.0" },
+        "/context"
+      ]
+    }
+  ],
+
+  "intents": [
+    {
+      "id": "list",
+      "match": ["welche skills", "which skills", "skills hast", "list skills", "was kannst"],
+      "steps": [
+        {
+          "type": "tool",
+          "name": "Read",
+          "arg": ".claude/skills/*/SKILL.md (headers)",
+          "kind": "files",
+          "tokens": 120,
+          "out": [
+            "release-checklist  — Ablauf für ein Release: Version, Changelog, Tag, Pipeline",
+            "reefer-domain      — Fachbegriffe und Regeln rund um Kühlcontainer",
+            "incident-report    — Struktur für Störungsberichte an den Betrieb",
+            "api-review         — Prüfliste für Änderungen an öffentlichen Endpunkten"
+          ]
+        },
+        {
+          "type": "assistant",
+          "text": {
+            "de": "Vier Skills, je Name und eine Zeile Beschreibung. Zusammen 120 Token — das ist alles, was dauerhaft im Context steht.",
+            "en": "Four skills, each a name and one line of description. 120 tokens in total — that is everything permanently in the context."
+          }
+        },
+        {
+          "type": "note",
+          "text": {
+            "de": "Die Beschreibungszeile ist die eigentliche Steuerung: Nur wenn sie klar sagt, wann der Skill dran ist, wird er zum richtigen Zeitpunkt gezogen.",
+            "en": "That description line is the actual control: only if it says clearly when the skill applies does it get pulled at the right moment."
+          }
+        }
+      ]
+    },
+    {
+      "id": "release",
+      "match": ["release", "3.4.0", "version", "changelog", "tag"],
+      "steps": [
+        {
+          "type": "assistant",
+          "text": {
+            "de": "Dafür gibt es einen Skill. Ich lese ihn jetzt — vorher stand nur seine Beschreibungszeile im Context.",
+            "en": "There is a skill for that. I am reading it now — before this, only its description line was in the context."
+          }
+        },
+        {
+          "type": "tool",
+          "name": "Read",
+          "arg": ".claude/skills/release-checklist/SKILL.md",
+          "kind": "files",
+          "tokens": 1450,
+          "out": [{ "de": "68 Zeilen Ablaufbeschreibung", "en": "68 lines of procedure" }]
+        },
+        {
+          "type": "tool",
+          "name": "Edit",
+          "arg": "build.gradle.kts",
+          "ask": true,
+          "detail": {
+            "de": "version = \"3.4.0\" — Schritt 1 der Checkliste.",
+            "en": "version = \"3.4.0\" — step 1 of the checklist."
+          },
+          "tokens": 160,
+          "out": ["+1 −1"]
+        },
+        {
+          "type": "tool",
+          "name": "Bash",
+          "arg": "./gradlew test",
+          "tokens": 520,
+          "out": ["BUILD SUCCESSFUL in 36s", "129 tests completed, 0 failed"]
+        },
+        {
+          "type": "assistant",
+          "text": {
+            "de": "Der Rest der Checkliste — Changelog, Tag, Pipeline — steht jetzt im Context und wird abgearbeitet. Die anderen drei Skills sind weiterhin nur eine Zeile.",
+            "en": "The rest of the checklist — changelog, tag, pipeline — is now in the context and gets worked through. The other three skills are still one line each."
+          }
+        },
+        {
+          "type": "note",
+          "text": {
+            "de": "1.450 Token, einmal, für den Skill der tatsächlich gebraucht wurde. Ein MCP-Server hätte seine Definitionen von der ersten Anfrage an mitgeschleppt.",
+            "en": "1,450 tokens, once, for the skill that was actually needed. An MCP server would have carried its definitions along from the very first request."
+          }
+        }
+      ]
+    }
+  ]
+}

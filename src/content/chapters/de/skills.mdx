@@ -5,6 +5,8 @@ part: 3
 order: 5
 ---
 
+import Terminal from '../../../components/demos/Terminal.astro';
+
 Ein **Skill** ist ein Ordner mit einer Anleitung — Vorgehenswissen, das nur dann Context kostet, wenn es gebraucht wird. Kern ist eine `SKILL.md`:
 
 ```markdown
@@ -56,6 +58,8 @@ Alles, was ihr wiederholt gleich macht und wo das Hausverfahren zählt:
 - Namens- und Testkonventionen
 
 Im Repo unter `.claude/skills/` abgelegt → automatisch teamweit verfügbar, und die [CLAUDE.md](../setup/) bleibt schlank, statt zum Handbuch anzuschwellen.
+
+<Terminal script="skills" locale="de" variant="inline" />
 
 <KeyTakeaway>
 - Ein Skill ist ein Ordner mit Anleitung; dauerhaft im Context stehen nur Name und Beschreibung.

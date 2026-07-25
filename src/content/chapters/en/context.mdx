@@ -5,6 +5,8 @@ part: 1
 order: 2
 ---
 
+import Terminal from '../../../components/demos/Terminal.astro';
+
 **Context** is everything the model sees for a task — no information exists outside it. And: **a language model is stateless.** What looks like memory is not — the entire history is resent with every call.
 
 ## What a request consists of
@@ -39,6 +41,8 @@ The guiding question of every session:
 > What information does the model need for this task — and how do I get exactly that in without dragging everything else along?
 
 The tools for it run through this tutorial: [skills](../skills/) load instructions only on demand, [sub-agents](../multi-agent/) keep research out of the main thread, compaction summarises old turns.
+
+<Terminal script="context" locale="en" variant="inline" />
 
 <KeyTakeaway>
 - Context is everything the model sees — models are stateless, the history travels along in full every time.

@@ -5,7 +5,7 @@ part: 1
 order: 1
 ---
 
-import Tokenizer from '../../../components/demos/Tokenizer.astro';
+import Terminal from '../../../components/demos/Terminal.astro';
 
 A model reads neither letters nor words but **tokens**: numbers from a fixed vocabulary of 100,000–200,000 entries. Everything in a Claude Code session — CLAUDE.md, Java classes, stack traces, Jira tickets — is measured, counted and billed in tokens.
 
@@ -29,9 +29,9 @@ The same text always produces exactly the same token sequence on the same model 
 Also outdated: "German costs 2–3×". That held for older tokenizers. Measured with current ones: **+16 %** (`o200k_base`) versus **+53 %** (`cl100k_base`).
 </Callout>
 
-<Tokenizer locale="en" />
+<Terminal script="token" locale="en" variant="inline" />
 
-The demo's numbers are computed with the real tokenizers at build time. The comparison at the bottom — same text, two tokenizers, different results — is the evidence that the token count belongs to the model.
+The numbers below are computed with the real tokenizers while this page is built. The comparison — same text, two tokenizer generations, different results — is the evidence that the token count belongs to the model.
 
 ## Practical rules
 

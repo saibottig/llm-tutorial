@@ -5,7 +5,7 @@ part: 3
 order: 4
 ---
 
-import McpCost from '../../../components/demos/McpCost.astro';
+import Terminal from '../../../components/demos/Terminal.astro';
 
 Das **Model Context Protocol** (MCP) ist ein offener Standard für die Anbindung von Modellen an bestehende Software — bei uns der Weg, auf dem Claude Code Jira, Confluence und Bitbucket erreicht. Statt jede Kombination aus Anwendung und System einzeln zu verdrahten (3 × 4 = 12 Integrationen), stellt ein Anbieter einen MCP-Server bereit, den jede MCP-fähige Anwendung nutzen kann (3 + 4 = 7 Bausteine).
 
@@ -25,7 +25,7 @@ Technisch ist alles gewöhnlicher [Tool Use](../tool-use/); MCP standardisiert E
 
 Ein Jira-Server bringt gut zwei Dutzend Tools mit, jedes mit Beschreibung und Schema — präsent bei jedem Aufruf, auch wenn man nur einen Kommentar liest.
 
-<McpCost locale="de" />
+<Terminal script="mcp" locale="de" variant="inline" servers />
 
 Alle Server an: fünfstelliger Verbrauch, bevor ein Wort der eigentlichen Aufgabe im Context steht — bei jeder Anfrage der Sitzung. Drei Folgen:
 

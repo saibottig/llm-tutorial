@@ -5,6 +5,8 @@ part: 4
 order: 4
 ---
 
+import Terminal from '../../../components/demos/Terminal.astro';
+
 In Claude Code, multi-agent means: the main session spawns a **sub-agent** with fresh context for a sub-task — say, "search the monorepo for every use of this interface". The pattern behind it:
 
 ```
@@ -57,6 +59,8 @@ Claude Code ships sub-agents built in — for everyday team use that suffices, a
 - **LangGraph** — the flow as a graph, more control over state and branching
 - **OpenAI Agents SDK** — a leaner approach built around handoffs between agents
 </Deep>
+
+<Terminal script="multi-agent" locale="en" variant="inline" />
 
 <KeyTakeaway>
 - Sub-agents bring parallelism — and, more importantly, context isolation: raw material stays out.

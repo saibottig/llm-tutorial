@@ -5,6 +5,8 @@ part: 5
 order: 4
 ---
 
+import Terminal from '../../../components/demos/Terminal.astro';
+
 Eine **Halluzination** ist eine Ausgabe, die plausibel klingt und falsch ist: erfundene Quellen, nicht existierende Methoden, falsche Zahlen mit korrekt aussehender Nachkommastelle. Der Mechanismus: Das Modell wählt fortlaufend das wahrscheinlichste nächste Token — es fragt „was passt hier hin?", nicht „stimmt das?". Fehlt Wissen, entsteht kein Loch, sondern die plausibelste Fortsetzung — nach denselben Regeln erzeugt wie eine richtige Antwort und deshalb von ihr nicht zu unterscheiden.
 
 <Callout type="merke">
@@ -42,6 +44,8 @@ Bei Recherchen mit Quellenangaben: jede genannte URL tatsächlich abrufen. Erfun
 ## Die Entwurfsfrage
 
 Für jede Stelle, an der eine Modellausgabe weiterverwendet wird: **Was passiert, wenn das frei erfunden ist?** „Nichts Schlimmes" → Grounding reicht. „Fällt niemandem auf und richtet Schaden an" → Prüfstufe einbauen. Derselbe Grundsatz wie bei [Prompt Injection](../prompt-injection/): Kontrolle gehört außerhalb des Modells.
+
+<Terminal script="hallucinations" locale="de" variant="inline" />
 
 <KeyTakeaway>
 - Halluzinationen entstehen aus Wahrscheinlichkeit statt Wahrheitsprüfung — kein behebbarer Defekt.

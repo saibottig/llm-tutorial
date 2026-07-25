@@ -5,7 +5,7 @@ part: 2
 order: 2
 ---
 
-import PrefillDecode from '../../../components/demos/PrefillDecode.astro';
+import Terminal from '../../../components/demos/Terminal.astro';
 
 After sending, nothing happens for a while, then the answer streams through steadily. That is no implementation detail — generation splits into two phases with different bottlenecks:
 
@@ -16,9 +16,9 @@ After sending, nothing happens for a while, then the answer streams through stea
 | Bottleneck | compute (compute-bound) | memory bandwidth (memory-bound) |
 | Determines | time to first token (TTFT) | tokens per second |
 
-<PrefillDecode locale="en" />
+<Terminal script="prefill-decode" locale="en" variant="inline" />
 
-The decisive relationship in the demo: a longer prompt shifts the time to first token — the output speed afterwards stays the same.
+The decisive relationship: a longer prompt shifts the time to first token — the output speed afterwards stays the same. The two scenarios below put exactly that side by side.
 
 <Deep title="Why decode is bandwidth-bound">
 For every single output token the model must read its complete weights from memory once: 40 GB model → 40 GB read per token. The compute units mostly idle. That is why providers can batch several requests through decode almost for free — the weights are being read anyway. Serving large models lives off exactly this.

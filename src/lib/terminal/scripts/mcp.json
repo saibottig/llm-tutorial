@@ -1,0 +1,105 @@
+{
+  "_comment": "Replaces the MCP cost demo. The server panel is the same data, but here the cost lands in a real session instead of a standalone calculator.",
+
+  "title": { "de": "Was MCP kostet, bevor du tippst", "en": "What MCP costs before you type" },
+
+  "strings": {
+    "greeting": {
+      "de": "Schalte links Server zu und beobachte die Statusline. Die Tool-Definitionen stehen im Context, bevor irgendjemand sie benutzt — und bei jeder einzelnen Anfrage erneut.",
+      "en": "Switch servers on at the left and watch the status line. Tool definitions sit in the context before anyone uses them — and again on every single request."
+    }
+  },
+
+  "scenarios": [
+    {
+      "id": "three",
+      "label": { "de": "Der Atlassian-Stack", "en": "The Atlassian stack" },
+      "hint": {
+        "de": "Jira, Confluence, Bitbucket — 54 Tools, bevor du irgendetwas fragst.",
+        "en": "Jira, Confluence, Bitbucket — 54 tools before you ask anything."
+      },
+      "reset": true,
+      "mcp": { "jira": true, "confluence": true, "bitbucket": true, "filesystem": false, "postgres": false, "browser": false, "sentry": false },
+      "commands": ["/context"]
+    },
+    {
+      "id": "everything",
+      "label": { "de": "„Sicherheitshalber alles an“", "en": "“Everything on, just in case”" },
+      "hint": {
+        "de": "Sieben Server, 97 Tools — 10 % des Fensters für Fähigkeiten, die du in dieser Sitzung nie brauchst.",
+        "en": "Seven servers, 97 tools — 10 % of the window for capabilities this session never needs."
+      },
+      "reset": true,
+      "mcp": { "jira": true, "confluence": true, "bitbucket": true, "filesystem": true, "postgres": true, "browser": true, "sentry": true },
+      "commands": ["/context", { "de": "Was kostet mich das pro Anfrage?", "en": "What does that cost me per request?" }]
+    },
+    {
+      "id": "one-tool",
+      "label": { "de": "Ein Ticket, ein Tool", "en": "One ticket, one tool" },
+      "hint": {
+        "de": "Von 22 Jira-Tools wird genau eines benutzt — die anderen 21 zahlst du trotzdem.",
+        "en": "Of 22 Jira tools exactly one gets used — you pay for the other 21 anyway."
+      },
+      "reset": true,
+      "mcp": { "jira": true, "confluence": true, "bitbucket": true, "filesystem": false, "postgres": false, "browser": false, "sentry": false },
+      "commands": [{ "de": "Was steht in TERM-4711?", "en": "What does TERM-4711 say?" }, "/context"]
+    }
+  ],
+
+  "intents": [
+    {
+      "id": "ticket",
+      "match": ["term-4711", "ticket", "jira", "was steht in", "what does term"],
+      "requires": ["jira"],
+      "steps": [
+        {
+          "type": "tool",
+          "name": "jira__get_issue",
+          "arg": "TERM-4711",
+          "tokens": 640,
+          "out": [
+            "TERM-4711 · Bug · In Progress",
+            {
+              "de": "„Warteliste sortiert Anläufe ohne bestätigte ETA nicht — NPE im Yard-Dashboard.“",
+              "en": "“Waiting list does not sort calls without a confirmed ETA — NPE in the yard dashboard.”"
+            }
+          ]
+        },
+        {
+          "type": "note",
+          "text": {
+            "de": "Ein Aufruf von 22 verfügbaren Jira-Tools. Die Definitionen der anderen 21 standen trotzdem im Context — und stehen dort auch in der nächsten Anfrage wieder.",
+            "en": "One call out of 22 available Jira tools. The definitions of the other 21 were in the context anyway — and will be again in the next request."
+          }
+        }
+      ]
+    },
+    {
+      "id": "cost",
+      "match": ["was kostet", "what does that cost", "pro anfrage", "per request", "teuer"],
+      "steps": [
+        {
+          "type": "assistant",
+          "text": {
+            "de": "Sieben Server sind 20.100 Token an Definitionen — rund 10 % des Fensters, bei jeder Anfrage neu. Bei 200 Anfragen am Tag ist das viermal die gesamte Codebasis, für Tools, die überwiegend nicht aufgerufen werden.",
+            "en": "Seven servers are 20,100 tokens of definitions — roughly 10 % of the window, on every request. At 200 requests a day that is four times the entire codebase, for tools that mostly never get called."
+          }
+        },
+        {
+          "type": "note",
+          "text": {
+            "de": "Die Gegenrechnung: Als Skills wären dieselben 97 Fähigkeiten mit Name und einer Zeile Beschreibung resident — rund 2.900 Token. Der Rumpf wird erst bei Bedarf gelesen.",
+            "en": "The counter-calculation: as skills, the same 97 capabilities would be resident with a name and a one-line description — roughly 2,900 tokens. The body is read only when needed."
+          }
+        },
+        {
+          "type": "note",
+          "text": {
+            "de": "Das heißt nicht „Skills statt MCP“. MCP ist ein Anbindungsprotokoll mit Prozess, Auth und Zustand; ein Skill ist Vorgehenswissen in einem Ordner. Es heißt: nur anschalten, was diese Sitzung braucht.",
+            "en": "That does not mean “skills instead of MCP”. MCP is a connection protocol with a process, auth and state; a skill is procedural knowledge in a folder. It means: only switch on what this session needs."
+          }
+        }
+      ]
+    }
+  ]
+}

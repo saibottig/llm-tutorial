@@ -1,0 +1,189 @@
+{
+  "_comment": "The chapter's correction: sub-agents cost more tokens in total but pollute the main thread less. The session shows both halves — the sub-agent's own spend, and the little that comes back.",
+
+  "title": { "de": "Wo die Token hingehen", "en": "Where the tokens go" },
+
+  "strings": {
+    "greeting": {
+      "de": "Dieselbe Recherche zweimal: einmal im Hauptthread, einmal an Sub-Agenten verteilt. Achte darauf, was am Ende im Context steht — nicht darauf, was insgesamt verbraucht wurde.",
+      "en": "The same investigation twice: once in the main thread, once handed to sub-agents. Watch what ends up in the context — not what was spent in total."
+    }
+  },
+
+  "scenarios": [
+    {
+      "id": "single",
+      "label": { "de": "Alles im Hauptthread", "en": "Everything in the main thread" },
+      "hint": {
+        "de": "Jede gelesene Datei bleibt bis zum Sitzungsende liegen — auch die drei, die nichts gebracht haben.",
+        "en": "Every file read stays until the session ends — including the three that led nowhere."
+      },
+      "reset": true,
+      "commands": [
+        { "de": "Such selbst, wo die Reefer-Temperatur validiert wird", "en": "Search yourself for where the reefer temperature is validated" }
+      ]
+    },
+    {
+      "id": "delegated",
+      "label": { "de": "An Sub-Agenten verteilt", "en": "Handed to sub-agents" },
+      "hint": {
+        "de": "Drei Sub-Agenten verbrauchen zusammen mehr — im Hauptthread landen trotzdem nur die Antworten.",
+        "en": "Three sub-agents spend more together — yet only their answers land in the main thread."
+      },
+      "reset": true,
+      "commands": [
+        { "de": "Verteil die Suche nach der Reefer-Validierung auf Sub-Agenten", "en": "Split the search for the reefer validation across sub-agents" }
+      ]
+    }
+  ],
+
+  "intents": [
+    {
+      "id": "single",
+      "match": ["such selbst", "search yourself", "im hauptthread", "in the main thread", "selbst suchen"],
+      "steps": [
+        {
+          "type": "tool",
+          "name": "Grep",
+          "arg": "reefer|Reefer",
+          "tokens": 420,
+          "out": [{ "de": "38 Treffer in 11 Dateien", "en": "38 matches in 11 files" }]
+        },
+        {
+          "type": "tool",
+          "name": "Read",
+          "arg": "src/main/java/com/terminal/yard/ReeferSlotPlanner.java",
+          "kind": "files",
+          "tokens": 2340,
+          "out": [{ "de": "212 Zeilen — plant Stellplätze, validiert nichts", "en": "212 lines — plans slots, validates nothing" }]
+        },
+        {
+          "type": "tool",
+          "name": "Read",
+          "arg": "frontend/src/app/yard/yard-overview.component.ts",
+          "kind": "files",
+          "tokens": 1720,
+          "out": [{ "de": "158 Zeilen — nur Anzeige", "en": "158 lines — display only" }]
+        },
+        {
+          "type": "tool",
+          "name": "Read",
+          "arg": "src/main/resources/application.yml",
+          "kind": "files",
+          "tokens": 380,
+          "out": [{ "de": "Grenzwerte konfiguriert, keine Prüfung", "en": "Limits configured, no validation" }]
+        },
+        {
+          "type": "assistant",
+          "text": {
+            "de": "Gefunden: die Validierung sitzt in ReeferSlotPlanner, aber erst in der privaten Methode ganz unten. Drei der vier gelesenen Dateien haben nichts beigetragen — und liegen trotzdem im Context.",
+            "en": "Found it: the validation sits in ReeferSlotPlanner, but only in the private method at the very bottom. Three of the four files read contributed nothing — and are in the context regardless."
+          }
+        },
+        { "type": "meter" }
+      ]
+    },
+    {
+      "id": "delegated",
+      "match": ["verteil", "split the search", "sub-agent", "subagent", "sub-agenten", "parallel"],
+      "steps": [
+        {
+          "type": "assistant",
+          "text": {
+            "de": "Ich schicke drei Sub-Agenten los. Jeder bekommt ein eigenes Fenster und gibt mir nur seine Antwort zurück.",
+            "en": "Let me dispatch three sub-agents. Each gets its own window and returns only its answer."
+          }
+        },
+        {
+          "type": "subagent",
+          "name": "backend",
+          "task": { "de": "Wo wird die Reefer-Temperatur im Backend geprüft?", "en": "Where is the reefer temperature checked in the backend?" },
+          "tokens": 6800,
+          "summary": 90,
+          "summaryText": {
+            "de": "Backend: ReeferSlotPlanner.validateTemperature(), Zeile 188 — private, wird nur aus assignSlot() gerufen.",
+            "en": "Backend: ReeferSlotPlanner.validateTemperature(), line 188 — private, called only from assignSlot()."
+          },
+          "steps": [
+            {
+              "type": "tool",
+              "name": "Grep",
+              "arg": "temperature|Temperatur",
+              "tokens": 380,
+              "out": [{ "de": "22 Treffer", "en": "22 matches" }]
+            },
+            {
+              "type": "tool",
+              "name": "Read",
+              "arg": "src/main/java/com/terminal/yard/ReeferSlotPlanner.java",
+              "tokens": 2340,
+              "out": [{ "de": "212 Zeilen", "en": "212 lines" }]
+            }
+          ]
+        },
+        {
+          "type": "subagent",
+          "name": "frontend",
+          "task": { "de": "Prüft das Yard-Dashboard die Temperatur selbst?", "en": "Does the yard dashboard validate the temperature itself?" },
+          "tokens": 4100,
+          "summary": 60,
+          "summaryText": {
+            "de": "Frontend: nein — zeigt nur an, was das Backend liefert.",
+            "en": "Frontend: no — it only displays what the backend returns."
+          },
+          "steps": [
+            {
+              "type": "tool",
+              "name": "Read",
+              "arg": "frontend/src/app/yard/yard-overview.component.ts",
+              "tokens": 1720,
+              "out": [{ "de": "158 Zeilen", "en": "158 lines" }]
+            }
+          ]
+        },
+        {
+          "type": "subagent",
+          "name": "config",
+          "task": { "de": "Stehen die Grenzwerte in der Konfiguration?", "en": "Are the limits in configuration?" },
+          "tokens": 2200,
+          "summary": 50,
+          "summaryText": {
+            "de": "Konfiguration: reefer.temp.min/max in application.yml, ohne eigene Prüfung.",
+            "en": "Configuration: reefer.temp.min/max in application.yml, with no validation of its own."
+          },
+          "steps": [
+            {
+              "type": "tool",
+              "name": "Read",
+              "arg": "src/main/resources/application.yml",
+              "tokens": 380,
+              "out": [{ "de": "44 Zeilen", "en": "44 lines" }]
+            }
+          ]
+        },
+        {
+          "type": "assistant",
+          "text": {
+            "de": "Dieselbe Antwort wie eben — aber im Hauptthread stehen jetzt 200 Token Zusammenfassung statt 4.440 Token Dateien.",
+            "en": "The same answer as before — but the main thread now holds 200 tokens of summary instead of 4,440 tokens of files."
+          }
+        },
+        { "type": "meter" },
+        {
+          "type": "note",
+          "text": {
+            "de": "Insgesamt verbraucht wurden 13.100 Token statt 4.860 — Sub-Agenten sind teurer, nicht billiger. Was sie sparen, ist Platz im Hauptthread: Der bleibt frei für die Aufgabe, statt sich mit Sackgassen zu füllen.",
+            "en": "In total 13,100 tokens were spent instead of 4,860 — sub-agents cost more, not less. What they save is room in the main thread: it stays free for the task instead of filling up with dead ends."
+          }
+        },
+        {
+          "type": "note",
+          "text": {
+            "de": "Deshalb lohnen sie sich bei Recherche mit vielen Fehlversuchen — und nicht bei einer Aufgabe, die man in drei Schritten erledigt hat.",
+            "en": "That is why they pay off for investigation with many dead ends — and not for a task you finish in three steps."
+          }
+        }
+      ]
+    }
+  ]
+}

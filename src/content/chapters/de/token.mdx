@@ -5,7 +5,7 @@ part: 1
 order: 1
 ---
 
-import Tokenizer from '../../../components/demos/Tokenizer.astro';
+import Terminal from '../../../components/demos/Terminal.astro';
 
 Ein Modell liest weder Buchstaben noch Wörter, sondern **Token**: Zahlen aus einem festen Vokabular von 100.000–200.000 Einträgen. Alles in einer Claude-Code-Sitzung — CLAUDE.md, Java-Klassen, Stacktraces, Jira-Tickets — wird in Token gemessen, gezählt und abgerechnet.
 
@@ -29,9 +29,9 @@ Derselbe Text ergibt bei demselben Modell immer exakt dieselbe Tokenfolge — eg
 Auch veraltet: „Deutsch kostet 2–3×". Das galt für ältere Tokenizer. Gemessen mit aktuellen: **+16 %** (`o200k_base`) statt **+53 %** (`cl100k_base`).
 </Callout>
 
-<Tokenizer locale="de" />
+<Terminal script="token" locale="de" variant="inline" />
 
-Die Zahlen der Demo sind beim Bauen mit den echten Tokenizern berechnet. Die Gegenüberstellung am Ende — derselbe Text, zwei Tokenizer, verschiedene Ergebnisse — ist der Beleg, dass die Tokenzahl am Modell hängt.
+Die Zahlen unten sind beim Bauen dieser Seite mit den echten Tokenizern berechnet. Die Gegenüberstellung — derselbe Text, zwei Tokenizer-Generationen, verschiedene Ergebnisse — ist der Beleg, dass die Tokenzahl am Modell hängt.
 
 ## Praktische Regeln
 

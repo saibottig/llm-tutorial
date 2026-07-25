@@ -1,0 +1,119 @@
+{
+  "_comment": "The one conceptual chapter. It gets a session anyway, because finding a use case is itself a conversation you can hold with the tool — and the good candidates are found by looking at the repository, not by brainstorming.",
+
+  "title": { "de": "Kandidaten im eigenen Repo finden", "en": "Finding candidates in your own repo" },
+
+  "strings": {
+    "greeting": {
+      "de": "Anwendungsfälle findet man nicht im Brainstorming, sondern dort, wo Wiederholung Spuren hinterlässt: in der Git-Historie, in Review-Kommentaren, in der Pipeline.",
+      "en": "Use cases are not found by brainstorming but where repetition leaves traces: in git history, in review comments, in the pipeline."
+    }
+  },
+
+  "scenarios": [
+    {
+      "id": "traces",
+      "label": { "de": "Wiederholung sichtbar machen", "en": "Making repetition visible" },
+      "hint": {
+        "de": "Was dreimal gleich passiert ist, passiert ein viertes Mal.",
+        "en": "What happened the same way three times will happen a fourth."
+      },
+      "reset": true,
+      "commands": [
+        { "de": "Wo wiederholen wir uns im Repo?", "en": "Where do we repeat ourselves in this repo?" }
+      ]
+    },
+    {
+      "id": "triage",
+      "label": { "de": "Kandidaten sortieren", "en": "Sorting the candidates" },
+      "hint": {
+        "de": "Nicht „was wäre beeindruckend“, sondern „was ist häufig, klar begrenzt und überprüfbar“.",
+        "en": "Not “what would be impressive” but “what is frequent, well bounded and checkable”."
+      },
+      "reset": true,
+      "commands": [
+        { "de": "Wo wiederholen wir uns im Repo?", "en": "Where do we repeat ourselves in this repo?" },
+        { "de": "Welcher davon lohnt sich zuerst?", "en": "Which of those is worth doing first?" }
+      ]
+    }
+  ],
+
+  "intents": [
+    {
+      "id": "find",
+      "match": ["wiederholen", "repeat ourselves", "wo wiederholen", "kandidaten", "candidates", "anwendungsfall", "use case"],
+      "steps": [
+        {
+          "type": "tool",
+          "name": "Bash",
+          "arg": "git log --since='6 months' --pretty=%s | sort | uniq -c | sort -rn | head -8",
+          "tokens": 420,
+          "out": [
+            "  34 Bump dependency versions",
+            "  21 Add missing null check",
+            "  18 Update CHANGELOG for release",
+            "  15 Fix flaky test in yard module",
+            "  11 Add javadoc to public API"
+          ]
+        },
+        {
+          "type": "tool",
+          "name": "bitbucket__search_comments",
+          "arg": "repo=terminal-suite since=6mo",
+          "tokens": 980,
+          "out": [
+            {
+              "de": "„Bitte Testfall für den Grenzwert ergänzen“ — 27×",
+              "en": "“Please add a test case for the boundary” — 27×"
+            },
+            {
+              "de": "„Changelog-Eintrag fehlt“ — 19×",
+              "en": "“Changelog entry missing” — 19×"
+            }
+          ]
+        },
+        {
+          "type": "assistant",
+          "text": {
+            "de": "Fünf Muster aus der Historie, zwei aus den Reviews. Alle sind häufig, klar begrenzt und haben ein objektives Erfolgskriterium — das sind die drei Eigenschaften, auf die es ankommt.",
+            "en": "Five patterns from history, two from reviews. All are frequent, well bounded and have an objective success criterion — the three properties that matter."
+          }
+        },
+        {
+          "type": "note",
+          "text": {
+            "de": "Nichts davon musste erfunden werden. Die Kandidaten standen schon im Repo; sie waren nur nie an einer Stelle sichtbar.",
+            "en": "None of this had to be invented. The candidates were already in the repo; they were just never visible in one place."
+          }
+        }
+      ]
+    },
+    {
+      "id": "triage",
+      "match": ["welcher davon", "which of those", "lohnt sich", "worth doing", "zuerst", "first"],
+      "steps": [
+        {
+          "type": "assistant",
+          "text": {
+            "de": "„Testfall für den Grenzwert ergänzen“ — 27 Nennungen in sechs Monaten, immer derselbe Zuschnitt, und der Erfolg ist messbar: Der Test muss rot werden, wenn man die Grenze verschiebt. Das ist ein Workflow, kein Agent.",
+            "en": "“Add a test case for the boundary” — 27 mentions in six months, always the same shape, and success is measurable: the test has to go red when you move the boundary. That is a workflow, not an agent."
+          }
+        },
+        {
+          "type": "assistant",
+          "text": {
+            "de": "„Flaky test in yard“ dagegen sieht verlockend aus und ist der schlechteste Kandidat: Die Ursache ist jedes Mal anders, und ob es behoben ist, weiß man erst nach fünfzig Läufen. Kein klares Kriterium, keine Wiederholbarkeit.",
+            "en": "“Flaky test in yard” looks tempting and is the worst candidate: the cause differs every time, and you only know it is fixed after fifty runs. No clear criterion, no repeatability."
+          }
+        },
+        {
+          "type": "note",
+          "text": {
+            "de": "Die drei Fragen für jeden Kandidaten: Passiert das oft genug? Ist der Zuschnitt jedes Mal derselbe? Kann etwas außer einem Menschen entscheiden, ob es geklappt hat? Dreimal ja — anfangen. Einmal nein — etwas anderes nehmen.",
+            "en": "The three questions for every candidate: does it happen often enough? Is the shape the same each time? Can something other than a human decide whether it worked? Three yeses — start. One no — pick something else."
+          }
+        }
+      ]
+    }
+  ]
+}

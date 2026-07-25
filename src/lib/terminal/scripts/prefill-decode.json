@@ -1,0 +1,90 @@
+{
+  "_comment": "Replaces the prefill/decode animation. The generate step renders the same asymmetry inside a real session: one parallel pass, then one serial token at a time.",
+
+  "title": { "de": "Ein Block, dann Tropfen für Tropfen", "en": "One block, then drop by drop" },
+
+  "strings": {
+    "greeting": {
+      "de": "Jede Antwort hat zwei Phasen mit völlig unterschiedlichem Kostenverhalten. Die Animation ist bewusst verlangsamt; die Zahlen sind realistische Größenordnungen.",
+      "en": "Every answer has two phases that behave completely differently. The animation is deliberately slowed down; the figures are realistic orders of magnitude."
+    }
+  },
+
+  "scenarios": [
+    {
+      "id": "long-in",
+      "label": { "de": "Viel rein, wenig raus", "en": "Much in, little out" },
+      "hint": {
+        "de": "Langer Prompt, kurze Antwort — das Warten liegt vorne.",
+        "en": "Long prompt, short answer — the waiting happens up front."
+      },
+      "reset": true,
+      "commands": [{ "de": "Ist das threadsicher? Antworte mit ja oder nein.", "en": "Is this thread-safe? Answer yes or no." }]
+    },
+    {
+      "id": "long-out",
+      "label": { "de": "Wenig rein, viel raus", "en": "Little in, much out" },
+      "hint": {
+        "de": "Kurzer Prompt, lange Antwort — jetzt liegt das Warten hinten, und es dauert länger.",
+        "en": "Short prompt, long answer — now the waiting is at the back, and it lasts longer."
+      },
+      "reset": true,
+      "commands": [{ "de": "Schreib mir die Javadoc für den Service", "en": "Write the Javadoc for the service" }]
+    }
+  ],
+
+  "intents": [
+    {
+      "id": "yes-no",
+      "match": ["threadsicher", "thread-safe", "thread safe", "ja oder nein", "yes or no"],
+      "steps": [
+        {
+          "type": "tool",
+          "name": "Read",
+          "arg": "src/main/java/com/terminal/berth/BerthAllocationService.java",
+          "kind": "files",
+          "tokens": 4180,
+          "out": [{ "de": "384 Zeilen", "en": "384 lines" }]
+        },
+        {
+          "type": "generate",
+          "promptTokens": 12400,
+          "outputTokens": 12,
+          "text": {
+            "de": "Nein — die Warteliste ist eine unsynchronisierte ArrayList.",
+            "en": "No — the waiting list is an unsynchronised ArrayList."
+          }
+        },
+        {
+          "type": "note",
+          "text": {
+            "de": "12.400 Token rein, 12 raus. Fast die ganze Wartezeit ist Prefill, und die skaliert mit der Prompt-Länge — nicht mit der Antwort.",
+            "en": "12,400 tokens in, 12 out. Almost all the waiting is prefill, and that scales with prompt length — not with the answer."
+          }
+        }
+      ]
+    },
+    {
+      "id": "javadoc",
+      "match": ["javadoc", "dokumentation", "documentation", "schreib mir die", "write the"],
+      "steps": [
+        {
+          "type": "generate",
+          "promptTokens": 8300,
+          "outputTokens": 640,
+          "text": {
+            "de": "Fertig — 640 Token Javadoc für die vier öffentlichen Methoden.",
+            "en": "Done — 640 tokens of Javadoc for the four public methods."
+          }
+        },
+        {
+          "type": "note",
+          "text": {
+            "de": "Kürzerer Prompt, aber die Antwort dauert länger: 640 Token nacheinander, jedes ein voller Durchlauf durch das Modell. Prefill ist rechenlastig und parallel, Decode ist speicherlastig und seriell — deshalb kostet Ausgabe pro Token ein Vielfaches von Eingabe.",
+            "en": "Shorter prompt, yet the answer takes longer: 640 tokens one after another, each a full pass through the model. Prefill is compute-heavy and parallel, decode is memory-heavy and serial — which is why output costs a multiple of input per token."
+          }
+        }
+      ]
+    }
+  ]
+}

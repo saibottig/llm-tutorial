@@ -1,0 +1,156 @@
+{
+  "_comment": "Evals as measurement rather than opinion. Mutation testing is the concrete instrument the unit-test chapter promised, run here on the suite that chapter produced.",
+
+  "title": { "de": "Messen statt finden, dass es gut aussieht", "en": "Measuring instead of finding it looks fine" },
+
+  "strings": {
+    "greeting": {
+      "de": "Die Testsuite ist grün und hat 84 % Zeilenabdeckung. Beide Zahlen sagen nichts darüber, ob die Tests Fehler bemerken würden. PIT beantwortet genau das.",
+      "en": "The suite is green with 84 % line coverage. Neither number says whether the tests would notice a defect. PIT answers exactly that."
+    }
+  },
+
+  "scenarios": [
+    {
+      "id": "coverage",
+      "label": { "de": "Was Abdeckung nicht sagt", "en": "What coverage does not tell you" },
+      "hint": {
+        "de": "84 % abgedeckt, alles grün — und trotzdem offen, ob irgendetwas gemessen wird.",
+        "en": "84 % covered, all green — and still open whether anything is being measured."
+      },
+      "reset": true,
+      "commands": [{ "de": "Wie gut sind unsere Tests?", "en": "How good are our tests?" }]
+    },
+    {
+      "id": "mutation",
+      "label": { "de": "Mutation Testing", "en": "Mutation testing" },
+      "hint": {
+        "de": "PIT baut absichtlich Defekte ein und zählt, wie viele die Tests bemerken.",
+        "en": "PIT injects defects on purpose and counts how many the tests notice."
+      },
+      "reset": true,
+      "commands": [{ "de": "Lass PIT über das Berth-Modul laufen", "en": "Run PIT over the berth module" }]
+    },
+    {
+      "id": "eval",
+      "label": { "de": "Dasselbe für einen Prompt", "en": "The same for a prompt" },
+      "hint": {
+        "de": "Ein Workflow ist nur so gut wie sein Testsatz — auch wenn niemand ihn so nennt.",
+        "en": "A workflow is only as good as its test set — even when nobody calls it that."
+      },
+      "reset": true,
+      "commands": [{ "de": "Wie prüfe ich, ob mein Ticket-Workflow gut ist?", "en": "How do I check whether my ticket workflow is any good?" }]
+    }
+  ],
+
+  "intents": [
+    {
+      "id": "coverage",
+      "match": ["wie gut sind", "how good are", "abdeckung", "coverage", "tests gut"],
+      "steps": [
+        {
+          "type": "tool",
+          "name": "Bash",
+          "arg": "./gradlew test jacocoTestReport",
+          "tokens": 2400,
+          "out": [
+            "BUILD SUCCESSFUL in 52s",
+            "131 tests completed, 0 failed",
+            "BerthAllocationService: 84 % line coverage"
+          ]
+        },
+        {
+          "type": "assistant",
+          "text": {
+            "de": "Grün und 84 % abgedeckt. Beides heißt nur: die Zeilen wurden ausgeführt und nichts ist explodiert. Ob eine Zusicherung geprüft wurde, steht in keiner der beiden Zahlen.",
+            "en": "Green and 84 % covered. Both only mean: the lines ran and nothing blew up. Whether any assertion was checked appears in neither number."
+          }
+        }
+      ]
+    },
+    {
+      "id": "pit",
+      "match": ["pit", "mutation", "mutanten", "mutants", "berth-modul laufen", "over the berth module"],
+      "steps": [
+        {
+          "type": "tool",
+          "name": "Bash",
+          "arg": "./gradlew pitest --targetClasses 'com.terminal.berth.*'",
+          "tokens": 3100,
+          "out": [
+            ">> Generated 74 mutations, killed 51 (69 %)",
+            ">> SURVIVED  BerthAllocationService:212  removed call to Vessel::getEta",
+            ">> SURVIVED  BerthAllocationService:263  replaced boolean return with true",
+            ">> SURVIVED  BerthAllocationService:301  changed conditional boundary <= to <"
+          ]
+        },
+        {
+          "type": "assistant",
+          "text": {
+            "de": "23 von 74 eingebauten Defekten hat niemand bemerkt. Der interessanteste ist Zeile 301: die Grenze zwischen „passt gerade noch“ und „passt nicht mehr“ prüft kein Test — genau der Fall, der im Betrieb strittig wird.",
+            "en": "23 of 74 injected defects went unnoticed. The most interesting is line 301: no test checks the boundary between “just fits” and “no longer fits” — precisely the case that gets disputed in operations."
+          }
+        },
+        {
+          "type": "note",
+          "text": {
+            "de": "84 % Abdeckung, 69 % getötete Mutanten. Die zweite Zahl ist die ehrlichere: Sie misst, was die Tests bemerken würden, nicht was sie durchlaufen haben.",
+            "en": "84 % coverage, 69 % mutants killed. The second number is the honest one: it measures what the tests would notice, not what they walked through."
+          }
+        },
+        {
+          "type": "note",
+          "text": {
+            "de": "Genau das ist ein Eval: eine Messung, die fehlschlagen kann. Ohne sie ist „die Tests sind gut“ eine Meinung.",
+            "en": "That is exactly what an eval is: a measurement that can fail. Without one, “the tests are good” is an opinion."
+          }
+        }
+      ]
+    },
+    {
+      "id": "prompt-eval",
+      "match": ["ticket-workflow", "ticket workflow", "wie prüfe ich", "how do i check", "prompt", "workflow gut"],
+      "steps": [
+        {
+          "type": "assistant",
+          "text": {
+            "de": "Genauso: mit einem festen Satz Fälle und einem Kriterium, das objektiv entscheidbar ist. Ich sehe nach, ob es den schon gibt.",
+            "en": "The same way: a fixed set of cases and a criterion that can be decided objectively. Let me check whether one already exists."
+          }
+        },
+        {
+          "type": "tool",
+          "name": "Glob",
+          "arg": ".claude/evals/**/*.json",
+          "tokens": 190,
+          "out": [{ "de": "12 Dateien", "en": "12 files" }]
+        },
+        {
+          "type": "tool",
+          "name": "Bash",
+          "arg": "./scripts/run-evals.sh ticket-workflow",
+          "tokens": 1400,
+          "out": [
+            "12 cases · 10 passed · 2 failed",
+            "FAIL  vessel-call-without-eta   → Ticket ohne Akzeptanzkriterium",
+            "FAIL  reefer-multi-module       → falsches Modul im Betreff"
+          ]
+        },
+        {
+          "type": "assistant",
+          "text": {
+            "de": "10 von 12. Die zwei Fehlschläge sind der eigentliche Ertrag: Sie sagen, wo der Prompt nachgebessert werden muss — und beim nächsten Lauf, ob die Nachbesserung geholfen hat.",
+            "en": "10 of 12. The two failures are the actual yield: they say where the prompt needs work — and on the next run, whether that work helped."
+          }
+        },
+        {
+          "type": "note",
+          "text": {
+            "de": "Zwölf Fälle reichen, um Regressionen zu bemerken. Der Aufwand liegt nicht in der Menge, sondern darin, das Kriterium so zu formulieren, dass zwei Leute dasselbe Urteil fällen.",
+            "en": "Twelve cases are enough to catch regressions. The effort is not in the volume but in phrasing the criterion so that two people reach the same verdict."
+          }
+        }
+      ]
+    }
+  ]
+}

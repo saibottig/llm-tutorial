@@ -1,0 +1,107 @@
+{
+  "_comment": "The chapter's point is statelessness: the model remembers nothing, the harness re-sends everything. The session makes the re-sending visible as a growing bill.",
+
+  "title": { "de": "Warum das Modell sich an nichts erinnert", "en": "Why the model remembers nothing" },
+
+  "strings": {
+    "greeting": {
+      "de": "Jede Zeile hier ist eine eigene Anfrage. Achte auf den Verlauf in der Statusline — er wächst, weil er jedes Mal komplett mitgeschickt wird.",
+      "en": "Every line here is its own request. Watch the history in the status line — it grows because all of it is re-sent every time."
+    }
+  },
+
+  "scenarios": [
+    {
+      "id": "restate",
+      "label": { "de": "Drei Runden, dreimal alles", "en": "Three turns, everything three times" },
+      "hint": {
+        "de": "Der Verlauf wächst mit jeder Runde — und wird jedes Mal vollständig neu geschickt.",
+        "en": "History grows with every turn — and all of it is re-sent each time."
+      },
+      "reset": true,
+      "commands": [
+        { "de": "Welche Klasse plant die Liegeplätze?", "en": "Which class plans the berths?" },
+        { "de": "Und was passiert bei einer Kollision?", "en": "And what happens on a collision?" },
+        { "de": "Woher weißt du das?", "en": "How do you know that?" },
+        "/context"
+      ]
+    },
+    {
+      "id": "amnesia",
+      "label": { "de": "Was /clear wirklich löscht", "en": "What /clear actually deletes" },
+      "hint": {
+        "de": "Der Verlauf ist weg, der Sockel bleibt — er gehört nicht zur Sitzung, sondern zu jeder Anfrage.",
+        "en": "History is gone, the floor stays — it belongs to every request, not to the session."
+      },
+      "reset": true,
+      "commands": [
+        { "de": "Welche Klasse plant die Liegeplätze?", "en": "Which class plans the berths?" },
+        "/clear",
+        { "de": "Und was passiert bei einer Kollision?", "en": "And what happens on a collision?" }
+      ]
+    }
+  ],
+
+  "intents": [
+    {
+      "id": "which-class",
+      "match": ["welche klasse", "which class", "liegeplätze", "liegeplatze", "berths", "plant"],
+      "steps": [
+        {
+          "type": "tool",
+          "name": "Grep",
+          "arg": "class .*Allocation",
+          "tokens": 240,
+          "out": ["BerthAllocationService.java:31"]
+        },
+        {
+          "type": "assistant",
+          "text": {
+            "de": "BerthAllocationService. Er prüft Tiefgang, Länge und Zeitfenster und weist danach zu.",
+            "en": "BerthAllocationService. It checks draft, length and time window, then assigns."
+          }
+        }
+      ]
+    },
+    {
+      "id": "collision",
+      "match": ["kollision", "collision", "was passiert", "what happens", "gleichzeitig", "same time"],
+      "steps": [
+        {
+          "type": "assistant",
+          "text": {
+            "de": "Bei zwei Anläufen im selben Fenster gewinnt der mit dem früheren bestätigten ETA, der andere geht auf die Warteliste.",
+            "en": "With two calls in the same window the earlier confirmed ETA wins, the other goes on the waiting list."
+          }
+        },
+        {
+          "type": "note",
+          "text": {
+            "de": "Diese Antwort setzt voraus, dass die vorige Runde noch im Context steht. Das Modell hat sie nicht behalten — der Harness hat sie erneut mitgeschickt.",
+            "en": "This answer relies on the previous turn still being in context. The model did not retain it — the harness re-sent it."
+          }
+        }
+      ]
+    },
+    {
+      "id": "how-do-you-know",
+      "match": ["woher weißt", "woher weisst", "how do you know", "warum weißt", "why do you know"],
+      "steps": [
+        {
+          "type": "assistant",
+          "text": {
+            "de": "Weil beides in dieser Anfrage steht: der Grep-Treffer von vorhin und meine eigene Antwort danach. Ich habe zwischen den Runden nichts gespeichert — ich lese jedes Mal den ganzen Verlauf neu.",
+            "en": "Because both are inside this request: the grep hit from earlier and my own answer after it. I stored nothing between turns — I read the whole history again each time."
+          }
+        },
+        {
+          "type": "note",
+          "text": {
+            "de": "Deshalb kostet die dritte Frage mehr als die erste, obwohl sie kürzer ist. Nicht die Frage wächst, sondern was vor ihr steht.",
+            "en": "That is why the third question costs more than the first, even though it is shorter. The question does not grow — what precedes it does."
+          }
+        }
+      ]
+    }
+  ]
+}

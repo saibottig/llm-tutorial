@@ -5,13 +5,13 @@ part: 1
 order: 3
 ---
 
-import ContextWindow from '../../../components/demos/ContextWindow.astro';
+import Terminal from '../../../components/demos/Terminal.astro';
 
 The **context window** is the capacity: the maximum token count per request, including the response the model has yet to produce. Not to be confused with [context](../context/) — that is the *content*, the window is the *capacity*. Current models: 200k to 1M tokens.
 
 ## When it fills up
 
-<ContextWindow locale="en" />
+<Terminal script="context-window" locale="en" variant="inline" />
 
 Three possible responses to overflow:
 

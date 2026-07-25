@@ -53,9 +53,13 @@ export const SESSION = {
   builtinToolTokens: 3900,
 } as const;
 
-/** Context is grouped into these buckets for `/context` and the meter. */
-export const BLOCK_KINDS = ['system', 'tools', 'mcp', 'files', 'history', 'output'] as const;
-export type BlockKind = (typeof BLOCK_KINDS)[number];
+/**
+ * Context is grouped into these buckets for `/context` and the meter. The order
+ * is the order they sit in the request, which is what makes prefix caching
+ * explicable: a change in one bucket invalidates it and everything after it.
+ */
+export const BLOCK_ORDER = ['system', 'tools', 'mcp', 'files', 'history', 'output'] as const;
+export type BlockKind = (typeof BLOCK_ORDER)[number];
 
 /** Colours for the meter, mapped to the tokens already used across the site. */
 export const BLOCK_COLOR: Record<BlockKind, string> = {
