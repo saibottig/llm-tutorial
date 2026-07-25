@@ -21,6 +21,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: withastro/action@v3
+        with:
+          # The action defaults to Node 20; Astro 7 requires >=22.12.0 and
+          # exits rather than warning. Keep this in step with the "engines"
+          # field in package.json.
+          node-version: 22
         # Runs install + build and uploads dist/ as the Pages artifact.
         # The build script also runs scripts/check-translations.mjs, so a
         # missing translation or a broken cross-link fails the deploy.
