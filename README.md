@@ -6,6 +6,10 @@ harnesses, agents and what it takes to run any of it in production.
 
 17 chapters in five parts, with six interactive demos.
 
+Continuing this project? Start with [HANDOVER.md](HANDOVER.md) — it covers
+the conventions, the deliberate deviations from common wisdom, and the open
+ends.
+
 ## Running it
 
 ```bash
