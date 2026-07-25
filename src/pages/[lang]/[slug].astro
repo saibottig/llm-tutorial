@@ -6,6 +6,8 @@ import CalloutDe from '../../components/mdx/CalloutDe.astro';
 import CalloutEn from '../../components/mdx/CalloutEn.astro';
 import TakeawayDe from '../../components/mdx/TakeawayDe.astro';
 import TakeawayEn from '../../components/mdx/TakeawayEn.astro';
+import DeepDe from '../../components/mdx/DeepDe.astro';
+import DeepEn from '../../components/mdx/DeepEn.astro';
 import Table from '../../components/mdx/Table.astro';
 import { getChapters, neighbours, slugOf, chapterUrl } from '../../lib/chapters';
 import { locales, t, type Locale, type UIKey } from '../../i18n/ui';
@@ -36,6 +38,7 @@ const { Content } = await render(chapter);
 const components = {
   Callout: locale === 'de' ? CalloutDe : CalloutEn,
   KeyTakeaway: locale === 'de' ? TakeawayDe : TakeawayEn,
+  Deep: locale === 'de' ? DeepDe : DeepEn,
   table: Table,
 };
 ---

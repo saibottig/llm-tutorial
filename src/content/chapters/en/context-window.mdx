@@ -7,54 +7,44 @@ order: 3
 
 import ContextWindow from '../../../components/demos/ContextWindow.astro';
 
-The **context window** is the capacity limit: the maximum number of tokens a model can process in a single request. It counts everything — tool definitions, system prompt, history, current message, and as a rule the response the model has yet to produce.
-
-The difference from the previous chapter matters and often gets blurred:
-
-- **Context** is the *content* — what you actually send.
-- **Context window** is the *capacity* — how much fits at most.
-
-Current models sit between 200,000 and 1,000,000 tokens. A million tokens is roughly 3,000 to 4,000 book pages.
+The **context window** is the capacity: the maximum token count per request, including the response the model has yet to produce. Not to be confused with [context](../context/) — that is the *content*, the window is the *capacity*. Current models: 200k to 1M tokens.
 
 ## When it fills up
 
 <ContextWindow locale="en" />
 
-Try the smaller window with a lot of turns: the bar overflows, and without a countermeasure the request fails right there. Also worth noting is the share taken by tool definitions — constantly present, on every single request, whether or not a tool is needed. That is what the [MCP](../mcp/) chapter is about.
+Three possible responses to overflow:
 
-When the window overflows there are essentially three responses:
+| Response | Behaviour | Verdict |
+| --- | --- | --- |
+| Error | request rejected | honest, but useless |
+| Truncation | oldest messages dropped | model abruptly "forgets" the beginning |
+| Compaction | old turns summarised | best, but lossy |
 
-1. **Error.** The request is rejected. Honest, but useless in long sessions.
-2. **Truncation.** The oldest messages are dropped. Cheap, but the model abruptly "forgets" the beginning.
-3. **Compaction.** Older turns are summarised and the summary replaces them. Considerably better, but lossy.
+Claude Code compacts automatically before the wall. The controls:
 
-Claude Code does the third: it compacts automatically before the wall is reached, and `/compact` lets you place the cut deliberately — ideally at a point where a unit of work is finished. What the session currently occupies is shown by `/context`.
+- `/context` — shows what the session currently occupies
+- `/compact` — place the cut deliberately, ideally after a finished unit of work
+- `/clear` — restart between independent tasks; one session per task is the healthy default
 
-## The more important point: quality before capacity
-
-This is where the most common misconception about large context windows lives.
+## Quality drops before the capacity limit
 
 <Callout type="korrektur">
-A window of one million tokens does not mean you *should* use a million tokens. Capacity and usable quality are two different things.
+A 1M window does not mean you *should* use 1M tokens. A carefully assembled context of 20,000 tokens regularly beats an unsorted one of 500,000. Two effects:
 
-Models retrieve information most reliably from the beginning and the end of the context. Material sitting in the middle of a very long context is measurably less well accounted for — the phenomenon is known as *lost in the middle*. On top of that, the longer the context, the more irrelevant material competes for attention and dilutes it.
-
+- **Lost in the middle:** models retrieve information reliably at the beginning and end, measurably worse in the middle.
+- **Context rot:** failed attempts, abandoned approaches and superseded file states stay in the history — and the model takes them for current. Not useless but actively misleading.
 </Callout>
 
-In practice: a carefully assembled context of 20,000 tokens regularly beats an unsorted one of 500,000. Throwing more in is rarely the fix — it is usually the problem.
+## Consequences
 
-Then there is the second effect, which builds up over long agent sessions and is often called **context rot**: failed attempts, abandoned approaches, superseded file contents and stale intermediate results all stay in the history. They are not merely useless, they are actively misleading, because the model takes them for the current state.
-
-## What follows from this
-
-- **Relevance beats completeness.** Three well-chosen files beat half the repository.
-- **Cleaning up is a feature, not a detail.** Removing old tool results matters as much as adding new ones.
-- **Important things belong at the edges.** Whatever absolutely must be honoured belongs at the start or the end — not in the middle of a pile of material.
-- **Long sessions need cuts.** A deliberate restart with `/clear` and a cleanly stated task often beats a session dragged on indefinitely. One session per task is the healthy default.
+- **Relevance beats completeness** — three well-chosen files instead of half the repository.
+- **Important things go to the edges** — whatever must be honoured belongs at the start or the end.
+- **Long sessions need cuts** — `/clear` with a clean restatement beats dragging on indefinitely.
 
 <KeyTakeaway>
 - The context window is the ceiling in tokens, including the response still to be generated.
-- On overflow the only options are truncation or compaction — both lose information.
-- Usable quality degrades well before the technical limit: the middle gets less attention, ballast dilutes.
+- Claude Code compacts automatically; `/context`, `/compact` and `/clear` are the manual controls.
+- Usable quality drops long before the limit: the middle gets less attention, old ballast actively misleads.
 - A large window is a reserve, not an invitation to fill it.
 </KeyTakeaway>

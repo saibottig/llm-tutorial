@@ -7,65 +7,54 @@ order: 4
 
 import McpCost from '../../../components/demos/McpCost.astro';
 
-Das **Model Context Protocol** (MCP) ist ein offener Standard dafür, wie Modelle an bestehende Software angebunden werden. Für uns ist es der Weg, auf dem Claude Code an Jira, Confluence und Bitbucket herankommt. Es löst ein Integrationsproblem, kein Modellproblem.
+Das **Model Context Protocol** (MCP) ist ein offener Standard für die Anbindung von Modellen an bestehende Software — bei uns der Weg, auf dem Claude Code Jira, Confluence und Bitbucket erreicht. Statt jede Kombination aus Anwendung und System einzeln zu verdrahten (3 × 4 = 12 Integrationen), stellt ein Anbieter einen MCP-Server bereit, den jede MCP-fähige Anwendung nutzen kann (3 + 4 = 7 Bausteine).
 
-## Wofür es gut ist
+Für unseren Stack: Atlassian betreibt einen offiziellen Remote-Server für die Cloud-Produkte (OAuth); für Data Center gibt es Community-Varianten. Den Alltagsnutzen zeigt [Ticket zu Pull Request](../atlassian/).
 
-Vor MCP musste jede Kombination aus Anwendung und Datenquelle einzeln verdrahtet werden. Drei Anwendungen und vier Systeme bedeuteten zwölf Integrationen, jede mit eigener Authentifizierung und eigenem Format.
-
-MCP macht daraus eine Steckverbindung. Ein Anbieter stellt einen MCP-Server bereit — für Jira, Confluence, Bitbucket, eine Datenbank — und jede MCP-fähige Anwendung kann ihn ohne Anpassung nutzen. Aus zwölf Integrationen werden sieben Bausteine. Atlassian selbst betreibt für die Cloud-Produkte einen offiziellen Remote-Server; für Data-Center-Installationen gibt es Community-Varianten. Was sich damit im Alltag anfangen lässt, zeigt das Kapitel [Ticket zu Pull Request](../atlassian/).
-
-Ein Server kann drei Arten von Dingen anbieten:
-
+<Deep title="Was ein MCP-Server anbietet">
 | Art | Was es ist |
 | --- | --- |
 | **Tools** | Funktionen, die das Modell aufrufen kann — der Hauptfall |
 | **Resources** | Daten, die als Context bereitgestellt werden |
-| **Prompts** | Vorgefertigte Vorlagen für wiederkehrende Aufgaben |
+| **Prompts** | Vorlagen für wiederkehrende Aufgaben |
 
-Technisch setzt das alles auf gewöhnlichem [Tool Use](../tool-use/) auf. MCP standardisiert das Drumherum: Wie werden Tools entdeckt, wie authentifiziert man sich, wie wird transportiert. Das Modell selbst weiß von MCP nichts — es sieht am Ende nur Tool-Definitionen.
+Technisch ist alles gewöhnlicher [Tool Use](../tool-use/); MCP standardisiert Entdeckung, Authentifizierung und Transport. Das Modell weiß von MCP nichts — es sieht nur Tool-Definitionen.
+</Deep>
 
-## Der Preis
+## Der Preis: Tool-Definitionen bei jeder Anfrage
 
-Und damit zum Haken, der in der Ausgangsfrage dieses Tutorials völlig zu Recht steht: **Die Tool-Definitionen liegen bei jeder Anfrage im Context.**
-
-Ein MCP-Server bringt selten ein einzelnes Tool mit. Ein Jira-Server hat gut zwei Dutzend, jedes mit Beschreibung und Parameterschema. Das ist bei jedem Aufruf da — auch wenn man nur einen Kommentar lesen will.
+Ein Jira-Server bringt gut zwei Dutzend Tools mit, jedes mit Beschreibung und Schema — präsent bei jedem Aufruf, auch wenn man nur einen Kommentar liest.
 
 <McpCost locale="de" />
 
-Schalte in der Demo alle Server an. Der Verbrauch geht in den fünfstelligen Bereich, bevor auch nur ein Wort der eigentlichen Aufgabe im Context steht. Und das gilt für jede einzelne Anfrage in der Sitzung.
+Alle Server an: fünfstelliger Verbrauch, bevor ein Wort der eigentlichen Aufgabe im Context steht — bei jeder Anfrage der Sitzung. Drei Folgen:
 
-Die Folgen sind mehrschichtig:
-
-- **Kosten.** Ein fester Grundbetrag pro Anfrage, den man immer zahlt.
-- **Weniger Platz.** Was Tool-Definitionen belegen, steht für Inhalt nicht zur Verfügung.
-- **Schlechtere Auswahl.** Je mehr ähnliche Tools zur Auswahl stehen, desto häufiger greift das Modell zum falschen. Das ist der Effekt, der am meisten unterschätzt wird.
+| Folge | Wirkung |
+| --- | --- |
+| Kosten | fester Grundbetrag pro Anfrage |
+| Platz | fehlt für den eigentlichen Inhalt |
+| **Trefferquote** | mehr ähnliche Tools → mehr Fehlgriffe. Der meistunterschätzte Effekt. |
 
 <Callout type="achtung">
-„Context Window Pollution" ist deshalb nicht primär ein Kostenproblem, sondern ein Qualitätsproblem. Ein Modell mit sechzig verfügbaren Tools trifft schlechtere Entscheidungen als eines mit acht passenden — selbst wenn das Fenster groß genug für alle sechzig wäre.
+„Context Window Pollution" ist primär ein Qualitätsproblem, kein Kostenproblem: Ein Modell mit sechzig verfügbaren Tools entscheidet schlechter als eines mit acht passenden — auch wenn alle sechzig hineinpassen würden.
 </Callout>
 
-## Was inzwischen dagegen hilft
+## Gegenmaßnahmen
 
-Der Punkt „MCPs werden immer im Context mitgenommen" stimmt als Grundmechanik, ist aber nicht mehr das letzte Wort. Es gibt zwei wirksame Gegenmaßnahmen:
-
-**Tool Search / Deferred Loading.** Statt alle Definitionen von vornherein zu laden, werden sie als „bei Bedarf nachladbar" markiert. Im Context steht zunächst nur ein Suchwerkzeug; das Modell sucht sich die passenden Tools und lädt nur deren Schemas nach. Aus konstant hohem Grundverbrauch wird ein kleiner Sockel plus das, was tatsächlich gebraucht wird. Für große Tool-Sammlungen ist das der wirksamste Hebel — und es erhält obendrein den [Cache](../prompt-caching/), weil Definitionen angehängt statt ausgetauscht werden.
-
-**Auswahl treffen.** Die unspektakuläre, aber sehr wirksame Maßnahme: nur die Server aktivieren, die für die anstehende Arbeit gebraucht werden. Wer gerade eine Angular-Komponente testet, braucht weder Jira- noch Postgres-Server im Context.
+1. **Nur nötige Server aktivieren.** Unspektakulär, am wirksamsten: Wer eine Angular-Komponente testet, braucht weder Jira- noch Postgres-Server im Context.
+2. **Tool Search / Deferred Loading.** Definitionen werden als nachladbar markiert; im Context steht zunächst nur ein Suchwerkzeug, Schemas werden bei Bedarf geladen. Aus konstantem Grundverbrauch wird Sockel + tatsächlicher Bedarf — und der [Cache](../prompt-caching/) bleibt erhalten.
 
 <Callout type="praxis">
-Wenn ein Agent auffällig oft danebengreift, lohnt vor jeder Prompt-Optimierung ein Blick auf die Zahl der aktiven Tools. Die Hälfte abzuschalten wirkt häufig stärker als jede Umformulierung des System-Prompts.
+Greift ein Agent auffällig oft daneben: erst die Zahl der aktiven Tools prüfen, dann am Prompt feilen. Die Hälfte abschalten wirkt oft stärker als jede Umformulierung.
 </Callout>
 
-## Was MCP nicht ist
+## Abgrenzung
 
-MCP ist ein **Anbindungsprotokoll**. Es klärt, wie ein Modell an ein externes System herankommt — Transport, Authentifizierung, Entdeckung von Fähigkeiten.
-
-Es ist ausdrücklich kein Mechanismus, um Anleitungen oder Fachwissen bereitzustellen. Genau dafür gibt es [Skills](../skills/), und genau deshalb ist die Gegenüberstellung im nächsten Kapitel wichtiger, als sie auf den ersten Blick wirkt.
+MCP ist ein **Anbindungsprotokoll** — Transport, Auth, Entdeckung. Es liefert kein Vorgehenswissen; dafür gibt es [Skills](../skills/), und die Gegenüberstellung im nächsten Kapitel ist wichtiger, als sie wirkt.
 
 <KeyTakeaway>
-- MCP standardisiert die Anbindung an externe Systeme und ersetzt Punkt-zu-Punkt-Integrationen.
-- Tool-Definitionen liegen grundsätzlich bei jeder Anfrage im Context — das kostet Geld, Platz und vor allem Trefferquote.
-- Tool Search lädt Definitionen erst bei Bedarf nach und entschärft das Problem erheblich.
-- Die einfachste Maßnahme bleibt, nur die tatsächlich benötigten Server zu aktivieren.
+- MCP standardisiert die Anbindung externer Systeme — bei uns: Jira, Confluence, Bitbucket.
+- Tool-Definitionen liegen bei jeder Anfrage im Context: kostet Geld, Platz und vor allem Trefferquote.
+- Wirksamste Maßnahme: nur die tatsächlich benötigten Server aktivieren; Tool Search entschärft große Sammlungen.
+- MCP liefert Zugriff, keine Anleitung — das ist die Aufgabe von Skills.
 </KeyTakeaway>

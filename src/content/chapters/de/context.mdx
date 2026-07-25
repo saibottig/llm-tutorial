@@ -5,60 +5,44 @@ part: 1
 order: 2
 ---
 
-**Context** ist die Gesamtheit dessen, was ein Modell für eine einzelne Aufgabe mitbekommt. Nicht mehr und nicht weniger. Alles, was das Modell für seine Antwort berücksichtigen soll, muss im Context stehen.
+**Context** ist alles, was das Modell für eine Aufgabe sieht — es gibt keine Information außerhalb davon. Und: **Ein Sprachmodell ist zustandslos.** Was wie Gedächtnis aussieht, ist keins — bei jedem Aufruf wird der gesamte bisherige Verlauf erneut mitgeschickt.
 
-Das klingt banal, hat aber eine Konsequenz, die viele überrascht: **Ein Sprachmodell ist zustandslos.** Es erinnert sich an nichts. Zwischen zwei Aufrufen behält es keinerlei Information. Was wie ein Gedächtnis aussieht, ist keins — es ist nur die Tatsache, dass bei jedem Aufruf der gesamte bisherige Verlauf erneut mitgeschickt wird.
+## Woraus eine Anfrage besteht
 
-## Woraus sich der Context zusammensetzt
-
-Eine typische Anfrage besteht aus vier Teilen, die in dieser Reihenfolge zusammengesetzt werden:
-
-| Teil | Inhalt | Ändert sich |
+| Teil | In Claude Code konkret | Ändert sich |
 | --- | --- | --- |
-| Tool-Definitionen | Schemas aller Werkzeuge, die das Modell aufrufen darf | selten |
-| System-Prompt | Rolle, Regeln, Ausgabeformat | selten |
-| Verlauf | alle bisherigen Nachrichten beider Seiten | wächst stetig |
-| Aktuelle Nachricht | die eigentliche Frage | jedes Mal |
+| Tool-Definitionen | eingebaute Tools + aktive MCP-Server | selten |
+| System-Prompt | u. a. die CLAUDE.md des Projekts | selten |
+| Verlauf | deine Aufgaben + jedes Tool-Ergebnis (gelesene Dateien, Testausgaben) | wächst stetig |
+| Aktuelle Nachricht | die neue Aufgabe | jedes Mal |
 
-Die Reihenfolge ist keine Konvention, sondern technisch relevant. Sie entscheidet darüber, welche Teile einer Anfrage zwischengespeichert werden können — dazu mehr im Kapitel [Prompt Caching](../prompt-caching/).
-
-Eine Claude-Code-Sitzung ist genau dieser Aufbau: Die Tool-Definitionen sind die eingebauten Werkzeuge plus aktive MCP-Server, zum System-Prompt gehört unter anderem die `CLAUDE.md` des Projekts, und der Verlauf enthält neben deinen Aufgaben auch jedes Tool-Ergebnis — jede gelesene Datei, jede Testausgabe.
+Die Reihenfolge ist technisch relevant: Sie bestimmt, was zwischengespeichert werden kann → [Prompt Caching](../prompt-caching/).
 
 <Callout type="merke">
-Der System-Prompt ist keine Sonderzone mit besonderer Autorität, sondern schlicht Text an einer bestimmten Stelle des Contexts. Er wirkt stark, weil er am Anfang steht und weil Modelle darauf trainiert sind, ihn ernst zu nehmen — nicht, weil er technisch unantastbar wäre. Genau daran hängt das Kapitel [Prompt Injection](../prompt-injection/).
+Der System-Prompt ist keine Sonderzone mit besonderer Autorität — nur Text an einer bestimmten Stelle. Er wirkt, weil er vorn steht und Modelle trainiert sind, ihn ernst zu nehmen. Genau daran hängt [Prompt Injection](../prompt-injection/).
 </Callout>
 
-## Die Illusion des Gedächtnisses
+## Was aus der Zustandslosigkeit folgt
 
-Wenn eine Unterhaltung über zehn Runden läuft, sieht das Modell bei Runde zehn nicht „die zehnte Frage". Es sieht den kompletten Verlauf von Runde eins bis zehn, jedes Mal neu, als hätte es ihn nie zuvor gelesen — denn genau so ist es.
-
-Daraus folgt einiges Praktisches:
-
-- **Kosten wachsen quadratisch, nicht linear.** Jede neue Runde schickt auch alle vorherigen mit. Zwanzig Runden kosten nicht das Zwanzigfache einer Runde, sondern deutlich mehr.
-- **Nichts verschwindet von selbst.** Ein Missverständnis aus Runde drei steht in Runde fünfzehn immer noch da und beeinflusst weiterhin die Antworten.
-- **Ein neuer Chat ist ein echter Neustart.** Es gibt keine verborgene Verbindung zwischen zwei Unterhaltungen.
+- **Kosten wachsen überproportional.** Jede Runde schickt alle vorherigen mit — Runde 30 bezahlt Runde 1 zum dreißigsten Mal.
+- **Nichts verschwindet von selbst.** Ein Missverständnis aus Runde 3 beeinflusst Runde 15 immer noch.
+- **Tool-Ergebnisse sind der größte Posten.** Drei gelesene Java-Klassen bleiben bis zum Sitzungsende im Context — auch wenn die Arbeit daran längst fertig ist. Ein einziger Tool-Aufruf kann mehr verbrauchen als zwanzig Gesprächsrunden.
 
 <Callout type="praxis">
-Wenn Claude Code sich in einer langen Sitzung festfährt und immer wieder denselben Fehler macht, hilft Nachbohren oft weniger als `/clear` und ein Neustart mit einer sauber formulierten Aufgabe. Der alte Verlauf ist nicht neutral — er zieht die Antwort in die Richtung, die schon einmal falsch war.
+Festgefahrene Sitzung, immer derselbe Fehler? Nicht nachbohren — `/clear` und die Aufgabe sauber neu stellen. Der alte Verlauf zieht die Antwort in die Richtung, die schon einmal falsch war.
 </Callout>
-
-## Context ist nicht nur Text
-
-Alles, was ein Modell verarbeiten soll, wird zu Context: hochgeladene Dokumente, Bilder, Ergebnisse von Tool-Aufrufen, Suchtreffer, Dateiinhalte. Liest Claude Code drei Java-Klassen, steht der Inhalt dieser drei Klassen im Context — und bleibt dort für den Rest der Sitzung, auch wenn die Arbeit daran längst abgeschlossen ist.
-
-Das ist der Grund, warum bei agentischen Abläufen der Context viel schneller wächst als beim Chatten. Ein einzelner Tool-Aufruf, der eine große Datei zurückgibt, kann mehr Context verbrauchen als zwanzig Gesprächsrunden.
 
 ## Context Engineering
 
-Weil der Context das einzige ist, worauf das Modell zugreifen kann, ist seine Gestaltung die zentrale Stellschraube. Dafür hat sich der Begriff **Context Engineering** eingebürgert. Die Leitfrage lautet nicht „Wie formuliere ich meine Frage?", sondern:
+Die Leitfrage jeder Sitzung:
 
 > Welche Informationen braucht das Modell für diese Aufgabe — und wie bekomme ich genau die hinein, ohne alles andere mitzuschleppen?
 
-Die meisten Techniken in diesem Tutorial sind Antworten auf diese Frage. [Skills](../skills/) laden Anleitungen erst bei Bedarf. [Sub-Agenten](../multi-agent/) halten Nebenrecherchen aus dem Hauptverlauf heraus. Compaction fasst alte Runden zusammen. Alles Werkzeuge, um den Context knapp und relevant zu halten.
+Die Werkzeuge dafür ziehen sich durch das Tutorial: [Skills](../skills/) laden Anleitungen erst bei Bedarf, [Sub-Agenten](../multi-agent/) halten Recherchen aus dem Hauptverlauf, Compaction fasst alte Runden zusammen.
 
 <KeyTakeaway>
-- Context ist alles, was ein Modell für eine Aufgabe sieht — es gibt keine Information außerhalb davon.
-- Modelle sind zustandslos. Das scheinbare Gedächtnis entsteht dadurch, dass der ganze Verlauf jedes Mal erneut mitgeschickt wird.
-- Deshalb wachsen Kosten überproportional, und alte Fehler bleiben wirksam.
-- Tool-Ergebnisse und Dateien füllen den Context oft schneller als das Gespräch selbst.
+- Context ist alles, was das Modell sieht — Modelle sind zustandslos, der Verlauf geht jedes Mal komplett mit.
+- Deshalb wachsen Kosten überproportional und alte Fehler bleiben wirksam.
+- Tool-Ergebnisse (gelesene Dateien, Testausgaben) füllen den Context schneller als das Gespräch selbst.
+- Bei festgefahrenen Sitzungen: `/clear` statt nachbohren.
 </KeyTakeaway>

@@ -7,57 +7,51 @@ order: 1
 
 import Tokenizer from '../../../components/demos/Tokenizer.astro';
 
-A language model reads neither letters nor words. It reads **tokens**. That is the smallest unit in which text exists for the model at all: a number drawn from a fixed vocabulary, typically 100,000 to 200,000 entries in size.
+A model reads neither letters nor words but **tokens**: numbers from a fixed vocabulary of 100,000–200,000 entries. Everything in a Claude Code session — CLAUDE.md, Java classes, stack traces, Jira tickets — is measured, counted and billed in tokens.
 
-A token usually corresponds to a short word, a syllable, a suffix or a punctuation mark. Common words get a token of their own; rare ones are split into several pieces. That is why `window` is one token while `Rechtsschutzversicherung` is several.
+Rough anchors:
 
-## Who decides how text is split
+| Text | Token cost |
+| --- | --- |
+| common short word (`window`) | 1 token |
+| long compound (`Rechtsschutzversicherung`) | several tokens |
+| English | ~5 characters per token |
+| German | ~15 % more tokens than English |
+| code, logs, JSON | noticeably more than prose of the same length |
 
-The splitting is done by the **tokenizer**, and the tokenizer belongs to the model. It is trained and shipped together with it. The same text always produces exactly the same token sequence on the same model — no matter where that model runs, who operates it, or how much memory the machine has.
+## The tokenizer belongs to the model
+
+The same text always produces exactly the same token sequence on the same model — no matter where it runs or who operates it.
 
 <Callout type="korrektur">
-You often read that the token count depends on the server the model runs on. It does not. Tokenization is part of the model and is fixed.
+"The token count depends on the server" — no. Tokenization is part of the model and fixed. What depends on the operator is the **usable context length**: a model may technically handle 1M tokens but be served capped at 200k.
 
-Something else does depend on the operator: the **usable context length**. A model may technically be able to process a million tokens — but if the provider only allocates enough memory for 200,000, then 200,000 is where it stops. That is an operational decision, not a property of the model.
+Also outdated: "German costs 2–3×". That held for older tokenizers. Measured with current ones: **+16 %** (`o200k_base`) versus **+53 %** (`cl100k_base`).
 </Callout>
-
-## The rule of thumb and its expiry date
-
-The most common rule says a token is roughly four characters. For English, current models put it closer to five. For German you often hear it is only two or three — that German is substantially more expensive because of its compound nouns.
-
-That used to be true and largely is not any more. Older tokenizers were heavily optimised for English; German text really did cost around 50 percent more tokens than the same content in English. Current tokenizers have mostly closed that gap — what remains is a surcharge of roughly 15 percent.
 
 <Tokenizer locale="en" />
 
-The numbers in this demo are not estimates. They are computed with the real tokenizers when the site is built. The most instructive part is the comparison at the bottom: **the same text, two tokenizers, markedly different results.** That is precisely the evidence that the token count belongs to the model.
+The demo's numbers are computed with the real tokenizers at build time. The comparison at the bottom — same text, two tokenizers, different results — is the evidence that the token count belongs to the model.
 
-## Why this matters in practice
+## Practical rules
 
-Everything that appears in a Claude Code session — the CLAUDE.md, a Java class, a stack trace, the text of a Jira ticket — is measured in tokens. Tokens are the unit of account for almost everything:
+- **Measure, don't estimate.** Providers expose counting endpoints; in Claude Code, `/context` shows the session's consumption.
+- **Never estimate with a foreign tokenizer** (e.g. `tiktoken` for a non-OpenAI model): off by double digits depending on content, worst for code and non-English text.
+- **Billing, limits, speed** — all measured in tokens: prices per token (input/output separately), context window in tokens, throughput in tokens/s.
 
-- **Billing.** Providers charge per token, input and output separately and at different rates.
-- **Limits.** The context window is measured in tokens, not characters or pages.
-- **Speed.** Throughput is quoted in tokens per second.
+<Deep title="Why models cannot count letters">
+A token is not a unit of meaning — the split follows the statistics of the training corpus, not grammar:
 
-So if you want to size a piece of text, do not count characters and divide — measure. Providers expose endpoints that count exactly instead of guessing.
+- A space usually belongs to the **following** word: `" window"` and `"window"` at sentence start are different tokens.
+- The same letter sequence can be split differently depending on its surroundings.
+- Numbers get chopped into pieces — one reason models stumble over arithmetic.
 
-<Callout type="achtung">
-A common mistake is to estimate with a foreign tokenizer — reaching for `tiktoken` for a model that does not use it, for instance. Depending on language and content the result is off by a double-digit percentage. The gap is widest for code and non-English text.
-</Callout>
-
-## What a token is not
-
-A token is not a unit of meaning. The split follows the statistics of the training corpus, not grammar. That leads to things which look odd at first:
-
-- A space usually belongs to the **following** word — `" window"` is one token, `"window"` at the start of a sentence a different one.
-- The same sequence of letters can be split differently depending on its surroundings.
-- Numbers are frequently chopped into several tokens, which is one reason models stumble over arithmetic.
-
-It also explains the classic party trick of models miscounting letters in a word: they never see the individual letters, only the token-sized chunks.
+The model never sees individual letters, only token chunks. That is why it fails at counting letters — it counts in a unit it cannot see.
+</Deep>
 
 <KeyTakeaway>
-- A token is the smallest unit in which a model perceives text — a number from a fixed vocabulary.
-- The tokenizer belongs to the model and is fixed. What depends on the operator is the usable context length, not the tokenization.
-- The "German costs two to three times as much" rule dates from older tokenizers. Today the surcharge is around 15 percent — more for compounds.
-- Measure rather than calculate, and never with another model's tokenizer.
+- A token is the smallest unit in which a model perceives text — everything is measured and billed in it.
+- The tokenizer is part of the model and fixed; the operator only sets the usable context length.
+- German costs ~15 % more than English today, not 2–3× — the old rule dates from older tokenizers.
+- Measure rather than calculate, never with another model's tokenizer.
 </KeyTakeaway>

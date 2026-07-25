@@ -5,21 +5,17 @@ part: 3
 order: 2
 ---
 
-Claude schlägt JUnit-4-Tests vor, obwohl das Team längst auf JUnit 5 ist. Es baut mit Maven, obwohl das Projekt Gradle nutzt. Es legt eine Klasse in ein Verzeichnis, das es bei uns gar nicht gibt. Das sind keine Modellschwächen — das ist fehlender Projektkontext.
+JUnit-4-Tests statt JUnit 5, Maven statt Gradle, Klassen in Verzeichnissen, die es nicht gibt — das sind keine Modellschwächen, sondern fehlender Projektkontext. Die Lösung ist eine Datei: **`CLAUDE.md`** im Projektverzeichnis, gelesen bei jedem Sitzungsstart.
 
-Die Lösung ist eine Datei: `CLAUDE.md` im Projektverzeichnis. Claude Code liest sie bei jedem Sitzungsstart und behandelt sie als Grundgesetz des Projekts.
+## Was hineingehört: drei Kategorien
 
-## Was in die CLAUDE.md gehört
+| Kategorie | Inhalt | Beispiel |
+| --- | --- | --- |
+| **Befehle** | bauen, testen, prüfen | `./gradlew test --tests "…"` |
+| **Konventionen** | was Claude sonst raten müsste | „AssertJ, nicht Hamcrest" |
+| **Grenzen** | was nicht angefasst wird | `src/generated/**` |
 
-Drei Kategorien, mehr nicht:
-
-**Befehle.** Wie wird gebaut, wie getestet, wie geprüft? Genau die Befehle, die ein neuer Kollege am ersten Tag braucht.
-
-**Konventionen.** Testframework und -stil, Namensschemata, Architekturregeln — alles, was Claude sonst raten müsste.
-
-**Grenzen.** Was darf nicht angefasst werden? Generierter Code, Migrationsskripte, fremde Module.
-
-Ein realistisches Beispiel für einen unserer Services:
+So sieht das für einen unserer Services aus:
 
 ```markdown
 # berth-planning-service
@@ -28,52 +24,54 @@ Spring Boot 3 / Java 21, Gradle. Teil der Vessel-Domäne.
 
 ## Befehle
 - Bauen: ./gradlew build
-- Einzelnen Test: ./gradlew test --tests "BerthAllocationServiceTest"
+- Einzelner Test: ./gradlew test --tests "BerthAllocationServiceTest"
 - Statische Analyse: ./gradlew spotlessCheck
 
 ## Konventionen
 - Tests: JUnit 5 + Mockito + AssertJ. Slices (@WebMvcTest, @DataJpaTest)
   statt @SpringBootTest, wo möglich.
 - DTOs sind Records. MapStruct für Mapping, kein manuelles Umkopieren.
-- Zeitstempel immer Instant, Zeitzonenlogik nur am Rand (REST-Layer).
+- Zeitstempel immer Instant, Zeitzonenlogik nur im REST-Layer.
 
 ## Nicht anfassen
 - src/generated/** (aus OpenAPI generiert)
-- Flyway-Migrationen unter db/migration — nur neue Dateien, nie ändern
+- Flyway-Migrationen — nur neue Dateien, nie ändern
 ```
 
 <Callout type="merke">
-Die CLAUDE.md ist eine Verfassung, kein Handbuch. Sie geht bei **jeder Anfrage** als Teil des [Contexts](../context/) mit — jede Zeile kostet also bei jeder Runde Tokens. Was nur selten gebraucht wird, gehört in einen [Skill](../skills/) oder in die Confluence-Doku, nicht hierher.
+Die CLAUDE.md geht bei **jeder Anfrage** als Teil des [Contexts](../context/) mit — jede Zeile kostet bei jeder Runde Tokens. Verfassung, kein Handbuch: Seltenes gehört in einen [Skill](../skills/) oder nach Confluence.
 </Callout>
 
-## Monorepo und Microservices
+## Zuschnitt je Repo-Typ
 
-Beides kommt bei uns vor, und die Datei skaliert unterschiedlich:
+- **Monorepo:** schlanke Wurzel-Datei (Build-System, übergreifende Regeln) + je eine pro Modul mit eigenen Konventionen. Claude Code liest die Dateien entlang des Pfades — Modul ergänzt Wurzel.
+- **Microservices:** eine Datei pro Repo. Gemeinsamen Kern als Vorlage pflegen (z. B. in Confluence) + die drei, vier servicespezifischen Zeilen.
+- **Angular-Workspace:** Testbefehle (`ng test`, Jest oder Karma), Komponenten-Konventionen (Standalone? Signals?), Ablageort geteilter UI-Bausteine.
 
-**Im Monorepo** liegt eine schlanke `CLAUDE.md` an der Wurzel (Build-System, übergreifende Regeln) und je eine in den Modulen, die eigene Konventionen haben. Claude Code liest die Dateien entlang des Pfades zur Datei, an der gerade gearbeitet wird — die Modul-Datei ergänzt die Wurzel-Datei.
+## Permissions: abstufen statt wegklicken
 
-**Bei Microservices** hat jedes Repo seine eigene Datei. Die Versuchung ist, überall dieselbe hineinzukopieren — besser ist ein gemeinsamer Kern (etwa als Vorlage in Confluence) plus die drei, vier Zeilen, die diesen Service besonders machen.
+In `.claude/settings.json`, eingecheckt ins Repo — dann gilt es fürs ganze Team:
 
-**Im Angular-Workspace** gilt dasselbe Prinzip: Testbefehle (`ng test`, ob Jest oder Karma), Komponenten-Konventionen (Standalone Components? Signals?), und wo geteilte UI-Bausteine liegen.
+| Stufe | Beispiel |
+| --- | --- |
+| ohne Rückfrage | `./gradlew test`, `ng test`, `git diff` |
+| mit Bestätigung | `git push` |
+| gesperrt | destruktive Befehle |
 
-## Permissions
-
-Claude Code fragt standardmäßig nach, bevor es etwas ausführt, das den Rechner verändert. Das ist anfangs richtig — und wird auf Dauer zäh, wenn jede Testausführung eine Rückfrage ist.
-
-In `.claude/settings.json` lässt sich das projektweit abstufen: `./gradlew test` und `ng test` dürfen ohne Rückfrage laufen, `git push` braucht Bestätigung, destruktive Befehle bleiben gesperrt. Die Datei gehört ins Repo — dann profitiert das ganze Team, und die Einführungsphase produziert nicht zwanzig private Regelwerke. Zentrale Unternehmens-Policies liegen darüber und lassen sich projektseitig nur weiter einschränken, nicht lockern.
+Zentrale Unternehmens-Policies liegen darüber; projektseitig lässt sich nur verschärfen, nicht lockern.
 
 <Callout type="achtung">
-Keine Zugangsdaten, Tokens oder internen Hostnamen in die CLAUDE.md schreiben. Die Datei ist Teil jeder Anfrage und liegt im Repo — sie ist der falscheste Ort für Geheimnisse, den es gibt.
+Keine Zugangsdaten, Tokens oder internen Hostnamen in die CLAUDE.md — sie ist Teil jeder Anfrage und liegt im Repo.
 </Callout>
 
 <Callout type="praxis">
-Der beste Zeitpunkt, die CLAUDE.md zu erweitern, ist der Moment, in dem man Claude zum zweiten Mal dieselbe Korrektur schreibt. „Wir nutzen AssertJ, nicht Hamcrest" einmal in die Datei geschrieben wirkt für alle künftigen Sitzungen — dieselbe Korrektur im Chat wirkt genau einmal.
+Erweiterungs-Trigger: dieselbe Korrektur zum zweiten Mal getippt. Einmal in die Datei geschrieben wirkt sie für alle künftigen Sitzungen — im Chat genau einmal.
 </Callout>
 
 <KeyTakeaway>
-- Die CLAUDE.md liefert Befehle, Konventionen und Grenzen — den Kontext, den Claude sonst raten müsste.
-- Sie geht bei jeder Anfrage mit: schlank halten, Seltenes in Skills oder Doku auslagern.
-- Monorepo: Wurzel- plus Modul-Dateien; Microservices: gemeinsamer Kern plus Service-Spezifika.
-- Permissions projektweit in settings.json abstufen und ins Repo einchecken, statt jede Rückfrage einzeln wegzuklicken.
-- Wiederholte Korrekturen sind das Signal, die Datei zu erweitern — und Geheimnisse gehören nie hinein.
+- CLAUDE.md = Befehle + Konventionen + Grenzen; sie ersetzt das Raten.
+- Sie kostet bei jeder Anfrage Tokens: schlank halten, Seltenes auslagern.
+- Monorepo: Wurzel + Modul-Dateien; Microservices: gemeinsamer Kern + Spezifika.
+- Permissions in settings.json ins Repo — Testläufe frei, Push mit Bestätigung, Destruktives gesperrt.
+- Wiederholte Korrektur = Signal für die Datei; Geheimnisse nie hinein.
 </KeyTakeaway>

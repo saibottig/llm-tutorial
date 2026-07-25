@@ -7,53 +7,44 @@ order: 3
 
 import ContextWindow from '../../../components/demos/ContextWindow.astro';
 
-Das **Context Window** ist die Kapazitätsgrenze: die maximale Anzahl Token, die ein Modell in einer einzigen Anfrage verarbeiten kann. Es zählt alles zusammen — Tool-Definitionen, System-Prompt, Verlauf, aktuelle Nachricht und in aller Regel auch die Antwort, die das Modell noch erzeugen wird.
-
-Der Unterschied zum vorigen Kapitel ist wichtig und wird oft verwischt:
-
-- **Context** ist der *Inhalt* — was du tatsächlich mitschickst.
-- **Context Window** ist das *Fassungsvermögen* — wie viel maximal hineinpasst.
-
-Aktuelle Modelle liegen bei 200.000 bis 1.000.000 Token. Eine Million Token entspricht grob 3.000 bis 4.000 Buchseiten.
+Das **Context Window** ist das Fassungsvermögen: die maximale Tokenzahl pro Anfrage, inklusive der Antwort, die das Modell noch erzeugen wird. Nicht zu verwechseln mit [Context](../context/) — das ist der *Inhalt*, das Window die *Kapazität*. Aktuelle Modelle: 200k bis 1M Token.
 
 ## Wenn es voll wird
 
 <ContextWindow locale="de" />
 
-Probiere in der Demo das kleinere Fenster mit vielen Runden: Der Balken läuft über, und ohne Gegenmaßnahme bricht die Anfrage genau hier ab. Interessant ist auch der Anteil, den die Tool-Definitionen belegen — der ist konstant da, bei jeder einzelnen Anfrage, unabhängig davon, ob ein Tool gebraucht wird. Genau darum geht es im Kapitel [MCP](../mcp/).
+Drei mögliche Reaktionen beim Überlauf:
 
-Läuft das Fenster über, gibt es im Wesentlichen drei Reaktionen:
+| Reaktion | Verhalten | Bewertung |
+| --- | --- | --- |
+| Fehler | Anfrage wird abgelehnt | ehrlich, aber unbrauchbar |
+| Abschneiden | älteste Nachrichten fallen weg | Modell „vergisst" schlagartig den Anfang |
+| Compaction | alte Runden werden zusammengefasst | am besten, aber verlustbehaftet |
 
-1. **Fehler.** Die Anfrage wird abgelehnt. Ehrlich, aber unbrauchbar in langen Sitzungen.
-2. **Abschneiden.** Die ältesten Nachrichten fallen weg. Billig, aber das Modell „vergisst" schlagartig den Anfang.
-3. **Compaction.** Ältere Runden werden zusammengefasst, das Ergebnis ersetzt sie. Deutlich besser, aber verlustbehaftet.
+Claude Code komprimiert automatisch vor der Wand. Die Griffe dazu:
 
-Claude Code macht das dritte: Es komprimiert automatisch, bevor die Wand erreicht ist, und mit `/compact` lässt sich der Schnitt auch bewusst setzen — idealerweise an einer Stelle, an der ein Arbeitsschritt abgeschlossen ist. Was die Sitzung gerade belegt, zeigt `/context`.
+- `/context` — zeigt, was die Sitzung gerade belegt
+- `/compact` — Schnitt bewusst setzen, idealerweise nach einem abgeschlossenen Arbeitsschritt
+- `/clear` — Neustart zwischen unabhängigen Aufgaben; eine Sitzung pro Aufgabe ist die gesunde Grundeinstellung
 
-## Der wichtigere Punkt: Qualität vor Kapazität
-
-Hier liegt das häufigste Missverständnis rund um große Context Windows.
+## Qualität sinkt vor der Kapazitätsgrenze
 
 <Callout type="korrektur">
-Ein Fenster von einer Million Token bedeutet nicht, dass man eine Million Token *nutzen sollte*. Kapazität und nutzbare Qualität sind zwei verschiedene Dinge.
+Ein 1M-Fenster heißt nicht, dass man 1M Token *nutzen sollte*. Ein präzise zusammengestellter Context von 20.000 Token schlägt regelmäßig einen unsortierten von 500.000. Zwei Effekte:
 
-Modelle finden Informationen am zuverlässigsten am Anfang und am Ende des Contexts. Was in der Mitte eines sehr langen Contexts steht, wird messbar schlechter berücksichtigt — das Phänomen ist als *Lost in the Middle* bekannt. Dazu kommt, dass mit wachsender Länge mehr irrelevantes Material konkurriert und die Aufmerksamkeit verwässert.
+- **Lost in the Middle:** Modelle finden Informationen am Anfang und Ende zuverlässig, in der Mitte messbar schlechter.
+- **Context Rot:** Fehlversuche, verworfene Ansätze und überholte Dateistände bleiben im Verlauf — und das Modell hält sie für gültigen Stand. Nicht nutzlos, sondern aktiv irreführend.
 </Callout>
 
-Praktisch heißt das: Ein präzise zusammengestellter Context von 20.000 Token schlägt regelmäßig einen unsortierten von 500.000. Mehr hineinzuwerfen ist selten die Lösung — es ist meistens das Problem.
+## Konsequenzen
 
-Dazu kommt der zweite Effekt, der sich in langen Agentensitzungen aufbaut und oft **Context Rot** genannt wird: Fehlversuche, verworfene Ansätze, überholte Dateiinhalte und veraltete Zwischenstände bleiben im Verlauf stehen. Sie sind nicht nur nutzlos, sie sind aktiv irreführend, weil das Modell sie für gültigen Stand hält.
-
-## Was daraus folgt
-
-- **Relevanz schlägt Vollständigkeit.** Lieber gezielt drei passende Dateien als das halbe Repository.
-- **Aufräumen ist eine Funktion, kein Detail.** Alte Tool-Ergebnisse zu entfernen ist genauso wichtig wie neue hinzuzufügen.
-- **Wichtiges gehört an den Rand.** Was unbedingt beachtet werden muss, gehört an den Anfang oder ans Ende — nicht in die Mitte eines Berges von Material.
-- **Lange Sitzungen brauchen Schnitte.** Ein bewusster Neustart mit `/clear` und einer sauberen Aufgabenbeschreibung ist oft besser als eine Sitzung, die man endlos weiterschleppt. Eine Sitzung pro Aufgabe ist die gesunde Grundeinstellung.
+- **Relevanz schlägt Vollständigkeit** — gezielt drei passende Dateien statt des halben Repositories.
+- **Wichtiges an den Rand** — was unbedingt beachtet werden muss, gehört an Anfang oder Ende.
+- **Lange Sitzungen brauchen Schnitte** — `/clear` mit sauberer Neuformulierung schlägt endloses Weiterschleppen.
 
 <KeyTakeaway>
 - Das Context Window ist die Obergrenze in Token, inklusive der zu erzeugenden Antwort.
-- Läuft es über, hilft nur Abschneiden oder Compaction — beides mit Informationsverlust.
-- Die nutzbare Qualität lässt lange vor der technischen Grenze nach: Mitte wird schlechter beachtet, Ballast verwässert.
+- Claude Code komprimiert automatisch; `/context`, `/compact` und `/clear` sind die manuellen Griffe.
+- Die nutzbare Qualität sinkt lange vor der Grenze: Mitte wird schlechter beachtet, alter Ballast führt aktiv irre.
 - Ein großes Fenster ist eine Reserve, keine Einladung, es zu füllen.
 </KeyTakeaway>
