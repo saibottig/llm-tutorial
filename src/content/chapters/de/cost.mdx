@@ -30,7 +30,7 @@ Sparen heißt: an der Eingabeseite ansetzen, also am Context. Kostendisziplin un
 | Hebel | Wirkung | Wie |
 | --- | --- | --- |
 | [Prompt Caching](../prompt-caching/) | bis −90 % auf der Eingabe | automatisch — nur nicht kaputtmachen (MCP/CLAUDE.md mid-session) |
-| Modellwahl je Aufgabe | bis Faktor 5, größte gegen kleinste | `/model`; Commit-Text und Umbenennung brauchen kein Spitzenmodell |
+| Modellwahl je Aufgabe | bis Faktor 5, größte gegen kleinste | `/model` zwischen Aufgaben; innerhalb einer die billige Arbeit an einen [Sub-Agenten](../multi-agent/) geben, statt zu wechseln |
 | Context knapp halten | linear pro gespartem Token | [MCP-Server](../mcp/) aus, auf Dateien zeigen, Recherche in [Sub-Agenten](../multi-agent/) |
 | Stapelverarbeitung | −50 % | asynchrone Verarbeitung für alles, was warten kann |
 
@@ -51,6 +51,7 @@ Vor jeder Optimierung: `/context` ansehen. Zwei ungenutzte MCP-Server und der Ve
 - ✗ **Am Prompt kürzen** — 200 Token sparen bei 20.000 Token Verlauf ist Symbolpolitik
 - ✗ **Ausgabe knapp halten** — bei Agenten ist sie selten der Kostentreiber
 - ✗ **Billigeres Modell trotz harter Aufgabe** — drei Anläufe sparen nichts
+- ✗ **Modellwechsel mitten in der Sitzung zum Sparen** — der Cache gehört einem Modell; der Wechsel kostet mehr, als der günstigere Tarif zurückgibt
 
 ## Zusatzregeln für Automatisiertes
 

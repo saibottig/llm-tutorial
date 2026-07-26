@@ -27,6 +27,25 @@ Claude Code compacts automatically before the wall. The controls:
 - `/compact` — place the cut deliberately, ideally after a finished unit of work
 - `/clear` — restart between independent tasks; one session per task is the healthy default
 
+## Write it down before the window forgets it
+
+Compaction summarises history, files and output. It cannot summarise what was
+never in the window — and the filesystem is not in the window.
+
+| File | Written | Bought you |
+| --- | --- | --- |
+| `plan.md` | before the first edit, from plan mode | the plan survives compaction; re-reading it costs one file read, not a re-derivation |
+| `decisions.md` | when a choice is made | the *why* survives, so the next session does not relitigate it |
+
+Both are ordinary files in the repo, so a fresh session starts from a written
+brief instead of from memory — the same move as a [skill](../skills/).
+
+<Callout type="praxis">
+Ending a long session: have Claude write down what was done, what is open, and
+what the next session needs to know. A repo-local slash command makes it one
+keystroke → [Agentic Workflows](../agentic-workflows/).
+</Callout>
+
 ## Quality drops before the capacity limit
 
 <Callout type="korrektur">
@@ -38,13 +57,13 @@ A 1M window does not mean you *should* use 1M tokens. A carefully assembled cont
 
 ## Consequences
 
-- **Relevance beats completeness** — three well-chosen files instead of half the repository.
 - **Important things go to the edges** — whatever must be honoured belongs at the start or the end.
-- **Long sessions need cuts** — `/clear` with a clean restatement beats dragging on indefinitely.
+- **Long sessions need cuts** — `/clear` with a written brief beats dragging on indefinitely.
 
 <KeyTakeaway>
 - The context window is the ceiling in tokens, including the response still to be generated.
 - Claude Code compacts automatically; `/context`, `/compact` and `/clear` are the manual controls.
 - Usable quality drops long before the limit: the middle gets less attention, old ballast actively misleads.
 - A large window is a reserve, not an invitation to fill it.
+- What must survive compaction belongs on disk: `plan.md`, `decisions.md`, a written handoff.
 </KeyTakeaway>

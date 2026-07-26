@@ -44,7 +44,6 @@ One "no" → build simpler.
 - **One purpose per workflow.** "Create a ticket" ✓ — "manage projects" ✗.
 - **Examples over rules.** Two or three real result examples beat any rule list, especially for formats.
 - **Pass context in, don't have it asked for.** A ticket workflow receives diff, branch and module — it does not ask.
-- **Fix the output format** when the result is processed further.
 - **Define the failure case.** What happens with an unusable result?
 
 <Callout type="praxis">
@@ -55,6 +54,14 @@ Free specification: do the task manually three or four times and note which info
 
 - **Skills / slash commands in the repo:** `/tests-for-diff` instead of a freshly typed paragraph each time — versioned, team-wide, improvable in one place → [skills](../skills/).
 - **Headless in the pipeline:** `claude -p "…"` runs non-interactively in Bitbucket Pipelines (review comment per PR, nightly check). Stricter rules apply: fixed output format, tight permissions, hard budget — nobody is sitting next to it.
+- **`/goal` for the agent shape:** sets a completion condition and keeps working across turns until it is met. It is the stopping condition made explicit instead of you re-prompting "continue" — which is exactly what separates an agent from a chat.
+
+<Callout type="praxis">
+The one workflow worth writing first is the **handoff**: a repo-local command
+that ends a session by writing down what was done, what is open, and what the
+next session needs. There is no built-in for it, and everyone who works in long
+sessions eventually builds one → [Context Window](../context-window/).
+</Callout>
 
 The most practical shape is often the **middle form**: fixed steps, one of which is agentic — the test workflow pins the sequence but lets the model look up files freely within "write code".
 
@@ -62,6 +69,6 @@ The most practical shape is often the **middle form**: fixed steps, one of which
 - Workflow: steps fixed, model handles individual ones. Agent: goal fixed, model chooses the steps.
 - Steps known in advance → workflow, almost always: cheaper, faster, testable.
 - Four questions before an agent: open? worth it? feasible? catchable?
-- Workflows live as skills/slash commands in the repo and headless in Bitbucket Pipelines.
+- Workflows live as skills/slash commands in the repo and headless in Bitbucket Pipelines; `/goal` makes an agent's stopping condition explicit.
 - Examples beat rules; missing context is the most common cause of poor results.
 </KeyTakeaway>

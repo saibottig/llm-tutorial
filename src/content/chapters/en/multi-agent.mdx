@@ -31,7 +31,7 @@ The trade-off is: **more tokens overall, less pollution in the main thread.** An
 
 ## Cost and safeguards
 
-**Cost:** well above a single agent — depending on the design, from not quite double to tenfold and more. Concrete numbers for your own case: measure, do not borrow from someone else's setup. The only reliable statement: it is an order of magnitude, not a footnote.
+**Cost:** well above a single agent — from not quite double to tenfold, depending on the design. It is an order of magnitude, not a footnote; measure your own case rather than borrowing someone else's number.
 
 **Most common failure: loops.** Orchestrator asks again, sub-agent returns something unsatisfying, orchestrator asks again — until budget or patience runs out. Build safeguards in from the start:
 
@@ -43,21 +43,42 @@ The trade-off is: **more tokens overall, less pollution in the main thread.** An
 | Progress check | two rounds without anything new → stop |
 | Time limit | wall clock as the last resort |
 
-## When it pays off
-
-- ✓ **Independent sub-tasks:** research across many sources, analysis of many files, the same check on many objects
-- ✓ **Raw-material-heavy intermediate steps:** monorepo research in the sub-agent, only the conclusion reaches the session changing the code
-- ✗ **Dependent steps:** if step 2 needs step 1's result, you pay the surcharge for nothing
-- ✗ **Tasks a single agent can handle**
+Where it does **not** pay: dependent steps (if step 2 needs step 1's result, the
+surcharge buys nothing) and anything a single agent already handles.
 
 Related but not orchestration: several Claude Code sessions in separate **git worktrees**, each on its own branch — the human coordinates, the insight is the same: separate tasks, separate contexts.
 
-<Deep title="Frameworks for building your own multi-agent systems">
-Claude Code ships sub-agents built in — for everyday team use that suffices, an extra framework is unnecessary machinery. For building beyond that:
+## Roles worth spawning
 
-- **crewAI** — role-based, approachable, the classic orchestrator-with-specialists shape
-- **LangGraph** — the flow as a graph, more control over state and branching
-- **OpenAI Agents SDK** — a leaner approach built around handoffs between agents
+A sub-agent's value is its own window, so give it work whose *raw material* you
+do not want back — and a role narrow enough to answer in a paragraph.
+
+| Role | Task | Comes back |
+| --- | --- | --- |
+| Scout | "where is X used across the monorepo?" | the places, not the files |
+| Adversary | "argue against this plan; name what breaks" | the objections that survived |
+| Verifier | "check this diff against the ticket" | pass, or the mismatch |
+
+The adversary is the underrated one: a second agent with fresh context and an
+explicit mandate to disagree catches what the agent that wrote the plan cannot,
+because it is not defending it.
+
+<Callout type="achtung">
+An adversary sub-agent is an LLM judge, with the quirks the [evals](../evals/)
+chapter lists — position effects, poor calibration. It surfaces objections worth
+reading; it does not rule on them.
+</Callout>
+
+<Deep title="A different model per sub-agent">
+Sub-agents can run a smaller model than the main thread — planning on the
+expensive one, mechanical work on the cheap one, at a factor of five between
+classes → [Working Cost-Consciously](../cost/).
+
+The mistake is doing it by switching the *main* session's model mid-task. Caches
+belong to exactly one model, so the switch throws away the whole session prefix —
+full price on every following turn to save a fraction on one. Delegation is what
+makes the split affordable: the cheap model runs in the sub-agent's own window
+and the main thread's cache stays intact.
 </Deep>
 
 <Terminal script="multi-agent" locale="en" variant="inline" />
@@ -67,5 +88,5 @@ Claude Code ships sub-agents built in — for everyday team use that suffices, a
 - Trade-off: more tokens overall, less pollution in the main thread — often a good trade.
 - The extra cost is an order of magnitude and highly design-dependent: measure rather than borrow.
 - Prevent loops with iteration limits, budgets and depth limits from the start.
-- Pays off for independent sub-tasks; worktrees are the manual variant of the same idea.
+- Give a sub-agent a narrow role — scout, adversary, verifier — and a cheaper model; never switch the main session's model to save.
 </KeyTakeaway>

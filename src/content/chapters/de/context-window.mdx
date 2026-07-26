@@ -27,6 +27,27 @@ Claude Code komprimiert automatisch vor der Wand. Die Griffe dazu:
 - `/compact` — Schnitt bewusst setzen, idealerweise nach einem abgeschlossenen Arbeitsschritt
 - `/clear` — Neustart zwischen unabhängigen Aufgaben; eine Sitzung pro Aufgabe ist die gesunde Grundeinstellung
 
+## Aufschreiben, bevor das Fenster es vergisst
+
+Compaction fasst Verlauf, Dateien und Antworten zusammen. Sie kann nicht
+zusammenfassen, was nie im Fenster stand — und das Dateisystem steht nicht
+im Fenster.
+
+| Datei | Wann geschrieben | Was sie rettet |
+| --- | --- | --- |
+| `plan.md` | vor der ersten Änderung, aus dem Plan Mode | Der Plan überlebt die Compaction; Nachlesen kostet einen Dateizugriff statt einer neuen Herleitung. |
+| `decisions.md` | wenn eine Entscheidung fällt | Das *Warum* überlebt, die nächste Sitzung rollt es nicht neu auf. |
+
+Beides sind gewöhnliche Dateien im Repo, also startet die nächste Sitzung aus
+einem geschriebenen Auftrag statt aus dem Gedächtnis — derselbe Zug wie bei
+einem [Skill](../skills/).
+
+<Callout type="praxis">
+Am Ende einer langen Sitzung: Claude aufschreiben lassen, was erledigt ist, was
+offen ist und was die nächste Sitzung wissen muss. Ein Slash-Command im Repo
+macht daraus einen Tastendruck → [Agentische Workflows](../agentic-workflows/).
+</Callout>
+
 ## Qualität sinkt vor der Kapazitätsgrenze
 
 <Callout type="korrektur">
@@ -38,13 +59,13 @@ Ein 1M-Fenster heißt nicht, dass man 1M Token *nutzen sollte*. Ein präzise zus
 
 ## Konsequenzen
 
-- **Relevanz schlägt Vollständigkeit** — gezielt drei passende Dateien statt des halben Repositories.
 - **Wichtiges an den Rand** — was unbedingt beachtet werden muss, gehört an Anfang oder Ende.
-- **Lange Sitzungen brauchen Schnitte** — `/clear` mit sauberer Neuformulierung schlägt endloses Weiterschleppen.
+- **Lange Sitzungen brauchen Schnitte** — `/clear` mit geschriebenem Auftrag schlägt endloses Weiterschleppen.
 
 <KeyTakeaway>
 - Das Context Window ist die Obergrenze in Token, inklusive der zu erzeugenden Antwort.
 - Claude Code komprimiert automatisch; `/context`, `/compact` und `/clear` sind die manuellen Griffe.
 - Die nutzbare Qualität sinkt lange vor der Grenze: Mitte wird schlechter beachtet, alter Ballast führt aktiv irre.
 - Ein großes Fenster ist eine Reserve, keine Einladung, es zu füllen.
+- Was die Compaction überleben muss, gehört auf die Platte: `plan.md`, `decisions.md`, eine geschriebene Übergabe.
 </KeyTakeaway>

@@ -341,6 +341,11 @@ Falls jemand meint, das sei ein Fehler — es ist keiner:
 4. **„Grün heißt gut"** (`unit-tests`). Generierte Tests, die die
    Implementierung nachbeten, sind grün und wertlos. Das Kapitel `evals`
    liefert mit Mutation Testing (PIT) die zugehörige Messmethode.
+5. **Modell-Orchestrierung ≠ Modellwechsel** (`multi-agent`, `cost`). Der
+   verbreitete Rat „teures Modell zum Planen, billiges für die Fleißarbeit"
+   stimmt — aber nicht als `/model`-Wechsel mitten in der Sitzung: Caches
+   gehören zu genau einem Modell, der Wechsel wirft den ganzen Präfix weg.
+   Tragfähig ist er nur über Sub-Agenten, die ihr eigenes Fenster haben.
 
 ---
 
@@ -408,7 +413,7 @@ Reihenfolge des Nutzens:
 
 | Thema | Wohin | Warum |
 |---|---|---|
-| Hooks als Guardrails | 3.6 | Formatter/Linter nach jedem Edit erzwingen — passt zur Verifikations-Linie |
+| Hooks als eigenes Kapitel | 3.6 | Die Grundlagen stehen seit Juli 2026 im Kapitel `setup` (Events, `settings.json`, Exit-Code 2). Ein eigenes Kapitel lohnt erst, wenn Hook-Rezepte dazukommen sollen |
 | RAG & Embeddings | neuer Teil | Chunking, Vektorsuche, „RAG oder langer Context?" |
 | Sampling & Temperature | 1.4 | Erklärt Nicht-Determinismus, auf den sich das Evals-Kapitel bereits beruft |
 | Reasoning-/Thinking-Modelle | 2.4 | Thinking-Tokens sind Kosten- und Latenzfaktor, kommen aktuell nirgends vor |

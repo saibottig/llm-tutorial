@@ -17,7 +17,7 @@ JUnit-4-Tests statt JUnit 5, Maven statt Gradle, Klassen in Verzeichnissen, die 
 | **Konventionen** | was Claude sonst raten müsste | „AssertJ, nicht Hamcrest" |
 | **Grenzen** | was nicht angefasst wird | `src/generated/**` |
 
-So sieht das für einen unserer Services aus:
+Für einen unserer Services:
 
 ```markdown
 # berth-planning-service
@@ -46,9 +46,11 @@ Die CLAUDE.md geht bei **jeder Anfrage** als Teil des [Contexts](../context/) mi
 
 ## Zuschnitt je Repo-Typ
 
-- **Monorepo:** schlanke Wurzel-Datei (Build-System, übergreifende Regeln) + je eine pro Modul mit eigenen Konventionen. Claude Code liest die Dateien entlang des Pfades — Modul ergänzt Wurzel.
-- **Microservices:** eine Datei pro Repo. Gemeinsamen Kern als Vorlage pflegen (z. B. in Confluence) + die drei, vier servicespezifischen Zeilen.
-- **Angular-Workspace:** Testbefehle (`ng test`, Jest oder Karma), Komponenten-Konventionen (Standalone? Signals?), Ablageort geteilter UI-Bausteine.
+| Repo | Zuschnitt |
+| --- | --- |
+| Monorepo | schlanke Wurzel-Datei + je eine pro Modul; Claude Code liest entlang des Pfades, Modul ergänzt Wurzel |
+| Microservices | eine Datei pro Repo — gemeinsamer Kern als Vorlage plus die drei, vier servicespezifischen Zeilen |
+| Angular-Workspace | Testbefehl (`ng test`), Komponenten-Konventionen (Standalone? Signals?), Ablageort geteilter UI-Bausteine |
 
 ## Permissions: abstufen statt wegklicken
 
@@ -62,12 +64,32 @@ In `.claude/settings.json`, eingecheckt ins Repo — dann gilt es fürs ganze Te
 
 Zentrale Unternehmens-Policies liegen darüber; projektseitig lässt sich nur verschärfen, nicht lockern.
 
+## Hooks: der Teil, der nicht vom Modell abhängt
+
+Permissions entscheiden, **ob** ein angeforderter Aufruf läuft. Hooks führen
+**deinen** Befehl an einer festen Stelle der Schleife aus, ob das Modell
+mitspielt oder nicht — dieselbe Datei, deterministisch statt erbeten.
+
+| Event | Typischer Einsatz |
+| --- | --- |
+| `PostToolUse` | Formatter nach jedem `Write`/`Edit` — kein „bitte spotless laufen lassen" im Prompt |
+| `PreToolUse` | destruktiven `Bash`-Aufruf abweisen, bevor er die Rückfrage erreicht |
+| `SessionStart` | aktuellen Branch und offenes Ticket automatisch in den Context legen |
+
+```json
+{ "hooks": { "PostToolUse": [ { "matcher": "Write|Edit",
+  "hooks": [ { "type": "command", "command": "./.claude/hooks/format.sh" } ] } ] } }
+```
+
+Ein Hook, der mit Code **2** endet, blockiert die Aktion und gibt seine
+Fehlerausgabe als Begründung an das Modell zurück.
+
 <Callout type="achtung">
 Keine Zugangsdaten, Tokens oder internen Hostnamen in die CLAUDE.md — sie ist Teil jeder Anfrage und liegt im Repo.
 </Callout>
 
 <Callout type="praxis">
-Erweiterungs-Trigger: dieselbe Korrektur zum zweiten Mal getippt. Einmal in die Datei geschrieben wirkt sie für alle künftigen Sitzungen — im Chat genau einmal.
+Die Eskalationsleiter: dieselbe Korrektur zum zweiten Mal getippt → in die CLAUDE.md, wo sie für alle künftigen Sitzungen wirkt. Steht in der CLAUDE.md und wird *trotzdem* manchmal übergangen → in einen Hook. Eine Anweisung ist eine Bitte, ein Hook ist eine Zusicherung.
 </Callout>
 
 <Terminal script="setup" locale="de" variant="inline" input />
@@ -75,7 +97,7 @@ Erweiterungs-Trigger: dieselbe Korrektur zum zweiten Mal getippt. Einmal in die 
 <KeyTakeaway>
 - CLAUDE.md = Befehle + Konventionen + Grenzen; sie ersetzt das Raten.
 - Sie kostet bei jeder Anfrage Tokens: schlank halten, Seltenes auslagern.
-- Monorepo: Wurzel + Modul-Dateien; Microservices: gemeinsamer Kern + Spezifika.
+- Hooks in derselben settings.json erzwingen, was eine Anweisung nur erbittet — Formatter, Sperren, Startkontext.
 - Permissions in settings.json ins Repo — Testläufe frei, Push mit Bestätigung, Destruktives gesperrt.
 - Wiederholte Korrektur = Signal für die Datei; Geheimnisse nie hinein.
 </KeyTakeaway>

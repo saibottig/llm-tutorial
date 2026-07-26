@@ -31,7 +31,7 @@ Der Trade-off lautet: **mehr Tokens insgesamt, weniger Pollution im Hauptthread.
 
 ## Kosten und Schutz
 
-**Kosten:** deutlich über einem einzelnen Agenten — je nach Zuschnitt von knapper Verdopplung bis Zehnfachem und mehr. Konkrete Zahlen für den eigenen Fall: messen, nicht aus fremden Aufbauten übernehmen. Verlässlich ist nur: Es ist eine Größenordnung, keine Randnotiz.
+**Kosten:** deutlich über einem einzelnen Agenten — je nach Zuschnitt von knapper Verdopplung bis Zehnfachem. Es ist eine Größenordnung, keine Randnotiz; den eigenen Fall messen statt fremde Zahlen übernehmen.
 
 **Häufigster Ausfall: Schleifen.** Orchestrator fragt nach, Sub-Agent liefert Unbefriedigendes, Orchestrator fragt erneut — bis Budget oder Geduld aufgebraucht sind. Schutzmaßnahmen von Anfang an einbauen:
 
@@ -43,21 +43,45 @@ Der Trade-off lautet: **mehr Tokens insgesamt, weniger Pollution im Hauptthread.
 | Fortschrittsprüfung | zwei Runden ohne Neues → abbrechen |
 | Zeitlimit | Wanduhrzeit als Reißleine |
 
-## Wann es sich lohnt
-
-- ✓ **Unabhängige Teilaufgaben:** Recherche über viele Quellen, Analyse vieler Dateien, dieselbe Prüfung auf viele Objekte
-- ✓ **Viel Rohmaterial im Zwischenschritt:** Monorepo-Recherche im Sub-Agenten, nur das Fazit landet in der Sitzung, die den Code ändert
-- ✗ **Abhängige Schritte:** braucht Schritt 2 das Ergebnis von Schritt 1, zahlt man den Aufschlag ohne Gegenwert
-- ✗ **Aufgaben, die ein einzelner Agent schafft**
+Wo es sich **nicht** lohnt: bei abhängigen Schritten (braucht Schritt 2 das
+Ergebnis von Schritt 1, kauft der Aufschlag nichts) und bei allem, was ein
+einzelner Agent ohnehin schafft.
 
 Verwandt, aber keine Orchestrierung: mehrere Claude-Code-Sitzungen in getrennten **Git-Worktrees**, jede auf eigenem Branch — die Koordination macht der Mensch, die Einsicht ist dieselbe: getrennte Aufgaben, getrennte Contexte.
 
-<Deep title="Frameworks für eigene Multi-Agent-Systeme">
-Claude Code bringt Sub-Agenten eingebaut mit — für den Teamalltag reicht das, ein zusätzliches Framework ist unnötiger Aufbau. Wer darüber hinaus baut:
+## Rollen, für die sich ein Sub-Agent lohnt
 
-- **crewAI** — rollenbasiert, zugänglich, klassischer Orchestrator-mit-Spezialisten-Aufbau
-- **LangGraph** — Ablauf als Graph, mehr Kontrolle über Zustand und Verzweigungen
-- **OpenAI Agents SDK** — schlanker Ansatz mit Übergaben zwischen Agenten
+Der Wert eines Sub-Agenten ist sein eigenes Fenster. Gib ihm also Arbeit, deren
+*Rohmaterial* du nicht zurückhaben willst — und eine Rolle, die sich in einem
+Absatz beantworten lässt.
+
+| Rolle | Auftrag | Zurück kommt |
+| --- | --- | --- |
+| Kundschafter | „Wo wird X im Monorepo überall benutzt?" | die Stellen, nicht die Dateien |
+| Advocatus Diaboli | „Argumentiere gegen diesen Plan; nenne, was bricht" | die Einwände, die standhalten |
+| Prüfer | „Gleich diesen Diff gegen das Ticket ab" | passt, oder die Abweichung |
+
+Unterschätzt wird der Advocatus Diaboli: Ein zweiter Agent mit frischem Context
+und dem Auftrag zu widersprechen findet, was der Agent nicht findet, der den Plan
+geschrieben hat — weil er ihn nicht verteidigt.
+
+<Callout type="achtung">
+Ein widersprechender Sub-Agent ist ein LLM-Judge, mit den Eigenheiten aus dem
+Kapitel [Evals](../evals/) — Positionseffekte, schlechte Kalibrierung. Er liefert
+lesenswerte Einwände; er entscheidet sie nicht.
+</Callout>
+
+<Deep title="Ein anderes Modell je Sub-Agent">
+Sub-Agenten können ein kleineres Modell fahren als der Hauptthread — Planung auf
+dem teuren, mechanische Arbeit auf dem günstigen, bei Faktor fünf zwischen
+größter und kleinster Klasse → [Kostenbewusst arbeiten](../cost/).
+
+Der Fehler ist, das über einen Modellwechsel der *Hauptsitzung* mitten in der
+Aufgabe zu tun. Caches gehören zu genau einem Modell, der Wechsel wirft den
+gesamten Sitzungs-Präfix weg — voller Preis in jeder folgenden Runde, um in
+einer einen Bruchteil zu sparen. Erst die Delegation macht die Aufteilung
+bezahlbar: Das günstige Modell läuft im eigenen Fenster des Sub-Agenten, der
+Cache des Hauptthreads bleibt heil.
 </Deep>
 
 <Terminal script="multi-agent" locale="de" variant="inline" />
@@ -67,5 +91,5 @@ Claude Code bringt Sub-Agenten eingebaut mit — für den Teamalltag reicht das,
 - Trade-off: mehr Tokens insgesamt, weniger Pollution im Hauptthread — oft ein guter Tausch.
 - Mehrkosten sind eine Größenordnung und stark zuschnittabhängig: messen statt übernehmen.
 - Schleifen mit Iterationslimit, Budget und Tiefenbegrenzung von Anfang an verhindern.
-- Lohnt bei unabhängigen Teilaufgaben; Worktrees sind die manuelle Variante derselben Idee.
+- Sub-Agenten eine enge Rolle geben — Kundschafter, Advocatus Diaboli, Prüfer — und ein günstigeres Modell; nie das Modell der Hauptsitzung wechseln, um zu sparen.
 </KeyTakeaway>

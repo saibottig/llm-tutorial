@@ -44,7 +44,6 @@ Ein „nein" → einfacher bauen.
 - **Ein Zweck pro Workflow.** „Erstelle ein Ticket" ✓ — „Verwalte Projekte" ✗.
 - **Beispiele statt Vorschriften.** Zwei, drei echte Ergebnisbeispiele schlagen jede Regelliste, besonders bei Formaten.
 - **Kontext mitgeben, nicht abfragen lassen.** Ein Ticket-Workflow bekommt Diff, Branch und Modul — er fragt nicht danach.
-- **Ausgabeformat festlegen**, wenn das Ergebnis weiterverarbeitet wird.
 - **Fehlerfall definieren.** Was passiert bei unbrauchbarem Ergebnis?
 
 <Callout type="praxis">
@@ -54,14 +53,23 @@ Spezifikation gratis: die Aufgabe drei-, viermal manuell machen und notieren, we
 ## Wo Workflows in Claude Code leben
 
 - **Skills / Slash-Commands im Repo:** `/tests-fuer-diff` statt jedes Mal ein neu getippter Absatz — versioniert, teamweit, an einer Stelle verbesserbar → [Skills](../skills/).
+- **`/goal` für den Agenten-Zuschnitt:** setzt eine Abbruchbedingung und arbeitet über Runden hinweg weiter, bis sie erfüllt ist. Das ist die Abbruchbedingung ausgesprochen, statt dass du „weiter" nachschiebst — und genau das trennt einen Agenten vom Chat.
 - **Headless in der Pipeline:** `claude -p "…"` läuft nicht-interaktiv in Bitbucket Pipelines (Review-Kommentar pro PR, nächtliche Prüfung). Verschärfte Regeln: festes Ausgabeformat, enge Permissions, hartes Budget — niemand sitzt daneben.
 
 Die praktikabelste Form ist oft die **Zwischenform**: feste Schritte, von denen einer agentisch ist — der Test-Workflow legt den Ablauf fest, lässt dem Modell aber innerhalb von „Code schreiben" die Freiheit, Dateien nachzuschlagen.
+
+<Callout type="praxis">
+Der Workflow, der sich zuerst lohnt, ist die **Übergabe**: ein Command im Repo,
+der eine Sitzung beendet, indem er aufschreibt, was erledigt ist, was offen ist
+und was die nächste Sitzung wissen muss. Dafür gibt es nichts Eingebautes, und
+wer in langen Sitzungen arbeitet, baut sich das früher oder später selbst →
+[Context Window](../context-window/).
+</Callout>
 
 <KeyTakeaway>
 - Workflow: Schritte fest, Modell erledigt einzelne. Agent: Ziel fest, Modell wählt die Schritte.
 - Schritte vorab bekannt → Workflow, fast immer: billiger, schneller, testbar.
 - Vor einem Agenten vier Fragen: offen? lohnend? machbar? auffangbar?
-- Workflows leben als Skills/Slash-Commands im Repo und headless in Bitbucket Pipelines.
+- Workflows leben als Skills/Slash-Commands im Repo und headless in Bitbucket Pipelines; `/goal` spricht die Abbruchbedingung eines Agenten aus.
 - Beispiele schlagen Regeln; fehlender Kontext ist der häufigste Grund für schlechte Ergebnisse.
 </KeyTakeaway>

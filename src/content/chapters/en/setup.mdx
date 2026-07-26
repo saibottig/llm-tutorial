@@ -17,7 +17,7 @@ JUnit 4 tests instead of JUnit 5, Maven instead of Gradle, classes in directorie
 | **Conventions** | what Claude would otherwise guess | "AssertJ, not Hamcrest" |
 | **Boundaries** | what is not touched | `src/generated/**` |
 
-For one of our services it looks like this:
+For one of our services:
 
 ```markdown
 # berth-planning-service
@@ -46,9 +46,11 @@ The CLAUDE.md travels with **every request** as part of the [context](../context
 
 ## Shape per repo type
 
-- **Monorepo:** lean root file (build system, cross-cutting rules) + one per module with conventions of its own. Claude Code reads files along the path — module supplements root.
-- **Microservices:** one file per repo. Maintain a shared core as a template (e.g. in Confluence) + the three or four service-specific lines.
-- **Angular workspace:** test commands (`ng test`, Jest or Karma), component conventions (standalone? signals?), where shared UI building blocks live.
+| Repo | Shape |
+| --- | --- |
+| Monorepo | lean root file + one per module; Claude Code reads along the path, so module supplements root |
+| Microservices | one file per repo — a shared core as a template plus the three or four service-specific lines |
+| Angular workspace | test command (`ng test`), component conventions (standalone? signals?), where shared UI lives |
 
 ## Permissions: tier instead of clicking away
 
@@ -62,12 +64,32 @@ In `.claude/settings.json`, checked into the repo — then it applies to the who
 
 Central company policies sit above; project-side you can only tighten, never loosen.
 
+## Hooks: the part that does not depend on the model
+
+Permissions decide **whether** a requested call runs. Hooks run **your** command
+at a fixed point in the loop, whether or not the model cooperates — same file,
+deterministic instead of asked for.
+
+| Event | Typical use |
+| --- | --- |
+| `PostToolUse` | run the formatter after every `Write`/`Edit` — no "please run spotless" in the prompt |
+| `PreToolUse` | refuse a destructive `Bash` call before it reaches the permission prompt |
+| `SessionStart` | put the current branch and open ticket into the context automatically |
+
+```json
+{ "hooks": { "PostToolUse": [ { "matcher": "Write|Edit",
+  "hooks": [ { "type": "command", "command": "./.claude/hooks/format.sh" } ] } ] } }
+```
+
+A hook that exits with code **2** blocks the action and hands its stderr back to
+the model as the reason.
+
 <Callout type="achtung">
 No credentials, tokens or internal hostnames in the CLAUDE.md — it is part of every request and lives in the repo.
 </Callout>
 
 <Callout type="praxis">
-Extension trigger: typing the same correction for the second time. Written into the file once, it applies to every future session — in chat, exactly once.
+The escalation ladder: typing the same correction twice → into the CLAUDE.md, where it applies to every future session. Standing in the CLAUDE.md and *still* skipped sometimes → into a hook. An instruction is a request; a hook is a guarantee.
 </Callout>
 
 <Terminal script="setup" locale="en" variant="inline" input />
@@ -75,7 +97,7 @@ Extension trigger: typing the same correction for the second time. Written into 
 <KeyTakeaway>
 - CLAUDE.md = commands + conventions + boundaries; it replaces guessing.
 - It costs tokens on every request: keep it lean, move rare material out.
-- Monorepo: root + module files; microservices: shared core + specifics.
+- Hooks in the same settings.json enforce what an instruction only requests — formatter, blocks, start context.
 - Permissions in settings.json in the repo — test runs free, push with confirmation, destructive blocked.
 - A repeated correction = signal for the file; secrets never go in.
 </KeyTakeaway>
