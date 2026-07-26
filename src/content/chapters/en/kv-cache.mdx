@@ -19,13 +19,13 @@ The KV cache is not an optimisation at the margins but the precondition for text
 
 ## The price: memory
 
-Compute is saved, memory is paid — growing linearly with context length. For a 70B-class model roughly **0.3 MB per token**:
+Compute is saved, memory is paid — growing linearly with context length. For a 70B-class model with GQA, 16 bits per value, roughly **0.3 MB per token**:
 
 | Context length | KV cache (70B model) | For comparison |
 | --- | --- | --- |
 | 8,000 tokens | ~2.5 GB | |
-| 128,000 tokens | ~40 GB | ≈ the model weights themselves (~39 GB) |
-| 1,000,000 tokens | ~305 GB | ≈ 8× the model |
+| 128,000 tokens | ~40 GB | ≈ the weights of that model served at 4 bits (~39 GB) |
+| 1,000,000 tokens | ~305 GB | ≈ 8× those weights |
 
 <Callout type="achtung">
 This is why providers cap usable context length and sometimes surcharge long context: the limit is not the model but the memory for its cache — the operational decision from the [Tokens](../token/) chapter.
@@ -47,7 +47,7 @@ The KV cache normally lives for one request. Keeping it across requests when the
 
 <KeyTakeaway>
 - The KV cache stores the intermediate values of processed tokens — quadratic effort becomes linear.
-- The price is memory: at 128k context as much as the model itself, at 1M eight times as much.
+- The price is memory: at 128k context as much as the same model's 4-bit weights, at 1M eight times as much.
 - The cache, not the model, is usually what caps usable context length.
 - Kept across requests, the mechanism is called prompt caching — the largest cost lever.
 </KeyTakeaway>

@@ -33,7 +33,11 @@ export const MCP_SERVERS: McpServer[] = [
 
 /**
  * A skill keeps only its name and one-line description resident; the body is
- * read on demand. That header is roughly 30 tokens per capability.
+ * read on demand. That header is roughly 30 tokens per capability — the figure
+ * the scripted numbers are derived from, and the reason they agree: four skills
+ * cost 120 tokens in `skills.json`, and the counter-calculation in `mcp.json`
+ * prices the seven servers' 97 capabilities as skill headers at ~2,900. Change
+ * this and both have to move with it.
  */
 export const SKILL_HEADER_TOKENS = 30;
 

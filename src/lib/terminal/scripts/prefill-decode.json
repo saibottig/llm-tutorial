@@ -5,8 +5,8 @@
 
   "strings": {
     "greeting": {
-      "de": "Jede Antwort hat zwei Phasen mit völlig unterschiedlichem Kostenverhalten. Die Animation ist bewusst verlangsamt; die Zahlen sind realistische Größenordnungen.",
-      "en": "Every answer has two phases that behave completely differently. The animation is deliberately slowed down; the figures are realistic orders of magnitude."
+      "de": "Jede Antwort hat zwei Phasen mit völlig unterschiedlichem Kostenverhalten. Der Balken und der Ticker sind nur Schema — es zählen die Sekunden daneben: die eine Zahl hängt am Prompt, die andere an der Antwort.",
+      "en": "Every answer has two phases that behave completely differently. The bar and the ticker are only a schematic — what counts are the seconds beside them: one number hangs on the prompt, the other on the answer."
     }
   },
 
@@ -48,7 +48,6 @@
         },
         {
           "type": "generate",
-          "promptTokens": 12400,
           "outputTokens": 12,
           "text": {
             "de": "Nein — die Warteliste ist eine unsynchronisierte ArrayList.",
@@ -58,8 +57,8 @@
         {
           "type": "note",
           "text": {
-            "de": "12.400 Token rein, 12 raus. Fast die ganze Wartezeit ist Prefill, und die skaliert mit der Prompt-Länge — nicht mit der Antwort.",
-            "en": "12,400 tokens in, 12 out. Almost all the waiting is prefill, and that scales with prompt length — not with the answer."
+            "de": "Ein volles Modul im Context, zwölf Token Antwort. Fast die ganze Wartezeit steckt im Prefill, und die skaliert mit dem Prompt — nicht mit der Antwort.",
+            "en": "A whole module in the context, twelve tokens of answer. Almost all the waiting sits in prefill, and that scales with the prompt — not with the answer."
           }
         }
       ]
@@ -70,7 +69,6 @@
       "steps": [
         {
           "type": "generate",
-          "promptTokens": 8300,
           "outputTokens": 640,
           "text": {
             "de": "Fertig — 640 Token Javadoc für die vier öffentlichen Methoden.",

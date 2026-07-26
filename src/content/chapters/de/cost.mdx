@@ -18,7 +18,7 @@ Preise je 1 Mio. Token, Größenordnungen (ändern sich; die Verhältnisse bleib
 | mittel, für den Großteil der Last | ~3 $ | ~15 $ |
 | klein, für einfache Aufgaben | ~1 $ | ~5 $ |
 
-Zwischen den Klassen liegt je etwa Faktor fünf. Im Enterprise-Betrieb fällt keine private Rechnung an — aber dieselbe Mechanik steckt hinter den Nutzungskontingenten.
+Zwei Verhältnisse zählen, beide etwa Faktor fünf: Ausgabe gegen Eingabe **innerhalb** einer Klasse, und größte gegen kleinste Klasse. Zwischen benachbarten Klassen ist es weniger — deshalb ist der Schritt eine Klasse tiefer oft folgenlos. Im Enterprise-Betrieb fällt keine private Rechnung an, aber dieselbe Mechanik steckt hinter den Nutzungskontingenten.
 </Deep>
 
 <Callout type="merke">
@@ -30,7 +30,7 @@ Sparen heißt: an der Eingabeseite ansetzen, also am Context. Kostendisziplin un
 | Hebel | Wirkung | Wie |
 | --- | --- | --- |
 | [Prompt Caching](../prompt-caching/) | bis −90 % auf der Eingabe | automatisch — nur nicht kaputtmachen (MCP/CLAUDE.md mid-session) |
-| Modellwahl je Aufgabe | Faktor 5 pro Klasse | `/model`; Commit-Text und Umbenennung brauchen kein Spitzenmodell |
+| Modellwahl je Aufgabe | bis Faktor 5, größte gegen kleinste | `/model`; Commit-Text und Umbenennung brauchen kein Spitzenmodell |
 | Context knapp halten | linear pro gespartem Token | [MCP-Server](../mcp/) aus, auf Dateien zeigen, Recherche in [Sub-Agenten](../multi-agent/) |
 | Stapelverarbeitung | −50 % | asynchrone Verarbeitung für alles, was warten kann |
 

@@ -21,7 +21,7 @@ Nach dem Absenden passiert erst eine Weile nichts, dann läuft die Antwort gleic
 Der entscheidende Zusammenhang: Ein längerer Prompt verschiebt die Zeit bis zum ersten Token — die Ausgabegeschwindigkeit danach bleibt gleich. Die beiden Szenarien unten stellen genau das gegenüber.
 
 <Deep title="Warum Decode bandbreitenlimitiert ist">
-Für jedes einzelne Ausgabe-Token muss das Modell seine kompletten Gewichte einmal aus dem Speicher lesen: 40-GB-Modell → 40 GB gelesen pro Token. Die Recheneinheiten langweilen sich dabei. Deshalb können Anbieter beim Decode mehrere Anfragen fast kostenlos bündeln — die Gewichte werden ohnehin gelesen. Genau davon lebt der Betrieb großer Modelle.
+Für jedes einzelne Ausgabe-Token muss das Modell seine kompletten Gewichte einmal aus dem Speicher lesen: 40-GB-Modell (ein 70B in 4 Bit) → 40 GB gelesen pro Token. Die Recheneinheiten langweilen sich dabei. Deshalb können Anbieter beim Decode mehrere Anfragen fast kostenlos bündeln — die Gewichte werden ohnehin gelesen. Genau davon lebt der Betrieb großer Modelle.
 </Deep>
 
 ## Was daraus folgt

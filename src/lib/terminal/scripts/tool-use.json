@@ -156,7 +156,7 @@
             "BerthAllocationServiceTest > waitingListOrdersByEta FAILED",
             "    java.lang.NullPointerException",
             "        at BerthAllocationService.java:248",
-            "128 tests completed, 1 failed"
+            "129 tests completed, 1 failed"
           ]
         },
         {

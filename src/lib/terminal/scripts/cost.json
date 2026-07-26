@@ -1,7 +1,7 @@
 {
   "_comment": "Cost is shown in tokens, never in prices — prices age faster than this tutorial is maintained. The same task twice, carelessly and deliberately, is the whole argument.",
 
-  "title": { "de": "Dieselbe Aufgabe, ein Zehntel der Token", "en": "The same task, a tenth of the tokens" },
+  "title": { "de": "Dieselbe Antwort, ein Bruchteil des Contexts", "en": "The same answer, a fraction of the context" },
 
   "strings": {
     "greeting": {
@@ -15,8 +15,8 @@
       "id": "careless",
       "label": { "de": "Mit Anlauf", "en": "The running start" },
       "hint": {
-        "de": "Alle Server an, alles gelesen, dann gefragt. Funktioniert — und kostet das Zehnfache.",
-        "en": "All servers on, everything read, then ask. It works — and costs ten times as much."
+        "de": "Alle Server an, alles gelesen, dann gefragt. Funktioniert — und kostet ein Vielfaches.",
+        "en": "All servers on, everything read, then ask. It works — and costs several times as much."
       },
       "reset": true,
       "mcp": { "jira": true, "confluence": true, "bitbucket": true, "filesystem": true, "postgres": true, "browser": true, "sentry": true },
@@ -122,8 +122,8 @@
         {
           "type": "note",
           "text": {
-            "de": "Dieselbe Antwort, ein Zehntel des Contexts. Die drei Hebel waren: nur nötige Server, gezielt suchen statt lesen, und die Frage so stellen, dass sie beantwortbar ist.",
-            "en": "The same answer, a tenth of the context. The three levers were: only the servers you need, search instead of read, and ask a question that can be answered."
+            "de": "Dieselbe Antwort, rund ein Fünftel des Contexts — und ohne den Sockel gerechnet, den beide Läufe zahlen, war der andere Weg mehr als zwanzigmal so teuer. Die drei Hebel waren: nur nötige Server, gezielt suchen statt lesen, und die Frage so stellen, dass sie beantwortbar ist.",
+            "en": "The same answer in roughly a fifth of the context — and counted without the floor both runs pay, the other route cost more than twenty times as much. The three levers were: only the servers you need, search instead of read, and ask a question that can be answered."
           }
         },
         {

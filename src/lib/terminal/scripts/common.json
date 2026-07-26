@@ -72,9 +72,10 @@
     "decode": { "de": "Decode", "en": "Decode" },
     "ttft": { "de": "bis zum ersten Token", "en": "to first token" },
     "speed": { "de": "Token/s", "en": "tokens/s" },
+    "decodeTime": { "de": "für die Antwort", "en": "for the answer" },
     "generateNote": {
-      "de": "Prefill verarbeitet {prompt} Prompt-Token auf einmal. Decode erzeugt {output} Token nacheinander — jedes einzeln, jedes mit dem ganzen Modell.",
-      "en": "Prefill processes {prompt} prompt tokens at once. Decode produces {output} tokens one after another — each on its own, each through the whole model."
+      "de": "Prefill verarbeitet {prompt} Prompt-Token auf einmal — das ist alles, was gerade im Context steht. Decode erzeugt {output} Token nacheinander, jedes einzeln, jedes mit dem ganzen Modell.",
+      "en": "Prefill processes {prompt} prompt tokens at once — that is everything currently in the context. Decode produces {output} tokens one after another, each on its own, each through the whole model."
     },
 
     "chipsSummary": {

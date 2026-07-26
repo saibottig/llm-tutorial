@@ -353,3 +353,122 @@ test.describe('English', () => {
     await expect(term.output).toContainText('Where is the ETA compared?');
   });
 });
+
+/**
+ * These figures used to be scripted constants sitting next to a status line that
+ * disagreed with them. They are derived from the session now, so each of these
+ * cases goes red if anyone pins them back to a literal.
+ */
+test.describe('the numbers a reader can cross-check', () => {
+  /** "Prefill 23,036 · 1.83 s to first token" → { prompt: 23036, ttft: 1.83 } */
+  async function phase(term: Terminal) {
+    const text = await term.output.innerText();
+    const match = text.match(/([\d,]+) · ([\d.]+) s to first token/);
+    if (!match) throw new Error(`No prefill line in output: ${text.slice(0, 400)}`);
+    return { prompt: Number(match[1].replace(/,/g, '')), ttft: Number(match[2]) };
+  }
+
+  test('a fuller window really does slow the first token down', async ({ page }) => {
+    test.slow();
+    await page.goto('en/kv-cache/');
+    const term = new Terminal(page);
+
+    await term.play('short');
+    const small = await phase(term);
+
+    await term.play('long');
+    // Same prompt, same intent — only the 78k build log in front of it differs.
+    // That is the entire claim the scenario's hint makes.
+    const large = await phase(term);
+
+    expect(large.prompt).toBeGreaterThan(small.prompt * 3);
+    expect(large.ttft).toBeGreaterThan(small.ttft * 3);
+  });
+
+  test('prefill is charged for the whole context, not a scripted figure', async ({ page }) => {
+    await page.goto('en/prefill-decode/');
+    const term = new Terminal(page);
+
+    await term.play('long-in');
+    const { prompt } = await phase(term);
+    // The status line reads in thousands; the prefill line reads in tokens.
+    expect(prompt / 1000).toBeCloseTo(await term.contextK(), 0);
+  });
+
+  test('the status meter shows how full the window is, not just its parts', async ({ page }) => {
+    await page.goto('en/context-window/');
+    const term = new Terminal(page);
+
+    await term.play('floor');
+    const bar = await term.root.evaluate((root: HTMLElement) => {
+      const meter = root.querySelector('[data-meter]') as HTMLElement;
+      const segs = [...meter.children].map((c) => c.getBoundingClientRect().width);
+      return { width: meter.getBoundingClientRect().width, segs };
+    });
+    const filled = bar.segs.reduce((a, b) => a + b, 0);
+
+    // An empty session sits at ~9 % of the window; a grow factor on the segments
+    // made this bar read as completely full.
+    expect(filled / bar.width).toBeLessThan(0.2);
+    // 3,550 system : 3,900 tools : 11,400 MCP — the widest segment is the MCP one.
+    expect(bar.segs.at(-1)!).toBeGreaterThan(bar.segs[0] * 2);
+  });
+
+  test("a sub-agent's calls are counted even though its tokens are not", async ({ page }) => {
+    test.slow();
+    await page.goto('en/multi-agent/');
+    const term = new Terminal(page);
+
+    await term.play('delegated');
+    const status = await term.status.innerText();
+    expect(Number(status.match(/(\d+) tool calls/)![1])).toBeGreaterThan(0);
+    // Still isolated: the summaries are all that reached the main thread.
+    expect(await term.contextK()).toBeLessThan(21);
+  });
+
+  test('the agent compares itself against what the workflow actually did', async ({ page }) => {
+    test.slow();
+    await page.goto('en/agentic-workflows/');
+    const term = new Terminal(page);
+
+    await term.scenario('workflow').click();
+    await expect(term.permission).toBeVisible({ timeout: 30_000 });
+    await term.permission.getByRole('button', { name: /Allow/ }).click();
+    await term.settle();
+    const workflowCalls = Number((await term.status.innerText()).match(/(\d+) tool calls/)![1]);
+    const workflowContext = await term.contextK();
+
+    await term.scenario('agent').click();
+    await expect(term.permission).toBeVisible({ timeout: 30_000 });
+    await term.permission.getByRole('button', { name: /Allow/ }).click();
+    await term.settle();
+    const agentCalls = Number((await term.status.innerText()).match(/(\d+) tool calls/)![1]);
+
+    expect(workflowCalls).toBe(3);
+    expect(agentCalls).toBe(8);
+    // The agent's closing line spells the comparison out — and used to say
+    // "four", counting the workflow's steps rather than its tool calls.
+    const spelled = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight'];
+    const claim = `${spelled[agentCalls]} tool calls instead of ${spelled[workflowCalls]}`;
+    await expect(term.output).toContainText(claim.replace(/^\w/, (c) => c.toUpperCase()));
+    // "roughly 12,000 tokens more in the context"
+    expect((await term.contextK()) - workflowContext).toBeGreaterThan(10);
+  });
+
+  test('the careless run costs what the cost chapter says it costs', async ({ page }) => {
+    test.slow();
+    await page.goto('en/cost/');
+    const term = new Terminal(page);
+
+    await term.play('careless');
+    const careless = await term.contextK();
+
+    await term.play('careful');
+    const careful = await term.contextK();
+
+    // The claim in the closing note: roughly a fifth of the context.
+    expect(careful / careless).toBeGreaterThan(0.15);
+    expect(careful / careless).toBeLessThan(0.25);
+    await expect(term.output).toContainText('roughly a fifth');
+  });
+});

@@ -18,7 +18,7 @@ Prices per 1M tokens, orders of magnitude (they change; the ratios persist):
 | medium, for most of the load | ~$3 | ~$15 |
 | small, for simple tasks | ~$1 | ~$5 |
 
-Roughly a factor of five separates each class. Enterprise operation means no private bill — but the same mechanics sit behind the usage quotas.
+Two ratios matter, and both are roughly a factor of five: output against input **within** a class, and the largest class against the smallest. Between neighbouring classes it is less — which is why the step down is often free of consequence. Enterprise operation means no private bill, but the same mechanics sit behind the usage quotas.
 </Deep>
 
 <Callout type="merke">
@@ -30,7 +30,7 @@ Saving means working the input side — the context. Cost discipline and the con
 | Lever | Effect | How |
 | --- | --- | --- |
 | [Prompt caching](../prompt-caching/) | up to −90 % on input | automatic — just don't break it (MCP/CLAUDE.md mid-session) |
-| Model choice per task | factor 5 per class | `/model`; commit messages and renames need no top model |
+| Model choice per task | up to factor 5, largest against smallest | `/model`; commit messages and renames need no top model |
 | Lean context | linear per token saved | [MCP servers](../mcp/) off, point at files, research in [sub-agents](../multi-agent/) |
 | Batch processing | −50 % | asynchronous processing for anything that can wait |
 

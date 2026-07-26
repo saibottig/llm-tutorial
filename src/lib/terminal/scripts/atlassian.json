@@ -123,8 +123,8 @@
           "arg": "src/main/java/com/terminal/berth/BerthAllocationService.java",
           "ask": true,
           "detail": {
-            "de": "Null-sichere Sortierung der Warteliste, plus Regressionstest.",
-            "en": "Null-safe sorting of the waiting list, plus a regression test."
+            "de": "Null-sichere Sortierung der Warteliste.",
+            "en": "Null-safe sorting of the waiting list."
           },
           "tokens": 260,
           "out": ["+2 −1"]
@@ -142,8 +142,8 @@
           "arg": "git push -u origin bugfix/TERM-4711",
           "ask": true,
           "detail": {
-            "de": "Push ist nicht umkehrbar — deshalb wird gefragt, obwohl Tests und Commit vorher ohne Rückfrage liefen.",
-            "en": "A push is not reversible — which is why this asks, even though tests and commit ran without a prompt."
+            "de": "Push ist nicht umkehrbar — deshalb wird gefragt, obwohl der Testlauf vorher ohne Rückfrage lief.",
+            "en": "A push is not reversible — which is why this asks, even though the test run before it needed no prompt."
           },
           "tokens": 180,
           "out": ["branch 'bugfix/TERM-4711' set up to track 'origin/bugfix/TERM-4711'"]

@@ -18,8 +18,8 @@
         "en": "As a workflow"
       },
       "hint": {
-        "de": "Vier Schritte, im Code festgelegt. Planbar und testbar.",
-        "en": "Four steps, fixed in code. Predictable and testable."
+        "de": "Vier Schritte, im Code festgelegt — drei davon rufen ein Tool. Planbar und testbar.",
+        "en": "Four steps, fixed in code — three of them call a tool. Predictable and testable."
       },
       "reset": true,
       "commands": [
@@ -258,8 +258,8 @@
         {
           "type": "assistant",
           "text": {
-            "de": "84 % statt 71 %. Acht Tool-Aufrufe statt vier, rund dreimal so viel Context — und ich hätte auch weitermachen können, ohne dass etwas mich gestoppt hätte.",
-            "en": "84 % instead of 71 %. Eight tool calls instead of four, roughly three times the context — and I could have carried on, with nothing to stop me."
+            "de": "84 % statt 71 %. Acht Tool-Aufrufe statt drei, rund 12.000 Token mehr im Context — und ich hätte auch weitermachen können, ohne dass etwas mich gestoppt hätte.",
+            "en": "84 % instead of 71 %. Eight tool calls instead of three, roughly 12,000 tokens more in the context — and I could have carried on, with nothing to stop me."
           }
         },
         {

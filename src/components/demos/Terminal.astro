@@ -341,6 +341,15 @@ const startOn = (id: string) => startMcp[id] ?? MCP_SERVERS.find((s) => s.id ===
 
     /** Set while an Esc press should collapse the current animation. */
     let skip = false;
+    /**
+     * A reader who asked the OS for less motion gets the same session with the
+     * steps arriving at once. The CSS media query only reaches the caret and the
+     * scroll behaviour — the typing, the prefill bar and the decode ticker are
+     * timers, so they have to consult it here.
+     */
+    const calm = matchMedia('(prefers-reduced-motion: reduce)');
+    /** True when the current step should render fully formed instead of animating. */
+    const still = () => skip || calm.matches;
     let busy = false;
     let exactCounting = false;
     /** While a permission prompt is open, Esc means “deny”, not “skip”. */
@@ -363,7 +372,7 @@ const startOn = (id: string) => startMcp[id] ?? MCP_SERVERS.find((s) => s.id ===
     }
 
     async function type(el: HTMLElement, content: string) {
-      if (skip) {
+      if (still()) {
         el.textContent = content;
         return;
       }
@@ -372,7 +381,7 @@ const startOn = (id: string) => startMcp[id] ?? MCP_SERVERS.find((s) => s.id ===
       const stride = content.length > 220 ? 3 : 1;
       const delay = content.length > 220 ? 6 : 12;
       for (let i = 0; i < content.length; i += stride) {
-        if (skip) break;
+        if (still()) break;
         el.textContent = content.slice(0, i + stride);
         out.scrollTop = out.scrollHeight;
         await sleep(delay);
@@ -447,7 +456,7 @@ const startOn = (id: string) => startMcp[id] ?? MCP_SERVERS.find((s) => s.id ===
         if (!block.tokens) continue;
         const seg = document.createElement('div');
         seg.className = 'stack__seg';
-        seg.style.flex = `1 1 ${(block.tokens / Math.max(total, cap)) * 100}%`;
+        seg.style.flex = `0 0 ${(block.tokens / Math.max(total, cap)) * 100}%`;
         seg.style.background = BLOCK_COLOR[block.kind];
         stack.appendChild(seg);
 
@@ -468,7 +477,7 @@ const startOn = (id: string) => startMcp[id] ?? MCP_SERVERS.find((s) => s.id ===
       if (total < cap) {
         const free = document.createElement('div');
         free.className = 'stack__seg';
-        free.style.flex = `1 1 ${((cap - total) / cap) * 100}%`;
+        free.style.flex = `0 0 ${((cap - total) / cap) * 100}%`;
         free.style.background = 'transparent';
         stack.appendChild(free);
       }
@@ -510,11 +519,13 @@ const startOn = (id: string) => startMcp[id] ?? MCP_SERVERS.find((s) => s.id ===
       out.scrollTop = out.scrollHeight;
     }
 
-    async function generate(step: Extract<Step, { type: 'generate' }>) {
-      // Deliberately slowed down, and labelled as such. The point is the shape:
-      // one parallel pass, then one serial token at a time.
-      const ttft = 0.18 + step.promptTokens / 14000;
+    async function generate(step: Extract<Step, { type: 'generate' }>, promptTokens: number) {
+      // The prompt is whatever the session is currently carrying, not a figure
+      // from the script: prefill scales with everything in front of the answer,
+      // which is the only reason a fuller window feels slower.
+      const ttft = 0.18 + promptTokens / 14000;
       const speed = 44;
+      const decodeSeconds = step.outputTokens / speed;
 
       const prefill = line('term__line--phase');
       const bar = document.createElement('span');
@@ -523,9 +534,9 @@ const startOn = (id: string) => startMcp[id] ?? MCP_SERVERS.find((s) => s.id ===
       prefill.appendChild(bar);
       const prefillNum = document.createElement('span');
       prefillNum.className = 'term__phaseNum';
-      prefillNum.textContent = `${fmt.format(step.promptTokens)} · ${ttft.toFixed(2)} s ${str.ttft}`;
+      prefillNum.textContent = `${fmt.format(promptTokens)} · ${ttft.toFixed(2)} s ${str.ttft}`;
       prefill.appendChild(prefillNum);
-      if (!skip) {
+      if (!still()) {
         bar.style.width = '0%';
         await sleep(20);
         bar.style.width = '100%';
@@ -543,15 +554,19 @@ const startOn = (id: string) => startMcp[id] ?? MCP_SERVERS.find((s) => s.id ===
       decodeNum.className = 'term__phaseNum';
       decode.appendChild(decodeNum);
 
+      // The ticker is a schematic — it always runs in about the same time. The
+      // figure beside it is the one that means something: at a fixed rate, the
+      // answer's own length is what decides how long the reader waits.
+      const tail = `${speed} ${str.speed} · ${decodeSeconds.toFixed(1)} s ${str.decodeTime}`;
       const shown = Math.min(step.outputTokens, 60);
       for (let i = 1; i <= shown; i++) {
-        if (skip) break;
+        if (still()) break;
         dots.textContent = '▍'.repeat(i);
-        decodeNum.textContent = `${fmt.format(Math.round((i / shown) * step.outputTokens))} · ${speed} ${str.speed}`;
+        decodeNum.textContent = `${fmt.format(Math.round((i / shown) * step.outputTokens))} · ${tail}`;
         await sleep(28);
       }
       dots.textContent = '▍'.repeat(shown);
-      decodeNum.textContent = `${fmt.format(step.outputTokens)} · ${speed} ${str.speed}`;
+      decodeNum.textContent = `${fmt.format(step.outputTokens)} · ${tail}`;
 
       if (step.text) {
         const el = line('term__line--assistant');
@@ -560,7 +575,7 @@ const startOn = (id: string) => startMcp[id] ?? MCP_SERVERS.find((s) => s.id ===
       line(
         'term__line--note',
         str.generateNote
-          .replace('{prompt}', fmt.format(step.promptTokens))
+          .replace('{prompt}', fmt.format(promptTokens))
           .replace('{output}', fmt.format(step.outputTokens)),
       );
     }
@@ -683,7 +698,10 @@ const startOn = (id: string) => startMcp[id] ?? MCP_SERVERS.find((s) => s.id ===
       for (const block of session.breakdown()) {
         if (!block.tokens) continue;
         const seg = document.createElement('span');
-        seg.style.flex = `1 1 ${(block.tokens / session.windowSize) * 100}%`;
+        // `flex: 0 0` — with a grow factor the segments swallowed the free space
+        // and the bar read as a full window at nine per cent, contradicting the
+        // breakdown bar printed right below it by /context.
+        seg.style.flex = `0 0 ${(block.tokens / session.windowSize) * 100}%`;
         seg.style.background = BLOCK_COLOR[block.kind];
         meterEl.appendChild(seg);
       }
@@ -713,10 +731,14 @@ const startOn = (id: string) => startMcp[id] ?? MCP_SERVERS.find((s) => s.id ===
             break;
           }
 
-          case 'generate':
+          case 'generate': {
+            // Read before booking: the prompt is what the request carried, the
+            // answer is what it produced.
+            const promptTokens = session.used();
             apply(step);
-            await generate(step);
+            await generate(step, promptTokens);
             break;
+          }
 
           case 'tool': {
             const mode = session.decide(step);
@@ -733,9 +755,12 @@ const startOn = (id: string) => startMcp[id] ?? MCP_SERVERS.find((s) => s.id ===
               }
             }
             apply(step);
+            // A sub-agent's calls are not billed to this thread, but they were
+            // still made — the counter tracks calls, the meter tracks tokens.
+            if (!bill) session.noteToolCall();
             toolLine(step, mode === 'allow' && step.ask ? '✓' : undefined);
             if (mode === 'allow' && step.ask) line('term__line--note', str.autoAllowed);
-            if (!skip) await sleep(240);
+            if (!still()) await sleep(240);
             break;
           }
 
@@ -891,7 +916,7 @@ const startOn = (id: string) => startMcp[id] ?? MCP_SERVERS.find((s) => s.id ===
           }
         }
         updateStatus();
-        if (!skip) await sleep(110);
+        if (!still()) await sleep(110);
       }
       return true;
     }
@@ -961,7 +986,7 @@ const startOn = (id: string) => startMcp[id] ?? MCP_SERVERS.find((s) => s.id ===
 
       for (const command of scenario.commands) {
         await submit(command);
-        if (!skip) await sleep(320);
+        if (!still()) await sleep(320);
       }
       inputEl?.focus({ preventScroll: true });
     }
@@ -1533,13 +1558,11 @@ const startOn = (id: string) => startMcp[id] ?? MCP_SERVERS.find((s) => s.id ===
     transition: width 0.4s ease;
   }
 
+  /* The renderer sets an inline width, which always beats a stylesheet rule —
+     max-width is what actually caps the grown bar. */
   .term__bar--prefill {
     width: 0;
     max-width: 9rem;
-  }
-
-  .term__bar[style*='100%'] {
-    width: 9rem;
   }
 
   .term__dots {

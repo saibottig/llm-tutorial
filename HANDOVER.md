@@ -174,6 +174,15 @@ inneren Schritte mit `bill: false` — nur `summary` landet im Context. Wer das
 vergisst, macht Delegation exakt so teuer wie Inline-Arbeit und dreht damit die
 Aussage des Multi-Agent-Kapitels um. Ein Test vergleicht beide Szenarien.
 
+**`generate` holt seine Prompt-Größe aus der Sitzung, nicht aus dem Skript.**
+Der Schritt trägt nur noch `outputTokens`; wie viele Prompt-Token Prefill
+verarbeitet, liest der Renderer als `session.used()`, direkt bevor er die
+Antwort bucht. Vorher stand dort eine feste Zahl — mit der Folge, dass das
+Szenario „Derselbe Prompt, volles Fenster" im KV-Cache-Kapitel exakt dieselbe
+Zeit bis zum ersten Token anzeigte wie das kurze davor, also genau den Effekt
+nicht zeigte, für den es da ist. Wer hier wieder eine Konstante einsetzt, dreht
+die Aussage des Kapitels ab; ein Test vergleicht beide Szenarien.
+
 **Schritttypen** (die Liste in `engine.ts` und die im Prüfskript müssen
 zusammenpassen): `assistant`, `note`, `out`, `tool`, `subagent`, `generate`,
 `invalidate`, `chips`, `compare`, `meter`, `cache`, `clear`, `compact`, `mcp`,
@@ -233,11 +242,11 @@ Astro-Import nötig, damit es auch ohne Build läuft.
 
 Das Prüfskript sieht Inhalte, kein Verhalten. Seit der Playground echte Logik
 mitbringt — Context-Buchhaltung, Compaction, Permission-Gate — liegt die in
-`tests/` als Playwright-Suite (rund 60 Fälle):
+`tests/` als Playwright-Suite (rund 66 Fälle):
 
 | Datei | Deckt ab |
 |---|---|
-| `tests/playground.spec.ts` | alle 20 Kapitel-Terminals, Cache-Treffer, Permission-Regeln (allow/ask/deny), Sub-Agenten, Prompt-Injection, die gemessenen Tokenizer-Zahlen, Slash-Commands, beide Sprachen |
+| `tests/playground.spec.ts` | alle 20 Kapitel-Terminals, Cache-Treffer, Permission-Regeln (allow/ask/deny), Sub-Agenten, Prompt-Injection, die gemessenen Tokenizer-Zahlen, Slash-Commands, beide Sprachen — dazu der Block „the numbers a reader can cross-check": jede Zahl, die im Text behauptet wird, gegen die, die die Sitzung tatsächlich anzeigt |
 | `tests/site.spec.ts` | alle 40 Kapitelseiten, Prev/Next-Kette, Sprachumschalter, 375 px, beide Themes, Konsolenfehler, Quell-Guards |
 | `tests/helpers.ts` | `Terminal`-Wrapper (`run`, `settle`, `contextK`) und die Kapitelliste |
 

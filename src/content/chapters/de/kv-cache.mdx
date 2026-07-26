@@ -19,13 +19,13 @@ Der KV-Cache ist keine Optimierung am Rand, sondern die Voraussetzung dafür, da
 
 ## Der Preis: Speicher
 
-Gespart wird Rechenzeit, bezahlt wird mit Speicher — linear wachsend mit der Kontextlänge. Bei einem 70B-Modell ca. **0,3 MB pro Token**:
+Gespart wird Rechenzeit, bezahlt wird mit Speicher — linear wachsend mit der Kontextlänge. Bei einem 70B-Modell mit GQA und 16 Bit pro Wert ca. **0,3 MB pro Token**:
 
 | Kontextlänge | KV-Cache (70B-Modell) | Zum Vergleich |
 | --- | --- | --- |
 | 8.000 Token | ~2,5 GB | |
-| 128.000 Token | ~40 GB | ≈ die Modellgewichte selbst (~39 GB) |
-| 1.000.000 Token | ~305 GB | ≈ 8× das Modell |
+| 128.000 Token | ~40 GB | ≈ die Gewichte desselben Modells in 4 Bit (~39 GB) |
+| 1.000.000 Token | ~305 GB | ≈ 8× diese Gewichte |
 
 <Callout type="achtung">
 Deshalb begrenzen Anbieter die nutzbare Kontextlänge und berechnen für langen Kontext teils Aufschläge: Nicht das Modell ist die Grenze, sondern der Speicher für seinen Cache — die Betriebsentscheidung aus dem Kapitel [Token](../token/).
@@ -47,7 +47,7 @@ Der KV-Cache lebt normalerweise nur eine Anfrage lang. Ihn über Anfragen hinweg
 
 <KeyTakeaway>
 - Der KV-Cache speichert die Zwischenwerte verarbeiteter Token — aus quadratischem Aufwand wird linearer.
-- Bezahlt wird mit Speicher: bei 128k Kontext so viel wie das Modell selbst, bei 1M das Achtfache.
+- Bezahlt wird mit Speicher: bei 128k Kontext so viel wie die 4-Bit-Gewichte desselben Modells, bei 1M das Achtfache.
 - Der Cache, nicht das Modell, begrenzt meist die nutzbare Kontextlänge.
 - Über Anfragen hinweg behalten heißt der Mechanismus Prompt Caching — der größte Kostenhebel.
 </KeyTakeaway>

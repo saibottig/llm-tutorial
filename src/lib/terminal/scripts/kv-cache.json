@@ -25,8 +25,8 @@
       "id": "long",
       "label": { "de": "Derselbe Prompt, volles Fenster", "en": "Same prompt, full window" },
       "hint": {
-        "de": "Nichts am Prompt ändert sich — nur, was davor steht. Und das erste Token dauert länger.",
-        "en": "Nothing about the prompt changes — only what precedes it. And the first token takes longer."
+        "de": "Nichts am Prompt ändert sich — nur, was davor steht. Vergleich die Prefill-Zeile mit der aus dem ersten Szenario.",
+        "en": "Nothing about the prompt changes — only what precedes it. Compare the prefill line with the one from the first scenario."
       },
       "reset": true,
       "commands": [
@@ -51,7 +51,6 @@
         },
         {
           "type": "generate",
-          "promptTokens": 12500,
           "outputTokens": 96,
           "text": {
             "de": "Tiefgang gegen Liegeplatztiefe, Länge gegen Liegeplatzlänge, Zeitfenster aus ETA und ETD. Bei Kollision gewinnt der frühere bestätigte ETA.",
@@ -81,8 +80,8 @@
         {
           "type": "note",
           "text": {
-            "de": "Der KV-Cache für diesen Context liegt jetzt im GPU-Speicher — und wächst linear mit der Contextlänge. Deshalb ist ein volles Fenster nicht nur teurer, sondern auch spürbar träger.",
-            "en": "The KV cache for this context now sits in GPU memory — and it grows linearly with context length. That is why a full window is not only more expensive but noticeably more sluggish."
+            "de": "Der KV-Cache für diesen Context liegt jetzt im GPU-Speicher — und wächst linear mit der Contextlänge. Stell jetzt dieselbe Frage wie im ersten Szenario: derselbe Prompt, aber das erste Token braucht ein Vielfaches, weil Prefill alles davor mitverarbeiten muss.",
+            "en": "The KV cache for this context now sits in GPU memory — and it grows linearly with context length. Now ask the same question as in the first scenario: same prompt, but the first token takes several times as long, because prefill has to work through everything in front of it."
           }
         }
       ]

@@ -66,9 +66,14 @@ export type Step =
       steps: Step[];
     }
   | {
-      /** One model response, split into its prefill and decode halves. */
+      /**
+       * One model response, split into its prefill and decode halves. The
+       * prompt half is deliberately *not* scripted: the renderer reads it from
+       * the session, so a fuller window really does show a longer time to first
+       * token. A fixed number here made the "same prompt, full window" scenario
+       * print the identical figure as the short one.
+       */
       type: 'generate';
-      promptTokens: number;
       outputTokens: number;
       text?: string;
     }
@@ -136,8 +141,14 @@ export type SessionConfig = {
 
 export type Breakdown = { kind: BlockKind; label: string; tokens: number; share: number };
 
-/** Good enough before the 1 MB BPE table has loaded — and never claimed to be more. */
-const estimateTokens = (text: string) => Math.max(1, Math.round([...text].length / 3.6));
+/**
+ * Good enough before the 1 MB BPE table has loaded — and never claimed to be
+ * more. 4.0 characters per token is the measured ratio across every prompt the
+ * scenarios in this repo replay, German and English together; the previous 3.6
+ * overshot them by about 12 %. Prose runs nearer 5 (see the tokens chapter) —
+ * short prompts full of domain nouns do not.
+ */
+const estimateTokens = (text: string) => Math.max(1, Math.round([...text].length / 4));
 
 export function createSession(config: SessionConfig) {
   const { script } = config;
@@ -408,6 +419,9 @@ export function createSession(config: SessionConfig) {
         state.history = 0;
         state.output = 0;
         state.turns = 0;
+        // A cleared session starts counting from zero in every column — leaving
+        // the tool counter standing made the status line contradict itself.
+        state.toolCalls = 0;
         state.seen = 0;
         state.lastCached = 0;
         state.lastFresh = 0;
@@ -459,6 +473,15 @@ export function createSession(config: SessionConfig) {
     settleTurn,
     compact,
     decide,
+    /**
+     * Counts a call whose tokens are booked elsewhere — the steps inside a
+     * sub-agent. Those run unbilled against the main thread, but they did
+     * happen, and a status line reading "0 tool calls" under four visible ⏺
+     * lines is simply wrong.
+     */
+    noteToolCall() {
+      state.toolCalls += 1;
+    },
     setCounter(fn: (text: string) => number) {
       count = fn;
     },
@@ -468,7 +491,13 @@ export function createSession(config: SessionConfig) {
     },
     toggleRule(id: string, on: boolean) {
       const rule = rules.find((r) => r.id === id);
-      if (rule) rule.on = on;
+      if (!rule) return;
+      rule.on = on;
+      // Same effect as the scripted `rule` step: the permission set is part of
+      // what the harness sends, so changing it invalidates the prefix. Without
+      // this, flipping a checkbox and replaying a scenario disagreed on the
+      // cache split with the identical change made from a script.
+      markDirty('system');
     },
     isOverflowing: () => used() > SESSION.windowSize,
     reset() {
